@@ -25,7 +25,7 @@ export function toUIMessages(
       content && typeof content !== "string" ? content : [];
     if (!coreMessage) continue;
     const common = {
-      id: message.id ?? message._id,
+      id: message._id,
       createdAt: new Date(message._creationTime),
       order: message.order,
       stepOrder: message.stepOrder,
@@ -82,7 +82,7 @@ export function toUIMessages(
           : message.status;
       }
       // update it to the last message's id
-      assistantMessage.id = message.id ?? message._id;
+      assistantMessage.id = message._id;
       if (message.reasoning) {
         assistantMessage.parts.push({
           type: "reasoning",
