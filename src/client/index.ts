@@ -80,6 +80,8 @@ import type {
 
 export { vMessageDoc, vThreadDoc } from "../component/schema.js";
 export { serializeDataOrUrl } from "../mapping.js";
+// NOTE: these are also exported via @convex-dev/agent/validators
+// a future version may put them all here or move these over there
 export {
   vAssistantMessage,
   vContextOptions,
@@ -410,7 +412,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
        * set in the agent constructor.
        */
       usageHandler?: UsageHandler;
-      /** @deprecated Pass `tools` in the next parameter instead. This is only intended to pass through thread-default tools.  */
+      /** Note: to get better type inference, pass tools in the next arg */
       tools?: ToolSet;
     },
     args: TextArgs<AgentTools, TOOLS, OUTPUT, OUTPUT_PARTIAL>,
@@ -510,10 +512,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       userId: argsUserId,
       threadId,
       usageHandler,
-      /**
-       * @deprecated Pass `tools` in the next parameter instead.
-       * This is only intended to pass through thread-default tools.
-       */
+      /** Note: to get better type inference, pass tools in the next arg */
       tools: threadTools,
     }: {
       userId?: string;
@@ -1562,8 +1561,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       messages.length &&
       storageOptions?.saveMessages !== "none" &&
       // If it was a promptMessageId, we don't want to save it again.
-      (!args.promptMessageId || storageOptions?.saveMessages === "all") &&
-      storageOptions?.saveAnyInputMessages !== false
+      (!args.promptMessageId || storageOptions?.saveMessages === "all")
     ) {
       const saveAll = storageOptions?.saveMessages === "all";
       const coreMessages = saveAll ? messages : messages.slice(-1);
@@ -1621,7 +1619,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
 
   _shouldSaveOutputMessages(storageOpts?: StorageOptions): boolean {
     const opts = storageOpts ?? this.options.storageOptions;
-    return opts?.saveOutputMessages !== false && opts?.saveMessages !== "none";
+    return opts?.saveMessages !== "none";
   }
 
   _mergedContextOptions(opts: ContextOptions | undefined): ContextOptions {

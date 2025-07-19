@@ -40,15 +40,6 @@ import {
 } from "./vector/tables.js";
 import { changeRefcount } from "./files.js";
 
-/** @deprecated Use *.threads.listMessagesByThreadId instead. */
-export const listThreadsByUserId = _listThreadsByUserId;
-
-/** @deprecated Use *.threads.getThread */
-export const getThread = _getThread;
-
-/** @deprecated Use *.threads.updateThread instead */
-export const updateThread = _updateThread;
-
 function publicMessage(message: Doc<"messages">): MessageDoc {
   return omit(message, ["parentMessageId", "stepId", "files"]);
 }
@@ -385,8 +376,6 @@ export const listMessagesByThreadId = query({
   args: {
     threadId: v.id("threads"),
     excludeToolMessages: v.optional(v.boolean()),
-    /** @deprecated Use excludeToolMessages instead. */
-    isTool: v.optional(v.literal("use excludeToolMessages instead of this")),
     /** What order to sort the messages in. To get the latest, use "desc". */
     order: v.union(v.literal("asc"), v.literal("desc")),
     paginationOpts: v.optional(paginationOptsValidator),
@@ -450,15 +439,6 @@ export const getMessagesByIds = query({
     return await Promise.all(args.messageIds.map((id) => ctx.db.get(id)));
   },
   returns: v.array(v.union(v.null(), vMessageDoc)),
-});
-
-/** @deprecated Use listMessagesByThreadId instead. */
-export const getThreadMessages = query({
-  args: { deprecated: v.literal("Use listMessagesByThreadId instead") },
-  handler: async () => {
-    throw new Error("Use listMessagesByThreadId instead of getThreadMessages");
-  },
-  returns: vPaginationResult(vMessageDoc),
 });
 
 export const searchMessages = action({

@@ -112,23 +112,6 @@ export type StorageOptions = {
    * Defaults to "promptAndOutput".
    */
   saveMessages?: "all" | "none" | "promptAndOutput";
-  /**
-   * @deprecated Use saveMessages instead.
-   * Defaults to false, allowing you to pass in arbitrary context that will
-   * be in addition to automatically fetched content.
-   * Pass true to have all input messages saved to the thread history.
-   */
-  saveAllInputMessages?: boolean;
-  /**
-   * @deprecated Use saveMessages instead.
-   * Defaults to true, saving the prompt, or last message passed to generateText.
-   */
-  saveAnyInputMessages?: boolean;
-  /**
-   * @deprecated Use saveMessages instead.
-   * Defaults to true. Whether to save messages generated while chatting.
-   */
-  saveOutputMessages?: boolean;
 };
 
 export type GenerationOutputMetadata = { messageId?: string; order?: number };

@@ -84,10 +84,7 @@ const MessageComposer: React.FC<MessageComposerProps> = ({
         isSystemPromptDirty ? systemPrompt : undefined
       );
       return setResponse(
-        storageOptions.saveOutputMessages ||
-          storageOptions.saveMessages === "none"
-          ? null
-          : text ?? null
+        storageOptions.saveMessages === "none" ? null : text ?? null,
       );
     } finally {
       setIsSendingMessage(false);
