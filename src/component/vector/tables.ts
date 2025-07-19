@@ -37,7 +37,7 @@ export type EmbeddingsWithoutDenormalizedFields = Infer<
   typeof vEmbeddingsWithoutDenormalizedFields
 >;
 
-function table<D extends number>(dimensions: D): Table<D> {
+function table<D extends number>(dimensions: D): VectorTable<D> {
   return defineTable(embeddings)
     .vectorIndex("vector", {
       vectorField: "vector",
@@ -47,7 +47,7 @@ function table<D extends number>(dimensions: D): Table<D> {
     .index("model_table_threadId", ["model", "table", "threadId"]);
 }
 
-type Table<D extends number> = TableDefinition<
+type VectorTable<D extends number> = TableDefinition<
   VObject<ObjectType<typeof embeddings>, typeof embeddings>,
   { model_table_threadId: ["model", "table", "threadId", "_creationTime"] },
   GenericTableSearchIndexes,
@@ -63,7 +63,7 @@ type VectorIndex<D extends number> = {
 };
 
 export type VectorSchema = SchemaDefinition<
-  { [key in VectorTableName]: Table<128> },
+  { [key in VectorTableName]: VectorTable<128> },
   true
 >;
 
@@ -110,7 +110,7 @@ export function getVectorIdInfo(ctx: QueryCtx, id: VectorTableId) {
 
 const tables: {
   [K in keyof typeof VectorDimensions &
-    number as `embeddings_${(typeof VectorDimensions)[K]}`]: Table<
+    number as `embeddings_${(typeof VectorDimensions)[K]}`]: VectorTable<
     (typeof VectorDimensions)[K]
   >;
 } = Object.fromEntries(
@@ -120,7 +120,7 @@ const tables: {
   ])
 ) as Record<
   `embeddings_${(typeof VectorDimensions)[number]}`,
-  Table<(typeof VectorDimensions)[number]>
+  VectorTable<(typeof VectorDimensions)[number]>
 >;
 
 export default tables;
