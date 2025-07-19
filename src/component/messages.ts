@@ -410,10 +410,8 @@ export const listMessagesByThreadId = query({
           })
           .order(order)
           .filterWith(
-            async (m) =>
-              !last ||
-              m.order < last.order ||
-              (m.order === last.order && m.stepOrder <= last.stepOrder)
+            // We allow all messages on the same order.
+            async (m) => !last || m.order < last.order || m.order === last.order
           )
       )
     );
@@ -543,14 +541,19 @@ export const _fetchSearchMessages = internalQuery({
         args.vectorIds.map((embeddingId) =>
           ctx.db
             .query("messages")
-            .withIndex("embeddingId", (q) => q.eq("embeddingId", embeddingId))
-            .filter((q) =>
+            .withIndex("embeddingId_threadId", (q) =>
               searchAllMessagesForUserId
-                ? q.eq(q.field("userId"), searchAllMessagesForUserId)
-                : q.eq(q.field("threadId"), threadId!)
+                ? q.eq("embeddingId", embeddingId)
+                : q.eq("embeddingId", embeddingId).eq("threadId", threadId!)
             )
-            // Don't include pending. Failed messages hopefully are deleted but may as well be safe.
-            .filter((q) => q.eq(q.field("status"), "success"))
+            .filter((q) =>
+              q.and(
+                q.eq(q.field("status"), "success"),
+                searchAllMessagesForUserId
+                  ? q.eq(q.field("userId"), searchAllMessagesForUserId)
+                  : q.eq(q.field("threadId"), threadId)
+              )
+            )
             .first()
         )
       )

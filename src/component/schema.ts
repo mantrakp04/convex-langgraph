@@ -85,7 +85,7 @@ export const schema = defineSchema({
       filterFields: ["userId", "threadId"],
     })
     // Allows finding messages by vector embedding id
-    .index("embeddingId", ["embeddingId"]),
+    .index("embeddingId_threadId", ["embeddingId", "threadId"]),
 
   // Status: if it's done, it's deleted, then deltas are vacuumed
   streamingMessages: defineTable({
