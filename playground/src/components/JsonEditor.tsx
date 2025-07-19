@@ -1,33 +1,41 @@
-
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { Textarea } from "@/components/ui/textarea";
-import { Validator } from "convex/values";
+import { Infer, Validator, Value, VObject } from "convex/values";
 import { validate, ValidationError } from "convex-helpers/validators";
 
-const JsonEditor = <T,>({
-  initialValue,
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const JsonEditor = <V extends Validator<any, "required", any>>({
+  defaultValue,
   onChange,
   validator,
 }: {
-  initialValue: T;
-  onChange?: (value: T) => void;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  validator: Validator<T, "required", any>;
+  defaultValue: Infer<V>;
+  onChange?: (value: Infer<V>) => void;
+  validator: V;
 }) => {
-  const [value, setValue] = useState<string | null>(null);
+  const [value, setValue] = useState<Infer<V> | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  function reset() {
+    setValue(null);
+    setError(null);
+  }
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newValue = e.target.value;
+    if (newValue === "") {
+      reset();
+      return;
+    }
+    setValue(newValue);
 
     try {
       const parsedJson = JSON.parse(newValue);
-      validate(validator, parsedJson, { throw: true });
-      setError(null);
-      onChange?.(parsedJson);
-      setValue(null);
+      if (validate(validator, parsedJson, { throw: true })) {
+        setError(null);
+        onChange?.(parsedJson);
+      }
     } catch (err) {
-      setValue(newValue);
       if (err instanceof ValidationError) {
         setError(err.message);
       } else {
@@ -35,11 +43,10 @@ const JsonEditor = <T,>({
       }
     }
   };
-
   return (
     <div className="w-full">
       <Textarea
-        value={value ?? JSON.stringify(initialValue, null, 2)}
+        value={value ?? JSON.stringify(defaultValue, null, 2)}
         onChange={handleChange}
         className="font-mono text-sm h-72"
         rows={5}

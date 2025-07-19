@@ -43,7 +43,7 @@ const RightPanel: React.FC<RightPanelProps> = ({
               </label>
               <CollapsibleSection title="Context Options">
                 <JsonEditor
-                  initialValue={contextOptions}
+                  defaultValue={contextOptions}
                   onChange={setContextOptions}
                   validator={vContextOptions}
                 />

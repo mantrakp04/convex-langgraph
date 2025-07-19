@@ -192,7 +192,7 @@ const MessageComposer: React.FC<MessageComposerProps> = ({
                 Context Options
               </label>
               <JsonEditor
-                initialValue={contextOptions}
+                defaultValue={contextOptions}
                 onChange={setContextOptions}
                 validator={vContextOptions}
               />
@@ -202,7 +202,7 @@ const MessageComposer: React.FC<MessageComposerProps> = ({
                 Storage Options
               </label>
               <JsonEditor
-                initialValue={storageOptions}
+                defaultValue={storageOptions}
                 onChange={setStorageOptions}
                 validator={vStorageOptions}
               />
