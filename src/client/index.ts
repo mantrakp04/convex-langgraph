@@ -1858,17 +1858,20 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
           await result.consumeStream();
           return {
             text: await result.text,
-            finishReason: await result.finishReason,
             messageId: result.messageId,
+            order: result.order,
+            finishReason: await result.finishReason,
+            warnings: result.warnings,
           };
         } else {
-          const { text, messageId, finishReason } = await this.generateText(
-            ctx,
-            targetArgs,
-            llmArgs,
-            opts
-          );
-          return { text, messageId, finishReason };
+          const res = await this.generateText(ctx, targetArgs, llmArgs, opts);
+          return {
+            text: res.text,
+            messageId: res.messageId,
+            order: res.order,
+            finishReason: res.finishReason,
+            warnings: res.warnings,
+          };
         }
       },
     });
@@ -1911,7 +1914,13 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
               this.options.storageOptions,
           }
         );
-        return { object: value.object as T };
+        return {
+          object: value.object as T,
+          messageId: value.messageId,
+          order: value.order,
+          finishReason: value.finishReason,
+          warnings: value.warnings,
+        };
       },
     });
   }
