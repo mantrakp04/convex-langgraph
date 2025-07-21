@@ -1,4 +1,4 @@
-// See the docs at https://docs.convex.dev/agents/agent-setup
+// See the docs at https://docs.convex.dev/agents/getting-started
 import { Agent, createTool } from "@convex-dev/agent";
 import { components } from "../_generated/api";
 import { z } from "zod";

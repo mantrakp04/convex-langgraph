@@ -11,7 +11,7 @@ npm i @convex-dev/agent
 AI Agents, built on Convex.
 [Check out the docs here](https://docs.convex.dev/agents).
 
-- [Agents](./docs/agent-setup.mdx) provide an abstraction for using LLMs to
+- [Agents](./docs/getting-started.mdx) provide an abstraction for using LLMs to
   represent units of use-case-specific prompting with associated models,
   prompts, [Tool Calls](./docs/tools.mdx), and behavior in relation to other
   Agents, functions, APIs, and more.
