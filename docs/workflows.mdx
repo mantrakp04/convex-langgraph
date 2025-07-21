@@ -51,6 +51,54 @@ export const getAdvice = action({
 });
 ```
 
+## Building reliable workflows
+
+One common pitfall when working with LLMs is their unreliability. API providers
+have outages, and LLMs can be flaky. To build reliable workflows, you often need
+three properties:
+
+1. Reliable retries
+2. Load balancing
+3. Durability and idempotency for multi-step workflows
+
+Thankfully there are Convex components to leverage for these properties.
+
+### Retries
+
+By default, Convex mutations have these properties by default. However, calling
+LLMs require side-effects and using the network calls, which necessitates using
+actions. If you are only worried about retries, you can use the
+[Action Retrier](https://convex.dev/components/retrier) component.
+
+However, keep reading, as the [Workpool](https://convex.dev/components/workpool)
+and [Workflow](https://convex.dev/components/workflow) components provide more
+robust solutions, including retries.
+
+### Load balancing
+
+With long-running actions in a serverless environment, you may consume a lot of
+resources. And with tasks like ingesting data for RAG or other spiky workloads,
+there's a risk of running out of resources. To mitigate this, you can use the
+[Workpool](https://convex.dev/components/workpool) component. You can set a
+limit on the number of concurrent workers and add work asynchronously, with
+configurable retries and a callback to handle eventual success / failure.
+
+However, if you also want to manage multi-step workflows, you should use the
+[Workflow](https://convex.dev/components/workflow) component, which also
+provides retries and load balancing out of the box.
+
+### Durability and idempotency for multi-step workflows
+
+When doing multi-step workflows that can fail mid-way, you need to ensure that
+the workflow can be resumed from where it left off, without duplicating work.
+The [Workflow](https://convex.dev/components/workflow) builds on the
+[Workpool](https://convex.dev/components/workpool) to provide durable execution
+of long running functions with retries and delays.
+
+Each step in the workflow is run, with the result recorded. Even if the server
+fails mid-way, it will resume with the latest incomplete step, with configurable
+retry settings.
+
 ## Using the Workflow component for long-lived durable workflows
 
 The [Workflow component](https://convex.dev/components/workflow) is a great way
@@ -157,3 +205,28 @@ patterns that can be built with the Agent component:
 - Cycles of Reasoning and Acting (ReAct)
 - Modeling a network of agents messaging each other
 - Workflows that can be paused and resumed
+
+import { ComponentCardList } from "@site/src/components/ComponentCard";
+
+<ComponentCardList
+  items={[
+    {
+      title: "Action Retrier",
+      description:
+        "Add reliability to unreliable external service calls. Retry idempotent calls with exponential backoff until success.",
+      href: "https://www.convex.dev/components/retrier",
+    },
+    {
+      title: "Workpool",
+      description:
+        "Builds on the Action Retrier to provide parallelism limits and retries to manage large numbers of external requests efficiently.",
+      href: "https://www.convex.dev/components/workpool",
+    },
+    {
+      title: "Workflow",
+      description:
+        "Builds on the Workpool to provide durable execution of long running functions with retries and delays.",
+      href: "https://www.convex.dev/components/workflow",
+    },
+  ]}
+/>

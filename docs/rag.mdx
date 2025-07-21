@@ -140,3 +140,16 @@ cd agent
 npm run setup
 npm run example
 ```
+
+import { ComponentCardList } from "@site/src/components/ComponentCard";
+
+<ComponentCardList
+  items={[
+    {
+      title: "RAG (Retrieval-Augmented Generation)",
+      description:
+        "Search documents for relevant content to prompt an LLM using embeddings.",
+      href: "https://www.convex.dev/components/rag",
+    },
+  ]}
+/>
