@@ -496,9 +496,7 @@ export type OpaqueIds<T> =
       : T extends ArrayBuffer
         ? ArrayBuffer
         : T extends object
-          ? {
-              [K in keyof T]: OpaqueIds<T[K]>;
-            }
+          ? { [K in keyof T]: OpaqueIds<T[K]> }
           : T;
 
 export type UseApi<API> = Expand<{

@@ -30,10 +30,11 @@ const { threadId } = await agent.createThread(ctx);
 You may also pass in metadata to set on the thread:
 
 ```ts
+const userId = await getAuthUserId(ctx);
 const { thread } = await agent.createThread(ctx, {
   userId,
-  title,
-  summary,
+  title: "My thread",
+  summary: "This is a summary of the thread",
 });
 ```
 
