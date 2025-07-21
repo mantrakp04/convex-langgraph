@@ -161,9 +161,9 @@ export function applyDeltasToStreamMessage(
     }
     switch (part.type) {
       case "text-delta":
-        currentMessage.text += part.textDelta;
+        currentMessage.text = (currentMessage.text ?? "") + part.textDelta;
         if (lastContent?.type === "text") {
-          lastContent.text += part.textDelta;
+          lastContent.text = (lastContent.text ?? "") + part.textDelta;
         } else {
           contentToAdd = {
             type: "text",
@@ -189,7 +189,7 @@ export function applyDeltasToStreamMessage(
           if (typeof lastContent.args !== "string") {
             throw new Error("Expected args to be a string");
           }
-          lastContent.args += part.argsTextDelta;
+          lastContent.args = (lastContent.args ?? "") + part.argsTextDelta;
         }
         break;
       case "tool-call":
@@ -197,9 +197,10 @@ export function applyDeltasToStreamMessage(
         contentToAdd = part;
         break;
       case "reasoning":
-        currentMessage.reasoning += part.textDelta;
+        currentMessage.reasoning =
+          (currentMessage.reasoning ?? "") + part.textDelta;
         if (lastContent?.type === "reasoning") {
-          lastContent.text += part.textDelta;
+          lastContent.text = (lastContent.text ?? "") + part.textDelta;
         } else {
           contentToAdd = {
             type: "reasoning",
