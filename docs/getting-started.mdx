@@ -51,8 +51,9 @@ const agent = new Agent(components.agent, {
 export const helloWorld = action({
   args: { prompt: v.string() },
   handler: async (ctx, { prompt }) => {
-    const { threadId } = await agent.createThread(ctx, { userId: "123" });
-    const result = await agent.generateText(ctx, { threadId }, { prompt });
+    const userId = await getAuthUserId(ctx);
+    const { thread } = await agent.createThread(ctx, { userId });
+    const result = await thread.generateText({ prompt });
     return result.text;
   },
 });
