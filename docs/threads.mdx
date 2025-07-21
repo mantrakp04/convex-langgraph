@@ -40,7 +40,7 @@ const { thread } = await agent.createThread(ctx, {
 
 Metadata may be provided as context to the agent automatically in the future,
 but for now it's a convenience that helps organize threads in the
-[Playground](./playground.md).
+[Playground](./playground.mdx).
 
 ## Continuing a thread
 
@@ -74,7 +74,7 @@ is a `Thread` object, which has convenience methods that are thread-specific:
 - `thread.streamObject({ prompt, ... })` - equivalent to
   `agent.streamObject(ctx, { threadId }, { prompt, ... })`
 
-See [Messages docs](./messages.md) for more details on generating messages.
+See [Messages docs](./messages.mdx) for more details on generating messages.
 
 ### Overriding behavior with `agent.continueThread`
 
@@ -140,7 +140,7 @@ await ctx.runMutation(components.agent.users.deleteAllForUserId, { userId });
 
 ## Getting messages in a thread
 
-See [messages.md](./messages.md) for more details.
+See [messages.mdx](./messages.mdx) for more details.
 
 ```ts
 import { listMessages } from "@convex-dev/agent";

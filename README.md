@@ -11,33 +11,33 @@ npm i @convex-dev/agent
 AI Agents, built on Convex.
 [Check out the docs here](https://docs.convex.dev/agents).
 
-- [Agents](./docs/agent-setup.md) provide an abstraction for using LLMs to
+- [Agents](./docs/agent-setup.mdx) provide an abstraction for using LLMs to
   represent units of use-case-specific prompting with associated models,
-  prompts, [Tool Calls](./docs/tools.md), and behavior in relation to other
+  prompts, [Tool Calls](./docs/tools.mdx), and behavior in relation to other
   Agents, functions, APIs, and more.
-- [Threads](./docs/threads.md) persist [messages](./docs/messages.md) and can be
+- [Threads](./docs/threads.mdx) persist [messages](./docs/messages.mdx) and can be
   shared by multiple users and agents (including
-  [human agents](./docs/human-agents.md)).
+  [human agents](./docs/human-agents.mdx)).
 - Streaming text and objects using deltas over websockets so all clients stay in
   sync efficiently, without http streaming. Enables streaming from async
   functions.
-- [Conversation context](./docs/context.md) is automatically included in each
+- [Conversation context](./docs/context.mdx) is automatically included in each
   LLM call, including built-in hybrid vector/text search for messages in the
   thread and opt-in search for messages from other threads (for the same
   specified user).
-- [RAG](./docs/rag.md) techniques are supported for prompt augmentation from
+- [RAG](./docs/rag.mdx) techniques are supported for prompt augmentation from
   other sources, either up front in the prompt or as tool calls. Integrates with
   the [RAG Component](https://www.convex.dev/components/rag), or DIY.
-- [Workflows](./docs/workflows.md) allow building multi-step operations that can
+- [Workflows](./docs/workflows.mdx) allow building multi-step operations that can
   span agents, users, durably and reliably.
-- [Files](./docs/files.md) are supported in thread history with automatic saving
+- [Files](./docs/files.mdx) are supported in thread history with automatic saving
   to [file storage](https://docs.convex.dev/file-storage) and ref-counting.
-- [Debugging](./docs/debugging.md) is enabled by callbacks, the
-  [agent playground](./docs/playground.md) where you can inspect all metadata
+- [Debugging](./docs/debugging.mdx) is enabled by callbacks, the
+  [agent playground](./docs/playground.mdx) where you can inspect all metadata
   and iterate on prompts and context settings, and inspection in the dashboard.
-- [Usage tracking](./docs/usage-tracking.md) is easy to set up, enabling usage
+- [Usage tracking](./docs/usage-tracking.mdx) is easy to set up, enabling usage
   attribution per-provider, per-model, per-user, per-agent, for billing & more.
-- [Rate limiting](./docs/rate-limiting.md), powered by the
+- [Rate limiting](./docs/rate-limiting.mdx), powered by the
   [Rate Limiting Component](https://www.convex.dev/components/rate-limiting),
   helps control the rate at which users can interact with agents and keep you
   from exceeding your LLM provider's limits.

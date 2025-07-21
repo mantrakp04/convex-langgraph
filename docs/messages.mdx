@@ -5,10 +5,10 @@ sidebar_position: 300
 description: "Sending and receiving messages with an agent"
 ---
 
-The Agent component stores message and [thread](./threads.md) history to enable
+The Agent component stores message and [thread](./threads.mdx) history to enable
 conversations between humans and agents.
 
-To see how humans can act as agents, see [Human Agents](./human-agents.md).
+To see how humans can act as agents, see [Human Agents](./human-agents.mdx).
 
 ## Generating a message
 
@@ -17,7 +17,7 @@ to be used as context to generate one or more messages via an LLM, using calls
 like `streamText` or `generateObject`.
 
 The message history will be provided by default as context. See
-[LLM Context](./context.md) for details on configuring the context provided.
+[LLM Context](./context.mdx) for details on configuring the context provided.
 
 The arguments to `generateText` and others are the same as the AI SDK, except
 you don't have to provide a model. By default it will use the agent's chat
@@ -58,7 +58,7 @@ a few benefits:
 - You can save the message in the same mutation (transaction) as other writes to
   the database. This message can the be used and re-used in an action with
   retries, without duplicating the prompt message in the history. See
-  [workflows](./workflows.md) for more details.
+  [workflows](./workflows.mdx) for more details.
 - Thanks to the transactional nature of mutations, the client can safely retry
   mutations for days until they run exactly once. Actions can transiently fail.
 

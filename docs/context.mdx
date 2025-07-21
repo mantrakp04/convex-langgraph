@@ -11,7 +11,7 @@ thread. This context is used to generate the next message.
 The context can include recent messages, as well as messages found via text and
 /or vector search.
 
-You can also use [RAG](./rag.md) to add extra context to your prompt.
+You can also use [RAG](./rag.mdx) to add extra context to your prompt.
 
 ## Customizing the context
 
@@ -80,7 +80,7 @@ The search will use a hybrid of text and vector search.
 ## Passing in messages as context
 
 You can pass in messages as context to the Agent's LLM, for instance to
-implement [Retrieval-Augmented Generation](./rag.md). The final messages sent to
+implement [Retrieval-Augmented Generation](./rag.mdx). The final messages sent to
 the LLM will be:
 
 1. The system prompt, if one is provided or the agent has `instructions`
