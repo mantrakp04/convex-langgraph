@@ -1156,12 +1156,19 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
             .join(", ")
       );
     }
+    await this._generateAndSaveEmbeddings(ctx, messages);
+  }
+
+  async _generateAndSaveEmbeddings(
+    ctx: RunActionCtx,
+    messages: MessageDoc[]
+  ) {
     if (messages.some((m) => !m.message)) {
       throw new Error(
         "Some messages don't have a message: " +
-          args.messageIds
-            .map((id, i) => (!messages[i].message ? id : undefined))
-            .filter((id): id is string => id !== undefined)
+          messages
+            .filter((m) => !m.message)
+            .map((m) => m._id)
             .join(", ")
       );
     }
@@ -1604,9 +1611,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       // embeddings yet. This can happen if the message was saved in a mutation
       // where the LLM is not available.
       if (!promptMessage.embeddingId && this.options.textEmbedding) {
-        await this.generateAndSaveEmbeddings(ctx, {
-          messageIds: [promptMessage._id],
-        });
+        await this._generateAndSaveEmbeddings(ctx, [promptMessage]);
       }
     }
 
