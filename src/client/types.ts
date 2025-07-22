@@ -22,13 +22,14 @@ import type {
   Auth,
   Expand,
   FunctionReference,
-  GenericActionCtx,
-  GenericDataModel,
-  GenericMutationCtx,
-  GenericQueryCtx,
   StorageActionWriter,
   StorageReader,
   WithoutSystemFields,
+  FunctionArgs,
+  FunctionReturnType,
+  GenericActionCtx,
+  GenericDataModel,
+  OptionalRestArgs,
 } from "convex/server";
 import type { GenericId } from "convex/values";
 import type { Schema } from "zod";
@@ -469,17 +470,24 @@ export type SyncStreamsReturnValue =
 
 /* Type utils follow */
 export type RunQueryCtx = {
-  runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
+  runQuery: <Query extends FunctionReference<"query", "internal">>(
+    query: Query,
+    args: FunctionArgs<Query>
+  ) => Promise<FunctionReturnType<Query>>;
 };
-export type RunMutationCtx = {
-  runQuery: GenericMutationCtx<GenericDataModel>["runQuery"];
-  runMutation: GenericMutationCtx<GenericDataModel>["runMutation"];
+export type RunMutationCtx = RunQueryCtx & {
+  runMutation: <Mutation extends FunctionReference<"mutation", "internal">>(
+    mutation: Mutation,
+    args: FunctionArgs<Mutation>
+  ) => Promise<FunctionReturnType<Mutation>>;
 };
-export type RunActionCtx = {
-  runQuery: GenericActionCtx<GenericDataModel>["runQuery"];
-  runMutation: GenericActionCtx<GenericDataModel>["runMutation"];
-  runAction: GenericActionCtx<GenericDataModel>["runAction"];
+export type RunActionCtx = RunMutationCtx & {
+  runAction<Action extends FunctionReference<"action", "internal">>(
+    action: Action,
+    args: FunctionArgs<Action>
+  ): Promise<FunctionReturnType<Action>>;
 };
+export type UserActionCtx = GenericActionCtx<GenericDataModel>;
 export type ActionCtx = RunActionCtx & {
   auth: Auth;
   storage: StorageActionWriter;
