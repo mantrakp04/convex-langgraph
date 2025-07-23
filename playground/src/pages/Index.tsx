@@ -9,6 +9,28 @@ import {
   LightningBoltIcon,
 } from "@radix-ui/react-icons";
 
+const installPlaygroundShell = `npm i @convex-dev/agent-playground`;
+const playgroundCode = `import { definePlaygroundAPI } from "@convex-dev/agent-playground";
+import { components } from "./_generated/api";
+import { weatherAgent, fashionAgent } from "./example";
+
+export const {
+  isApiKeyValid,
+  listAgents,
+  listUsers,
+  listThreads,
+  listMessages,
+  createThread,
+  generateText,
+  fetchPromptContext,
+} = definePlaygroundAPI(components.agent, {
+  agents: [weatherAgent, fashionAgent],
+});`;
+
+const issueApiKey = `npx convex run --component agent apiKeys:issue`;
+
+const runPlayground = `npx @convex-dev/agent-playground`;
+
 const Index = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
@@ -157,7 +179,15 @@ const Index = () => {
               Getting Started
             </h2>
             <p className="text-lg text-gray-600">
-              Set up your agent playground in minutes with these simple steps
+              Set up your agent playground in minutes with these simple steps.
+              If you don't yet have a Convex project with the Agent component,
+              check out the{" "}
+              <a
+                href="https://docs.convex.dev/agents"
+                className="text-violet-900 hover:text-violet-950 font-normal  hover:underline"
+              >
+                Agent docs
+              </a>
             </p>
           </div>
 
@@ -184,9 +214,7 @@ const Index = () => {
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 hover:bg-gray-200"
-                      onClick={() =>
-                        copyToClipboard("npm i @convex-dev/agent-playground")
-                      }
+                      onClick={() => copyToClipboard(installPlaygroundShell)}
                     >
                       <Copy className="w-3 h-3" />
                     </Button>
@@ -194,7 +222,7 @@ const Index = () => {
                 </div>
                 <div className="p-4">
                   <pre className="text-sm text-gray-800">
-                    <code>npm i @convex-dev/agent-playground</code>
+                    <code>{installPlaygroundShell}</code>
                   </pre>
                 </div>
               </div>
@@ -231,24 +259,7 @@ const Index = () => {
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 hover:bg-gray-200"
-                      onClick={() =>
-                        copyToClipboard(`import { definePlaygroundAPI } from "@convex-dev/agent-playground";
-import { components } from "./_generated/api";
-import { weatherAgent, fashionAgent } from "./example";
-
-export const {
-  isApiKeyValid,
-  listAgents,
-  listUsers,
-  listThreads,
-  listMessages,
-  createThread,
-  generateText,
-  fetchPromptContext,
-} = definePlaygroundAPI(components.agent, {
-  agents: [weatherAgent, fashionAgent],
-});`)
-                      }
+                      onClick={() => copyToClipboard(playgroundCode)}
                     >
                       <Copy className="w-3 h-3" />
                     </Button>
@@ -256,22 +267,7 @@ export const {
                 </div>
                 <div className="p-4 overflow-x-auto">
                   <pre className="text-sm text-gray-800">
-                    <code>{`import { definePlaygroundAPI } from "@convex-dev/agent-playground";
-import { components } from "./_generated/api";
-import { weatherAgent, fashionAgent } from "./example";
-
-export const {
-  isApiKeyValid,
-  listAgents,
-  listUsers,
-  listThreads,
-  listMessages,
-  createThread,
-  generateText,
-  fetchPromptContext,
-} = definePlaygroundAPI(components.agent, {
-  agents: [weatherAgent, fashionAgent],
-});`}</code>
+                    <code>{playgroundCode}</code>
                   </pre>
                 </div>
               </div>
@@ -299,11 +295,7 @@ export const {
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 hover:bg-gray-200"
-                      onClick={() =>
-                        copyToClipboard(
-                          `npx convex run --component agent apiKeys:issue`
-                        )
-                      }
+                      onClick={() => copyToClipboard(issueApiKey)}
                     >
                       <Copy className="w-3 h-3" />
                     </Button>
@@ -311,7 +303,7 @@ export const {
                 </div>
                 <div className="p-4">
                   <pre className="text-sm text-gray-800">
-                    <code>npx convex run --component agent apiKeys:issue</code>
+                    <code>{issueApiKey}</code>
                   </pre>
                 </div>
               </div>
@@ -339,9 +331,7 @@ export const {
                       variant="ghost"
                       size="sm"
                       className="h-6 w-6 p-0 hover:bg-gray-200"
-                      onClick={() =>
-                        copyToClipboard("npx @convex-dev/agent-playground")
-                      }
+                      onClick={() => copyToClipboard(runPlayground)}
                     >
                       <Copy className="w-3 h-3" />
                     </Button>
@@ -349,7 +339,7 @@ export const {
                 </div>
                 <div className="p-4">
                   <pre className="text-sm text-gray-800">
-                    <code>npx @convex-dev/agent-playground</code>
+                    <code>{runPlayground}</code>
                   </pre>
                 </div>
               </div>
