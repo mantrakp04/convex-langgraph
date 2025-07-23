@@ -82,6 +82,7 @@ import type {
   TextArgs,
   Thread,
   UsageHandler,
+  UserActionCtx,
 } from "./types.js";
 
 export { vMessageDoc, vThreadDoc } from "../component/schema.js";
@@ -295,7 +296,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     thread?: Thread<ThreadTools extends undefined ? AgentTools : ThreadTools>;
   }> {
     const threadId = await createThread(ctx, this.component, args);
-    if (!("runAction" in ctx)) {
+    if (!("runAction" in ctx) || "workflowId" in ctx) {
       return { threadId };
     }
     const { thread } = await this.continueThread(ctx, {
@@ -433,7 +434,13 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       ...options,
     });
     const { args: aiArgs, messageId, order, userId } = context;
-    const toolCtx = { ...ctx, userId, threadId, messageId, agent: this };
+    const toolCtx = {
+      ...(ctx as UserActionCtx),
+      userId,
+      threadId,
+      messageId,
+      agent: this,
+    };
     const tools = wrapTools(
       toolCtx,
       args.tools ?? threadTools ?? this.options.tools
@@ -560,7 +567,13 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       ...options,
     });
     const { args: aiArgs, messageId, order, stepOrder, userId } = context;
-    const toolCtx = { ...ctx, userId, threadId, messageId, agent: this };
+    const toolCtx = {
+      ...(ctx as UserActionCtx),
+      userId,
+      threadId,
+      messageId,
+      agent: this,
+    };
     const tools = wrapTools(
       toolCtx,
       args.tools ?? threadTools ?? this.options.tools
@@ -906,25 +919,31 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     const { skipEmbeddings, ...rest } = args;
     if (args.embeddings) {
       embeddings = args.embeddings;
-    } else if (skipEmbeddings || !("runAction" in ctx)) {
-      embeddings = undefined;
-      if (!skipEmbeddings && this.options.textEmbedding) {
+    } else if (!skipEmbeddings && this.options.textEmbedding) {
+      if (!("runAction" in ctx)) {
         console.warn(
           "You're trying to save messages and generate embeddings, but you're in a mutation. " +
             "Pass `skipEmbeddings: true` to skip generating embeddings in the mutation and skip this warning. " +
             "They will be generated lazily when you generate or stream text / objects. " +
             "You can explicitly generate them asynchronously by using the scheduler to run an action later that calls `agent.generateAndSaveEmbeddings`."
         );
+      } else if ("workflowId" in ctx) {
+        console.warn(
+          "You're trying to save messages and generate embeddings, but you're in a workflow. " +
+            "Pass `skipEmbeddings: true` to skip generating embeddings in the workflow and skip this warning. " +
+            "They will be generated lazily when you generate or stream text / objects. " +
+            "You can explicitly generate them asynchronously by using the scheduler to run an action later that calls `agent.generateAndSaveEmbeddings`.",
+        );
+      } else {
+        embeddings = await this.generateEmbeddings(
+          ctx,
+          {
+            userId: args.userId,
+            threadId: args.threadId,
+          },
+          args.messages
+        );
       }
-    } else {
-      embeddings = await this.generateEmbeddings(
-        ctx,
-        {
-          userId: args.userId,
-          threadId: args.threadId,
-        },
-        args.messages
-      );
     }
     return saveMessages(ctx, this.component, {
       ...rest,
@@ -1143,12 +1162,19 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
             .join(", ")
       );
     }
+    await this._generateAndSaveEmbeddings(ctx, messages);
+  }
+
+  async _generateAndSaveEmbeddings(
+    ctx: RunActionCtx,
+    messages: MessageDoc[]
+  ) {
     if (messages.some((m) => !m.message)) {
       throw new Error(
         "Some messages don't have a message: " +
-          args.messageIds
-            .map((id, i) => (!messages[i].message ? id : undefined))
-            .filter((id): id is string => id !== undefined)
+          messages
+            .filter((m) => !m.message)
+            .map((m) => m._id)
             .join(", ")
       );
     }
@@ -1591,9 +1617,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       // embeddings yet. This can happen if the message was saved in a mutation
       // where the LLM is not available.
       if (!promptMessage.embeddingId && this.options.textEmbedding) {
-        await this.generateAndSaveEmbeddings(ctx, {
-          messageIds: [promptMessage._id],
-        });
+        await this._generateAndSaveEmbeddings(ctx, [promptMessage]);
       }
     }
 

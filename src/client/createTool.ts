@@ -2,9 +2,12 @@ import type { Schema, Tool, ToolExecutionOptions, ToolSet } from "ai";
 import { tool } from "ai";
 import { z } from "zod";
 import type { Agent } from "./index.js";
-import type { ActionCtx } from "./types.js";
+import type { GenericActionCtx, GenericDataModel } from "convex/server";
 
-export type ToolCtx<TOOLS extends ToolSet = ToolSet> = ActionCtx & {
+export type ToolCtx<
+  DataModel extends GenericDataModel = GenericDataModel,
+  TOOLS extends ToolSet = ToolSet,
+> = GenericActionCtx<DataModel> & {
   agent: Agent<TOOLS>;
   userId?: string;
   threadId?: string;

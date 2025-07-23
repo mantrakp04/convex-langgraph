@@ -39,9 +39,9 @@ export async function storeFile(
   filePart: FilePart;
   imagePart: ImagePart | undefined;
 }> {
-  if (!("runAction" in ctx)) {
+  if (!("runAction" in ctx) || !("storage" in ctx)) {
     throw new Error(
-      "You're trying to save a file that's too large in a mutation. " +
+      "You're trying to save a file that's too large in a mutation / workflow. " +
         "You can store the file in file storage from an action first, then pass a URL instead. " +
         "To have the agent component track the file, you can use `saveFile` from an action then use the fileId with getFile in the mutation. " +
         "Read more in the docs."
