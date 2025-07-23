@@ -1004,14 +1004,14 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
           "A textEmbedding model is required to be set on the Agent that you're doing vector search with"
         );
         return {
-          vector: (
+          embedding: (
             await this.doEmbed(ctx, {
               userId: args.userId,
               threadId: args.threadId,
               values: [text],
             })
           ).embeddings[0],
-          vectorModel: this.options.textEmbedding.modelId,
+          embeddingModel: this.options.textEmbedding.modelId,
         };
       },
     });

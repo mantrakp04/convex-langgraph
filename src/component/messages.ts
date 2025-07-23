@@ -496,15 +496,15 @@ export const searchMessages = action({
             1 / ((textEmbeddingIds?.indexOf(v._id) ?? Infinity) + k),
         }))
         .sort((a, b) => b.score - a.score);
-      const vectorIds = vectorScores.slice(0, limit).map((v) => v.id);
+      const embeddingIds = vectorScores.slice(0, limit).map((v) => v.id);
       const messages: MessageDoc[] = await ctx.runQuery(
         internal.messages._fetchSearchMessages,
         {
           searchAllMessagesForUserId: args.searchAllMessagesForUserId,
           threadId: args.threadId,
-          vectorIds,
+          embeddingIds,
           textSearchMessages: textSearchMessages?.filter(
-            (m) => !vectorIds.includes(m.embeddingId! as VectorTableId)
+            (m) => !embeddingIds.includes(m.embeddingId! as VectorTableId)
           ),
           messageRange: args.messageRange ?? DEFAULT_MESSAGE_RANGE,
           beforeMessageId: args.beforeMessageId,
@@ -520,7 +520,7 @@ export const searchMessages = action({
 export const _fetchSearchMessages = internalQuery({
   args: {
     threadId: v.optional(v.id("threads")),
-    vectorIds: v.array(vVectorId),
+    embeddingIds: v.array(vVectorId),
     searchAllMessagesForUserId: v.optional(v.string()),
     textSearchMessages: v.optional(v.array(vMessageDoc)),
     messageRange: v.object({ before: v.number(), after: v.number() }),
@@ -538,7 +538,7 @@ export const _fetchSearchMessages = internalQuery({
     );
     let messages: MessageDoc[] = (
       await Promise.all(
-        args.vectorIds.map((embeddingId) =>
+        args.embeddingIds.map((embeddingId) =>
           ctx.db
             .query("messages")
             .withIndex("embeddingId_threadId", (q) =>

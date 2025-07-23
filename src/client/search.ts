@@ -16,9 +16,8 @@ import {
 const DEFAULT_VECTOR_SCORE_THRESHOLD = 0.0;
 
 export type GetEmbedding = (text: string) => Promise<{
-  vector: number[];
-  vectorModel: string;
-  vectorScoreThreshold?: number;
+  embedding: number[];
+  embeddingModel: string;
 }>;
 
 /**
@@ -122,7 +121,8 @@ export async function fetchContextMessages(
         vectorScoreThreshold:
           opts.searchOptions?.vectorScoreThreshold ??
           DEFAULT_VECTOR_SCORE_THRESHOLD,
-        ...embeddingFields,
+        embedding: embeddingFields?.embedding,
+        embeddingModel: embeddingFields?.embeddingModel,
       }
     );
     // TODO: track what messages we used for context
