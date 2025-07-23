@@ -387,6 +387,6 @@ export function Monitor({
       <canvas ref={canvasRef} className="absolute inset-0 w-full h-full" />
     </div>
   );
-};
+}
 
 export default Monitor;

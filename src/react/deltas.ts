@@ -20,7 +20,7 @@ export function mergeDeltas(
     cursor: number;
     messages: MessageDoc[];
   }>,
-  allDeltas: StreamDelta[]
+  allDeltas: StreamDelta[],
 ): [
   MessageDoc[],
   Array<{ streamId: string; cursor: number; messages: MessageDoc[] }>,
@@ -35,16 +35,16 @@ export function mergeDeltas(
   let changed = false;
   for (const streamMessage of streamMessages) {
     const deltas = allDeltas.filter(
-      (d) => d.streamId === streamMessage.streamId
+      (d) => d.streamId === streamMessage.streamId,
     );
     const existing = existingStreams.find(
-      (s) => s.streamId === streamMessage.streamId
+      (s) => s.streamId === streamMessage.streamId,
     );
     const [newStream, messageChanged] = applyDeltasToStreamMessage(
       threadId,
       streamMessage,
       existing,
-      deltas
+      deltas,
     );
     newStreams.push(newStream);
     if (messageChanged) changed = true;
@@ -69,7 +69,7 @@ export function applyDeltasToStreamMessage(
   existing:
     | { streamId: string; cursor: number; messages: MessageDoc[] }
     | undefined,
-  deltas: StreamDelta[]
+  deltas: StreamDelta[],
 ): [{ streamId: string; cursor: number; messages: MessageDoc[] }, boolean] {
   let changed = false;
   let cursor = existing?.cursor ?? 0;
@@ -82,17 +82,17 @@ export function applyDeltasToStreamMessage(
     if (cursor !== delta.start) {
       if (cursor >= delta.end) {
         console.debug(
-          `Got duplicate delta for stream ${delta.streamId} at ${delta.start}`
+          `Got duplicate delta for stream ${delta.streamId} at ${delta.start}`,
         );
         continue;
       } else if (cursor < delta.start) {
         console.warn(
-          `Got delta for stream ${delta.streamId} that has a gap ${cursor} -> ${delta.start}`
+          `Got delta for stream ${delta.streamId} that has a gap ${cursor} -> ${delta.start}`,
         );
         continue;
       } else {
         throw new Error(
-          `Got unexpected delta for stream ${delta.streamId}: delta: ${delta.start} -> ${delta.end} existing cursor: ${cursor}`
+          `Got unexpected delta for stream ${delta.streamId}: delta: ${delta.start} -> ${delta.end} existing cursor: ${cursor}`,
         );
       }
     }
@@ -129,7 +129,7 @@ export function applyDeltasToStreamMessage(
       threadId,
       streamMessage,
       parts[0]!,
-      existingMessages.length
+      existingMessages.length,
     );
     parts = parts.slice(1);
     currentMessage = newMessage;
@@ -153,7 +153,7 @@ export function applyDeltasToStreamMessage(
         threadId,
         streamMessage,
         part,
-        newStream.messages.length
+        newStream.messages.length,
       );
       lastContent = getLastContent(currentMessage);
       newStream.messages.push(currentMessage);
@@ -237,7 +237,7 @@ export function applyDeltasToStreamMessage(
 }
 
 function cloneMessageAndContent(
-  message: Message | undefined
+  message: Message | undefined,
 ): Message | undefined {
   return (
     message &&
@@ -258,7 +258,7 @@ function getLastContent(message: MessageDoc) {
 }
 
 function statusFromStreamStatus(
-  status: StreamMessage["status"]
+  status: StreamMessage["status"],
 ): MessageStatus {
   switch (status) {
     case "streaming":
@@ -276,7 +276,7 @@ export function createStreamingMessage(
   threadId: string,
   message: StreamMessage,
   part: TextStreamPart,
-  index: number
+  index: number,
 ): MessageDoc {
   const { streamId, ...rest } = message;
   const metadata: MessageDoc = {

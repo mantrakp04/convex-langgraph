@@ -33,23 +33,23 @@ function Play({ apiKey, api }: PlayProps) {
     ContextMessage[] | null
   >(null);
   const [storageOptions, setStorageOptions] = useState<StorageOptions>(
-    DEFAULT_STORAGE_OPTIONS
+    DEFAULT_STORAGE_OPTIONS,
   );
   const [contextOptions, setContextOptions] = useState<ContextOptions>(
-    DEFAULT_CONTEXT_OPTIONS
+    DEFAULT_CONTEXT_OPTIONS,
   );
 
   // Convex hooks
   const users = usePaginatedQuery(
     api.listUsers,
     { apiKey },
-    { initialNumItems: 20 }
+    { initialNumItems: 20 },
   );
 
   const threads = usePaginatedQuery(
     api.listThreads,
     { apiKey, userId: selectedUserId },
-    { initialNumItems: 20 }
+    { initialNumItems: 20 },
   );
   useEffect(() => {
     if (threads.results.length > 0 && !selectedThreadId) {
@@ -60,7 +60,7 @@ function Play({ apiKey, api }: PlayProps) {
   const messages = useThreadMessages(
     api.listMessages,
     selectedThreadId ? { apiKey, threadId: selectedThreadId } : "skip",
-    { initialNumItems: 20 }
+    { initialNumItems: 20 },
   );
   useEffect(() => {
     if (messages.results.length > 0 && !selectedMessageId) {
@@ -84,7 +84,7 @@ function Play({ apiKey, api }: PlayProps) {
       }
     } else if (agents && selectedAgent) {
       const newAgent = agents.find(
-        (agent) => agent.name === selectedAgent.name
+        (agent) => agent.name === selectedAgent.name,
       );
       if (newAgent) {
         if (JSON.stringify(selectedAgent) !== JSON.stringify(newAgent)) {
@@ -103,10 +103,10 @@ function Play({ apiKey, api }: PlayProps) {
 
   // Selected thread and message
   const selectedThread = threads.results.find(
-    (thread) => thread._id === selectedThreadId
+    (thread) => thread._id === selectedThreadId,
   );
   const selectedMessage = messages.results.find(
-    (message) => message._id === selectedMessageId
+    (message) => message._id === selectedMessageId,
   );
 
   // Handlers
@@ -166,7 +166,7 @@ function Play({ apiKey, api }: PlayProps) {
       selectedThreadId,
       selectedUserId,
       toast,
-    ]
+    ],
   );
 
   // Send message
@@ -175,7 +175,7 @@ function Play({ apiKey, api }: PlayProps) {
     agentName: string,
     context: ContextOptions | undefined,
     storage: StorageOptions | undefined,
-    system?: string
+    system?: string,
   ) => {
     if (!selectedThreadId || !selectedUserId) {
       toast({ title: "Select a thread and user first" });
@@ -246,6 +246,6 @@ function Play({ apiKey, api }: PlayProps) {
       </div>
     </div>
   );
-};
+}
 
 export default Play;

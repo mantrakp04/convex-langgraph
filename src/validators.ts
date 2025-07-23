@@ -11,7 +11,7 @@ import { vVectorDimension } from "./component/vector/tables.js";
 
 export const vProviderOptions = v.record(
   v.string(),
-  v.record(v.string(), v.any())
+  v.record(v.string(), v.any()),
 );
 const providerOptions = v.optional(vProviderOptions);
 export type ProviderOptions = Infer<typeof providerOptions>;
@@ -22,12 +22,12 @@ export type ProviderMetadata = Infer<typeof providerMetadata>;
 
 export const vThreadStatus = v.union(
   v.literal("active"),
-  v.literal("archived") // unused
+  v.literal("archived"), // unused
 );
 export const vMessageStatus = v.union(
   v.literal("pending"),
   v.literal("success"),
-  v.literal("failed")
+  v.literal("failed"),
 );
 export type MessageStatus = Infer<typeof vMessageStatus>;
 
@@ -35,7 +35,7 @@ export const vRole = v.union(
   v.literal("system"),
   v.literal("user"),
   v.literal("assistant"),
-  v.literal("tool")
+  v.literal("tool"),
 );
 
 export const vTextPart = v.object({
@@ -61,7 +61,7 @@ export const vFilePart = v.object({
 
 export const vUserContent = v.union(
   v.string(),
-  v.array(v.union(vTextPart, vImagePart, vFilePart))
+  v.array(v.union(vTextPart, vImagePart, vFilePart)),
 );
 
 export const vReasoningPart = v.object({
@@ -87,8 +87,8 @@ export const vReasoningDetails = v.array(
     v.object({
       type: v.literal("redacted"),
       data: v.string(),
-    })
-  )
+    }),
+  ),
 );
 
 export const vToolCallPart = v.object({
@@ -107,9 +107,9 @@ export const vAssistantContent = v.union(
       vFilePart,
       vReasoningPart,
       vRedactedReasoningPart,
-      vToolCallPart
-    )
-  )
+      vToolCallPart,
+    ),
+  ),
 );
 
 const vToolResultContent = v.array(
@@ -122,8 +122,8 @@ const vToolResultContent = v.array(
       type: v.literal("image"),
       data: v.string(),
       mimeType: v.optional(v.string()),
-    })
-  )
+    }),
+  ),
 );
 
 const vToolResultPart = v.object({
@@ -171,7 +171,7 @@ export const vMessage = v.union(
   vUserMessage,
   vAssistantMessage,
   vToolMessage,
-  vSystemMessage
+  vSystemMessage,
 );
 export type Message = Infer<typeof vMessage>;
 
@@ -221,7 +221,7 @@ export const vFinishReason = v.union(
   v.literal("tool-calls"),
   v.literal("error"),
   v.literal("other"),
-  v.literal("unknown")
+  v.literal("unknown"),
 );
 
 export const vUsage = v.object({
@@ -245,7 +245,7 @@ export const vLanguageModelV1CallWarning = v.union(
   v.object({
     type: v.literal("other"),
     message: v.string(),
-  })
+  }),
 );
 
 export const vMessageWithMetadataInternal = v.object({
@@ -307,7 +307,7 @@ export const vContextOptions = v.object({
 
 export const vStorageOptions = v.object({
   saveMessages: v.optional(
-    v.union(v.literal("all"), v.literal("none"), v.literal("promptAndOutput"))
+    v.union(v.literal("all"), v.literal("none"), v.literal("promptAndOutput")),
   ),
 });
 
@@ -352,8 +352,8 @@ export const vTextArgs = v.object({
       v.object({
         type: v.literal("tool"),
         toolName: v.string(),
-      })
-    )
+      }),
+    ),
   ),
   maxSteps: v.optional(v.number()),
   experimental_continueSteps: v.optional(v.boolean()),
@@ -382,8 +382,8 @@ export function vPaginationResult<
       v.union(
         v.literal("SplitRecommended"),
         v.literal("SplitRequired"),
-        v.null()
-      )
+        v.null(),
+      ),
     ),
   });
 }
@@ -413,7 +413,7 @@ export const vTextStreamPart = v.union(
     toolName: v.string(),
     argsTextDelta: v.string(),
   }),
-  vToolResultPart
+  vToolResultPart,
 );
 export type TextStreamPart = Infer<typeof vTextStreamPart>;
 
@@ -432,8 +432,8 @@ export const vStreamArgs = v.optional(
     v.object({
       kind: v.literal("deltas"),
       cursors: v.array(vStreamCursor),
-    })
-  )
+    }),
+  ),
 );
 export type StreamArgs = Infer<typeof vStreamArgs>;
 
@@ -442,7 +442,7 @@ export const vStreamMessage = v.object({
   status: v.union(
     v.literal("streaming"),
     v.literal("finished"),
-    v.literal("aborted")
+    v.literal("aborted"),
   ),
   order: v.number(),
   stepOrder: v.number(),

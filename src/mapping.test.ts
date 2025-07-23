@@ -89,7 +89,7 @@ describe("mapping", () => {
     const bigArr = new Uint8Array(1024 * 65).fill(1);
     const ab = bigArr.buffer.slice(
       bigArr.byteOffset,
-      bigArr.byteOffset + bigArr.byteLength
+      bigArr.byteOffset + bigArr.byteLength,
     );
     let called = false;
     const ctx = {
@@ -117,7 +117,7 @@ describe("mapping", () => {
     const { content: ser, fileIds } = await serializeContent(
       ctx,
       component,
-      content
+      content,
     );
     expect(called).toBe(true);
     expect(fileIds).toEqual(["file-123"]);
@@ -125,7 +125,7 @@ describe("mapping", () => {
     const serArr = ser as SerializedContent;
     expect(typeof (serArr as { data: unknown }[])[0].data).toBe("string");
     expect((serArr as { data: unknown }[])[0].data as string).toMatch(
-      /^https?:\/\//
+      /^https?:\/\//,
     );
   });
 
@@ -133,7 +133,7 @@ describe("mapping", () => {
     const arr = new Uint8Array([1, 2, 3, 4, 5]);
     const ab = arr.buffer.slice(
       arr.byteOffset,
-      arr.byteOffset + arr.byteLength
+      arr.byteOffset + arr.byteLength,
     );
     const ctx = {
       runAction: async () => undefined,

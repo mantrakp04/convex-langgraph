@@ -117,15 +117,15 @@ describe("toUIMessages", () => {
     expect(uiMessages).toHaveLength(2);
     expect(uiMessages[0].role).toBe("user");
     expect(uiMessages[0].parts.filter((p) => p.type === "text")).toHaveLength(
-      1
+      1,
     );
     expect(uiMessages[1].role).toBe("assistant");
     expect(
-      uiMessages[1].parts.filter((p) => p.type === "tool-invocation")
+      uiMessages[1].parts.filter((p) => p.type === "tool-invocation"),
     ).toHaveLength(1);
     expect(
       uiMessages[1].parts.filter((p) => p.type === "tool-invocation")[0]
-        .toolInvocation
+        .toolInvocation,
     ).toEqual({
       toolName: "myTool",
       toolCallId: "call1",
@@ -169,19 +169,19 @@ describe("toUIMessages", () => {
     expect(uiMessages[0].role).toBe("assistant");
     expect(uiMessages[0].content).toBe("Here's one idea. Here's another idea.");
     expect(
-      uiMessages[0].parts.filter((p) => p.type === "reasoning")
+      uiMessages[0].parts.filter((p) => p.type === "reasoning"),
     ).toHaveLength(1);
     expect(uiMessages[0].parts[0].type).toBe("reasoning");
     assert(uiMessages[0].parts[0].type === "reasoning");
     expect(uiMessages[0].parts[0].reasoning).toBe(
-      "I'm thinking...I'm thinking..."
+      "I'm thinking...I'm thinking...",
     );
 
     expect(uiMessages[0].parts.filter((p) => p.type === "text")).toHaveLength(
-      1
+      1,
     );
     expect(uiMessages[0].parts.filter((p) => p.type === "text")[0].text).toBe(
-      "Here's one idea. Here's another idea."
+      "Here's one idea. Here's another idea.",
     );
   });
 
@@ -226,11 +226,11 @@ describe("toUIMessages", () => {
     expect(uiMessages).toHaveLength(1);
     expect(uiMessages[0].role).toBe("assistant");
     expect(
-      uiMessages[0].parts.filter((p) => p.type === "tool-invocation")
+      uiMessages[0].parts.filter((p) => p.type === "tool-invocation"),
     ).toHaveLength(1);
     expect(
       uiMessages[0].parts.filter((p) => p.type === "tool-invocation")[0]
-        .toolInvocation
+        .toolInvocation,
     ).toEqual({
       toolName: "myTool",
       toolCallId: "call1",
@@ -277,7 +277,7 @@ describe("toUIMessages", () => {
     expect(uiMessages[0].role).toBe("assistant");
     // Should have a tool-invocation part
     expect(uiMessages[0].parts.some((p) => p.type === "tool-invocation")).toBe(
-      true
+      true,
     );
   });
 

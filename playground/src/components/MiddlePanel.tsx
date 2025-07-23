@@ -21,7 +21,7 @@ interface MiddlePanelProps {
     agentName: string,
     context: ContextOptions | undefined,
     storage: StorageOptions | undefined,
-    systemPrompt?: string
+    systemPrompt?: string,
   ) => Promise<string | undefined>;
   selectedThreadTitle?: string;
 }

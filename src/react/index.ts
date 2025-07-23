@@ -86,7 +86,7 @@ export function useThreadMessages<
     stream?: Query extends ThreadStreamQuery
       ? boolean
       : ErrorMessage<"To enable streaming, your query must take in streamArgs: vStreamArgs and return a streams object returned from agent.syncStreams. See docs.">;
-  }
+  },
 ): UsePaginatedQueryResult<
   ThreadMessagesResult<Query> & { streaming?: boolean }
 > {
@@ -94,7 +94,7 @@ export function useThreadMessages<
   const paginated = usePaginatedQuery(
     query,
     args as PaginatedQueryArgs<Query> | "skip",
-    { initialNumItems: options.initialNumItems }
+    { initialNumItems: options.initialNumItems },
   );
 
   // These are streaming messages that will not include full messages.
@@ -107,7 +107,7 @@ export function useThreadMessages<
       args === "skip" ||
       paginated.status === "LoadingFirstPage"
       ? "skip"
-      : { ...args, startOrder: paginated.results.at(-1)?.order }
+      : { ...args, startOrder: paginated.results.at(-1)?.order },
   );
 
   const merged = useMemo(() => {
@@ -122,14 +122,14 @@ export function useThreadMessages<
         .map((m) => ({ ...m, streaming: false }))
         .concat(streamListMessages)
         .sort((a, b) =>
-          a.order === b.order ? a.stepOrder - b.stepOrder : a.order - b.order
+          a.order === b.order ? a.stepOrder - b.stepOrder : a.order - b.order,
         )
         // They shouldn't overlap, but check for duplicates just in case.
         .filter(
           (m, i, arr) =>
             !arr[i - 1] ||
             m.order !== arr[i - 1].order ||
-            m.stepOrder !== arr[i - 1].stepOrder
+            m.stepOrder !== arr[i - 1].stepOrder,
         ),
     };
   }, [paginated, streamMessages]);
@@ -154,7 +154,7 @@ export function useStreamingThreadMessages<
   Query extends ThreadStreamQuery<any, any>,
 >(
   query: Query,
-  args: (ThreadMessagesArgs<Query> & { startOrder?: number }) | "skip"
+  args: (ThreadMessagesArgs<Query> & { startOrder?: number }) | "skip",
 ): Array<ThreadMessagesResult<Query>> | undefined {
   // Invariant: streamMessages[streamId] is comprised of all deltas up to the
   // cursor. There can be multiple messages in the same stream, e.g. for tool
@@ -179,7 +179,7 @@ export function useStreamingThreadMessages<
             kind: "list",
             startOrder: startOrderRef.current,
           } as StreamArgs,
-        } as FunctionArgs<Query>)
+        } as FunctionArgs<Query>),
   ) as
     | { streams: Extract<SyncStreamsReturnValue, { kind: "list" }> }
     | undefined;
@@ -204,7 +204,7 @@ export function useStreamingThreadMessages<
           ...queryArgs,
           paginationOpts: { cursor: null, numItems: 0 },
           streamArgs: { kind: "deltas", cursors } as StreamArgs,
-        } as FunctionArgs<Query>)
+        } as FunctionArgs<Query>),
   ) as
     | { streams: Extract<SyncStreamsReturnValue, { kind: "deltas" }> }
     | undefined;
@@ -220,7 +220,7 @@ export function useStreamingThreadMessages<
       threadId,
       streamList.streams.messages,
       streams,
-      cursorQuery?.streams?.deltas ?? []
+      cursorQuery?.streams?.deltas ?? [],
     );
   }, [threadId, cursorQuery, streams, streamList]);
   // Now assemble the chunks into messages
@@ -248,7 +248,7 @@ export function useStreamingThreadMessages<
 export function useStreamingText(
   url: string,
   threadId: string | null,
-  token?: string
+  token?: string,
 ) {
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -295,7 +295,7 @@ export function useStreamingText(
         setLoading(false);
       }
     },
-    [threadId, token, url]
+    [threadId, token, url],
   );
   return [{ text, loading, error }, readStream] as const;
 }

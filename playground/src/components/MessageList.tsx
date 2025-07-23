@@ -17,7 +17,7 @@ const MessageList: React.FC<MessageListProps> = ({
   onSelectMessage,
 }) => {
   const [selectedToolCallId, setSelectedToolCallId] = useState<string | null>(
-    null
+    null,
   );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const uiMessages = useMemo(() => {
@@ -39,7 +39,7 @@ const MessageList: React.FC<MessageListProps> = ({
 
   const handleSelectToolCall = (toolCallId: string) => {
     setSelectedToolCallId(
-      selectedToolCallId === toolCallId ? null : toolCallId
+      selectedToolCallId === toolCallId ? null : toolCallId,
     );
   };
 

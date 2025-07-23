@@ -44,13 +44,13 @@ export function createTool<PARAMETERS extends ToolParameters, RESULT>(t: {
   handler: (
     ctx: ToolCtx,
     args: inferParameters<PARAMETERS>,
-    options: ToolExecutionOptions
+    options: ToolExecutionOptions,
   ) => PromiseLike<RESULT>;
   ctx?: ToolCtx;
 }): Tool<PARAMETERS, RESULT> & {
   execute: (
     args: inferParameters<PARAMETERS>,
-    options: ToolExecutionOptions
+    options: ToolExecutionOptions,
   ) => PromiseLike<RESULT>;
 } {
   const args = {
@@ -60,13 +60,13 @@ export function createTool<PARAMETERS extends ToolParameters, RESULT>(t: {
     parameters: t.args,
     async execute(
       args: inferParameters<PARAMETERS>,
-      options: ToolExecutionOptions
+      options: ToolExecutionOptions,
     ) {
       if (!this.ctx) {
         throw new Error(
           "To use a Convex tool, you must either provide the ctx" +
             " at definition time (dynamically in an action), or use the Agent to" +
-            " call it (which injects the ctx, userId and threadId)"
+            " call it (which injects the ctx, userId and threadId)",
         );
       }
       return t.handler(this.ctx, args, options);

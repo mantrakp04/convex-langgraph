@@ -59,7 +59,7 @@ export const deleteAllForUserId = action({
           streamsInProgress,
           streamOrder,
           deltaCursor,
-        }
+        },
       );
       messagesCursor = result.messagesCursor;
       threadInProgress = result.threadInProgress;
@@ -121,7 +121,7 @@ export const _deleteAllForUserIdAsync = internalMutation({
 
 async function deleteAllForUserIdAsyncHandler(
   ctx: MutationCtx,
-  args: DeleteAllArgs
+  args: DeleteAllArgs,
 ): Promise<boolean> {
   const result = await deletePageForUserId(ctx, args);
   if (!result.isDone) {
@@ -145,7 +145,7 @@ export const _deletePageForUserId = internalMutation({
 });
 async function deletePageForUserId(
   ctx: MutationCtx,
-  args: DeleteAllArgs
+  args: DeleteAllArgs,
 ): Promise<DeleteAllReturns> {
   let threadInProgress: Id<"threads"> | null = args.threadInProgress;
   let threadsCursor: string | null = args.threadsCursor;
@@ -189,7 +189,7 @@ async function deletePageForUserId(
     const messages = await paginator(ctx.db, schema)
       .query("messages")
       .withIndex("threadId_status_tool_order_stepOrder", (q) =>
-        q.eq("threadId", threadInProgress!)
+        q.eq("threadId", threadInProgress!),
       )
       .order("desc")
       .paginate({

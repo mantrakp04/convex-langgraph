@@ -43,7 +43,7 @@ export async function fetchContextMessages(
     upToAndIncludingMessageId?: string;
     contextOptions: ContextOptions;
     getEmbedding?: GetEmbedding;
-  }
+  },
 ): Promise<MessageDoc[]> {
   assert(args.userId || args.threadId, "Specify userId or threadId");
   const opts = args.contextOptions;
@@ -66,17 +66,17 @@ export async function fetchContextMessages(
         upToAndIncludingMessageId: args.upToAndIncludingMessageId,
         order: "desc",
         statuses: ["success"],
-      }
+      },
     );
     included = new Set(page.map((m) => m._id));
     contextMessages.push(
       // Reverse since we fetched in descending order
-      ...page.reverse()
+      ...page.reverse(),
     );
   }
   if (opts.searchOptions?.textSearch || opts.searchOptions?.vectorSearch) {
     const targetMessage = contextMessages.find(
-      (m) => m._id === args.upToAndIncludingMessageId
+      (m) => m._id === args.upToAndIncludingMessageId,
     )?.message;
     const messagesToSearch = targetMessage ? [targetMessage] : args.messages;
     if (!("runAction" in ctx)) {
@@ -88,11 +88,11 @@ export async function fetchContextMessages(
     assert(text, `No text to search in message ${JSON.stringify(lastMessage)}`);
     assert(
       !args.contextOptions?.searchOptions?.vectorSearch || "runAction" in ctx,
-      "You must do vector search from an action"
+      "You must do vector search from an action",
     );
     if (opts.searchOptions?.vectorSearch && !args.getEmbedding) {
       throw new Error(
-        "You must provide an embedding and embeddingModel to use vector search"
+        "You must provide an embedding and embeddingModel to use vector search",
       );
     }
     const embeddingFields = opts.searchOptions?.vectorSearch
@@ -123,19 +123,19 @@ export async function fetchContextMessages(
           DEFAULT_VECTOR_SCORE_THRESHOLD,
         embedding: embeddingFields?.embedding,
         embeddingModel: embeddingFields?.embeddingModel,
-      }
+      },
     );
     // TODO: track what messages we used for context
     contextMessages.unshift(
-      ...searchMessages.filter((m) => !included?.has(m._id))
+      ...searchMessages.filter((m) => !included?.has(m._id)),
     );
   }
   // Ensure we don't include tool messages without a corresponding tool call
   return filterOutOrphanedToolMessages(
     contextMessages.sort((a, b) =>
       // Sort the raw MessageDocs by order and stepOrder
-      a.order === b.order ? a.stepOrder - b.stepOrder : a.order - b.order
-    )
+      a.order === b.order ? a.stepOrder - b.stepOrder : a.order - b.order,
+    ),
   );
 }
 

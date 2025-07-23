@@ -22,7 +22,7 @@ describe("files", () => {
         hash,
         filename,
         mimeType: "text/plain",
-      }
+      },
     );
     expect(fileId).toBeTruthy();
     expect(returnedStorageId).toBe(storageId);

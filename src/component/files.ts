@@ -23,7 +23,7 @@ export const addFile = mutation({
 
 export async function addFileHandler(
   ctx: MutationCtx,
-  args: Infer<typeof addFileArgs>
+  args: Infer<typeof addFileArgs>,
 ) {
   const existingFile = await ctx.db
     .query("files")
@@ -93,14 +93,14 @@ export const useExistingFile = mutation({
     v.object({
       fileId: v.id("files"),
       storageId: v.string(),
-    })
+    }),
   ),
 });
 
 export async function changeRefcount(
   ctx: MutationCtx,
   prev: Id<"files">[],
-  next: Id<"files">[]
+  next: Id<"files">[],
 ) {
   const prevSet = new Set(prev);
   const nextSet = new Set(next);
@@ -140,7 +140,7 @@ export const copyFile = mutation({
 
 export async function copyFileHandler(
   ctx: MutationCtx,
-  args: { fileId: Id<"files"> }
+  args: { fileId: Id<"files"> },
 ) {
   const file = await ctx.db.get(args.fileId);
   if (!file) {
@@ -194,14 +194,14 @@ export const deleteFiles = mutation({
         if (file.refcount && file.refcount > 0) {
           if (!args.force) {
             console.error(
-              `File ${fileId} has refcount ${file.refcount} > 0, skipping...`
+              `File ${fileId} has refcount ${file.refcount} > 0, skipping...`,
             );
             return null;
           }
         }
         await ctx.db.delete(fileId);
         return fileId;
-      })
+      }),
     );
     return deletedFileIds.filter((fileId) => fileId !== null);
   },

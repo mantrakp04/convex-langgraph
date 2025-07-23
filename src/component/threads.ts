@@ -104,7 +104,7 @@ export const searchThreadTitles = query({
       .withSearchIndex("title", (q) =>
         args.userId
           ? q.search("title", args.query).eq("userId", args.userId ?? undefined)
-          : q.search("title", args.query)
+          : q.search("title", args.query),
       )
       .take(args.limit);
     return threads.map(publicThread);
@@ -138,7 +138,7 @@ export const deleteAllForThreadIdSync = action({
     while (true) {
       const result: DeleteThreadReturns = await ctx.runMutation(
         internal.threads._deletePageForThreadId,
-        { threadId: args.threadId, cursor, limit: args.limit }
+        { threadId: args.threadId, cursor, limit: args.limit },
       );
       if (result.isDone) {
         break;
@@ -218,12 +218,12 @@ export const deleteAllForThreadIdAsync = mutation({
 
 async function deletePageForThreadIdHandler(
   ctx: MutationCtx,
-  args: DeleteThreadArgs
+  args: DeleteThreadArgs,
 ): Promise<DeleteThreadReturns> {
   const messages = await paginator(ctx.db, schema)
     .query("messages")
     .withIndex("threadId_status_tool_order_stepOrder", (q) =>
-      q.eq("threadId", args.threadId)
+      q.eq("threadId", args.threadId),
     )
     .paginate({
       numItems: args.limit ?? 100,

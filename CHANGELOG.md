@@ -2,13 +2,13 @@
 
 ## 0.1.16 alpha
 
-- Support calling generate/stream with the same `promptMessageId` multiple
-  times and have it continue the generation, e.g. when maxSteps is 1.
+- Support calling generate/stream with the same `promptMessageId` multiple times
+  and have it continue the generation, e.g. when maxSteps is 1.
 - `asTextAction` and `asObjectAction` now return `order` and `warnings`.
 - Deprecated: dropped long-deprecated args like `isTool`, and some
   `storageOptions.save*` options that have been replaced with alternatives.
-- Breaking: `.id` on `toUIMessages` is now always the message's `_id`, not
-  any custom id provided from the AI SDK. Shouldn't affect ~anyone.
+- Breaking: `.id` on `toUIMessages` is now always the message's `_id`, not any
+  custom id provided from the AI SDK. Shouldn't affect ~anyone.
 - Fix handling of `undefined` in streaming text
 
 ## 0.1.15

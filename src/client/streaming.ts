@@ -38,7 +38,7 @@ export async function syncStreams(
     streamArgs: StreamArgs | undefined;
     // By default, only streaming messages are included.
     includeStatuses?: ("streaming" | "finished" | "aborted")[];
-  }
+  },
 ): Promise<SyncStreamsReturnValue | undefined> {
   if (!args.streamArgs) return undefined;
   if (args.streamArgs.kind === "list") {
@@ -66,7 +66,7 @@ export async function abortStream(
   component: AgentComponent,
   args: {
     reason: string;
-  } & ({ streamId: string } | { threadId: string; order: number })
+  } & ({ streamId: string } | { threadId: string; order: number }),
 ): Promise<boolean> {
   if ("streamId" in args) {
     return await ctx.runMutation(component.streams.abort, {
@@ -102,7 +102,7 @@ export async function listStreams(
     threadId: string;
     startOrder?: number;
     includeStatuses?: ("streaming" | "finished" | "aborted")[];
-  }
+  },
 ): Promise<StreamMessage[]> {
   return ctx.runQuery(component.streams.list, {
     threadId,
@@ -137,7 +137,7 @@ export function mergeTransforms<TOOLS extends ToolSet>(
   existing:
     | StreamTextTransform<TOOLS>
     | Array<StreamTextTransform<TOOLS>>
-    | undefined
+    | undefined,
 ) {
   if (!options) {
     return existing;
@@ -180,7 +180,7 @@ export class DeltaStreamer {
       order: number | undefined;
       stepOrder: number | undefined;
       abortSignal: AbortSignal | undefined;
-    }
+    },
   ) {
     this.options =
       typeof options === "boolean"
@@ -216,7 +216,7 @@ export class DeltaStreamer {
           ...omit(this.metadata, ["abortSignal"]),
           order: this.#nextOrder,
           stepOrder: this.#nextStepOrder,
-        }
+        },
       );
     }
     this.#nextParts.push(...parts);
@@ -237,7 +237,7 @@ export class DeltaStreamer {
     try {
       const success = await this.ctx.runMutation(
         this.component.streams.addDelta,
-        delta
+        delta,
       );
       if (!success) {
         this.abortController.abort();

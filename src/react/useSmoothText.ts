@@ -29,7 +29,7 @@ export function useSmoothText(
      * This will start streaming the first value it sees.
      */
     startStreaming?: boolean;
-  } = {}
+  } = {},
 ): [string, { cursor: number; isStreaming: boolean }] {
   const [visibleText, setVisibleText] = useState(startStreaming ? "" : text);
   const smoothState = useRef({
@@ -52,11 +52,11 @@ export function useSmoothText(
     // Smooth out the charsPerSec by averaging it with the previous value.
     smoothState.current.charsPerMs = Math.min(
       (2 * latestCharsPerMs + smoothState.current.charsPerMs) / 3,
-      smoothState.current.charsPerMs * 2
+      smoothState.current.charsPerMs * 2,
     );
     smoothState.current.tick = Math.max(
       smoothState.current.tick,
-      Date.now() - 2 * MS_PER_FRAME
+      Date.now() - 2 * MS_PER_FRAME,
     );
 
     function update() {
@@ -66,14 +66,14 @@ export function useSmoothText(
       const now = Date.now();
       const timeSinceLastUpdate = Math.min(
         MAX_TIME_JUMP_MS,
-        now - smoothState.current.tick
+        now - smoothState.current.tick,
       );
       const chars = Math.floor(
-        timeSinceLastUpdate * smoothState.current.charsPerMs
+        timeSinceLastUpdate * smoothState.current.charsPerMs,
       );
       smoothState.current.cursor = Math.min(
         smoothState.current.cursor + chars,
-        text.length
+        text.length,
       );
       smoothState.current.tick = now;
       setVisibleText(text.slice(0, smoothState.current.cursor));

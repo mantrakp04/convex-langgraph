@@ -4,10 +4,10 @@ import type { OptimisticLocalStore } from "convex/browser";
 import type { ThreadQuery } from "./types.js";
 
 export function optimisticallySendMessage(
-  query: ThreadQuery<unknown, MessageDoc>
+  query: ThreadQuery<unknown, MessageDoc>,
 ): (
   store: OptimisticLocalStore,
-  args: { threadId: string; prompt: string }
+  args: { threadId: string; prompt: string },
 ) => void {
   return (store, args) => {
     const queries = store.getAllQueries(query);

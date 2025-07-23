@@ -40,7 +40,7 @@ function ApiKeyGate({
   const { url: encodedUrl } = useParams();
   const [apiKey, setApiKey] = useState<string>(() => {
     const storedKey = sessionStorage.getItem(
-      `${API_KEY_STORAGE_KEY}-${encodedUrl}`
+      `${API_KEY_STORAGE_KEY}-${encodedUrl}`,
     );
     if (storedKey) {
       return storedKey;
@@ -51,7 +51,7 @@ function ApiKeyGate({
   const [apiKeyInput, setApiKeyInput] = useState(apiKey || "");
   const [apiPath, setApiPath] = useState<string>(() => {
     const storedPath = sessionStorage.getItem(
-      `${API_PATH_STORAGE_KEY}-${encodedUrl}`
+      `${API_PATH_STORAGE_KEY}-${encodedUrl}`,
     );
     if (storedPath) {
       return storedPath;
@@ -73,7 +73,7 @@ function ApiKeyGate({
       .then((isValid) => {
         sessionStorage.setItem(
           `${API_PATH_STORAGE_KEY}-${encodedUrl}`,
-          apiPathInput
+          apiPathInput,
         );
         setApiPath(apiPathInput);
         if (isValid) {
@@ -96,7 +96,7 @@ function ApiKeyGate({
           "Invalid playground path (could not find isApiKeyValid).\nPlease check the path and try again.\n" +
             "e.g. if you exported the API in convex/foo/playground.ts, it would be foo/playground.\n" +
             "The code there should be:\n" +
-            PLAYGROUND_CODE
+            PLAYGROUND_CODE,
         );
       });
   }, [apiKeyInput, apiPathInput, convex, encodedUrl]);
@@ -106,7 +106,7 @@ function ApiKeyGate({
     if (apiKeyValid) {
       sessionStorage.setItem(
         `${API_KEY_STORAGE_KEY}-${encodedUrl}`,
-        apiKeyInput
+        apiKeyInput,
       );
       setApiKey(apiKeyInput);
     }
@@ -223,7 +223,7 @@ function ApiKeyGate({
                 e.target.value
                   .trim()
                   .replace(/^['"]|['"]$/g, "")
-                  .trim()
+                  .trim(),
               )
             }
             placeholder="API Key"

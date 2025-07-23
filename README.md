@@ -5,8 +5,8 @@
 Convex provides powerful building blocks for building agentic AI applications,
 leveraging Components and existing Convex features.
 
-With Convex, you can separate your long-running agentic workflows from your
-UI, without the user losing reactivity and interactivity.
+With Convex, you can separate your long-running agentic workflows from your UI,
+without the user losing reactivity and interactivity.
 
 ```sh
 npm i @convex-dev/agent
@@ -25,8 +25,8 @@ workflows.
   represent units of use-case-specific prompting with associated models,
   prompts, [Tool Calls](./docs/tools.mdx), and behavior in relation to other
   Agents, functions, APIs, and more.
-- [Threads](./docs/threads.mdx) persist [messages](./docs/messages.mdx) and can be
-  shared by multiple users and agents (including
+- [Threads](./docs/threads.mdx) persist [messages](./docs/messages.mdx) and can
+  be shared by multiple users and agents (including
   [human agents](./docs/human-agents.mdx)).
 - Streaming text and objects using deltas over websockets so all clients stay in
   sync efficiently, without http streaming. Enables streaming from async
@@ -38,10 +38,11 @@ workflows.
 - [RAG](./docs/rag.mdx) techniques are supported for prompt augmentation from
   other sources, either up front in the prompt or as tool calls. Integrates with
   the [RAG Component](https://www.convex.dev/components/rag), or DIY.
-- [Workflows](./docs/workflows.mdx) allow building multi-step operations that can
-  span agents, users, durably and reliably.
-- [Files](./docs/files.mdx) are supported in thread history with automatic saving
-  to [file storage](https://docs.convex.dev/file-storage) and ref-counting.
+- [Workflows](./docs/workflows.mdx) allow building multi-step operations that
+  can span agents, users, durably and reliably.
+- [Files](./docs/files.mdx) are supported in thread history with automatic
+  saving to [file storage](https://docs.convex.dev/file-storage) and
+  ref-counting.
 - [Debugging](./docs/debugging.mdx) is enabled by callbacks, the
   [agent playground](./docs/playground.mdx) where you can inspect all metadata
   and iterate on prompts and context settings, and inspection in the dashboard.
