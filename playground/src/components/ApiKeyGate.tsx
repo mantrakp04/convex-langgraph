@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode } from "react";
+import { useState, useEffect, ReactNode, useMemo } from "react";
 import { useConvex } from "convex/react";
 import type { PlaygroundAPI } from "../definePlaygroundAPI";
 import { anyApi } from "convex/server";
@@ -38,6 +38,17 @@ function ApiKeyGate({
   children: (apiKey: string, api: PlaygroundAPI) => ReactNode;
 }) {
   const { url: encodedUrl } = useParams();
+  const deploymentUrl = useMemo(() => {
+    if (encodedUrl) {
+      try {
+        return decodeURIComponent(encodedUrl).replace(/\/$/, "");
+      } catch (e) {
+        console.error("Error decoding url", encodedUrl, e);
+        return null;
+      }
+    }
+    return null;
+  }, [encodedUrl]);
   const [apiKey, setApiKey] = useState<string>(() => {
     const storedKey = sessionStorage.getItem(
       `${API_KEY_STORAGE_KEY}-${encodedUrl}`,
@@ -129,6 +140,10 @@ function ApiKeyGate({
             <h2 className="text-2xl font-bold mb-1 text-foreground">
               Configure the playground
             </h2>
+            <p className="text-sm text-muted-foreground">
+              Convex cloud deployment URL:{" "}
+              {deploymentUrl ? deploymentUrl : "No deployment URL found"}
+            </p>
             {isConnected === false && (
               <div className="text-red-600 text-sm  font-medium mt-2">
                 Backend is not connected. Please check your internet connection,
