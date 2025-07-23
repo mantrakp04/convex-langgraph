@@ -174,6 +174,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
             });
             return {
               ...thread,
+              lastAgentName: last?.agentName,
               latestMessage: last?.text,
               lastMessageAt: last?._creationTime,
             };

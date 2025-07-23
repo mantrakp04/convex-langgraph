@@ -21,6 +21,7 @@ export interface User {
 }
 
 export type Thread = ThreadDoc & {
+  lastAgentName?: string;
   latestMessage?: string;
   lastMessageAt?: number;
 };

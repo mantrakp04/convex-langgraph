@@ -25,7 +25,9 @@ const ThreadItem: React.FC<ThreadItemProps> = ({
       onClick={onClick}
     >
       <div className="flex justify-between items-start">
-        <h3 className="font-medium text-sm">{thread.title}</h3>
+        <h3 className="font-medium text-sm">
+          {thread.title ?? thread.lastAgentName ?? thread._id}
+        </h3>
         <span className="text-xs text-muted-foreground">{relativeTime}</span>
       </div>
 
