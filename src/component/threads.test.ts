@@ -225,7 +225,7 @@ describe("threads", () => {
       t.mutation(api.threads.updateThread, {
         threadId: thread._id as Id<"threads">,
         patch: { title: "New Title" },
-      })
+      }),
     ).rejects.toThrow();
   });
 
@@ -368,7 +368,7 @@ describe("threads", () => {
         {
           threadId: thread._id as Id<"threads">,
           cursor: currentResult.cursor,
-        }
+        },
       );
       iterations++;
     }
@@ -471,7 +471,7 @@ describe("threads", () => {
     await expect(
       t.action(api.threads.deleteAllForThreadIdSync, {
         threadId: thread._id as Id<"threads">,
-      })
+      }),
     ).resolves.not.toThrow();
 
     // Thread should be deleted
@@ -499,7 +499,7 @@ describe("threads", () => {
     await expect(
       t.action(api.threads.deleteAllForThreadIdSync, {
         threadId: thread._id as Id<"threads">,
-      })
+      }),
     ).resolves.not.toThrow();
   });
 

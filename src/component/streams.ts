@@ -51,7 +51,7 @@ export const listDeltas = query({
       v.object({
         streamId: v.id("streamingMessages"),
         cursor: v.number(),
-      })
+      }),
     ),
   },
   returns: v.array(vStreamDelta),
@@ -62,16 +62,16 @@ export const listDeltas = query({
       const streamDeltas = await ctx.db
         .query("streamDeltas")
         .withIndex("streamId_start_end", (q) =>
-          q.eq("streamId", cursor.streamId).gte("start", cursor.cursor)
+          q.eq("streamId", cursor.streamId).gte("start", cursor.cursor),
         )
         .take(
-          Math.min(MAX_DELTAS_PER_STREAM, MAX_DELTAS_PER_REQUEST - totalDeltas)
+          Math.min(MAX_DELTAS_PER_STREAM, MAX_DELTAS_PER_REQUEST - totalDeltas),
         );
       totalDeltas += streamDeltas.length;
       deltas.push(
         ...streamDeltas.map((d) =>
-          pick(d, ["streamId", "start", "end", "parts"])
-        )
+          pick(d, ["streamId", "start", "end", "parts"]),
+        ),
       );
       if (totalDeltas >= MAX_DELTAS_PER_REQUEST) {
         break;
@@ -96,7 +96,7 @@ export const create = mutation({
     const timeoutFnId = await ctx.scheduler.runAfter(
       TIMEOUT_INTERVAL,
       internal.streams.timeoutStream,
-      { streamId }
+      { streamId },
     );
     await ctx.db.patch(streamId, { state: { ...state, timeoutFnId } });
     return streamId;
@@ -112,9 +112,9 @@ export const list = query({
         v.union(
           v.literal("streaming"),
           v.literal("finished"),
-          v.literal("aborted")
-        )
-      )
+          v.literal("aborted"),
+        ),
+      ),
     ),
   },
   returns: v.array(vStreamMessage),
@@ -128,11 +128,11 @@ export const list = query({
             q
               .eq("threadId", args.threadId)
               .eq("state.kind", status)
-              .gte("order", args.startOrder ?? 0)
+              .gte("order", args.startOrder ?? 0),
           )
-          .order("desc")
+          .order("desc"),
       ),
-      ["order", "stepOrder"]
+      ["order", "stepOrder"],
     ).take(100);
 
     return messages.map((m) => ({
@@ -165,7 +165,7 @@ export const abortByOrder = mutation({
         q
           .eq("threadId", args.threadId)
           .eq("state.kind", "streaming")
-          .eq("order", args.order)
+          .eq("order", args.order),
       )
       .take(100);
     for (const stream of streams) {
@@ -189,7 +189,7 @@ export const abort = mutation({
 
 async function abortById(
   ctx: MutationCtx,
-  args: { streamId: Id<"streamingMessages">; reason: string }
+  args: { streamId: Id<"streamingMessages">; reason: string },
 ) {
   const stream = await ctx.db.get(args.streamId);
   if (!stream) {
@@ -197,7 +197,7 @@ async function abortById(
   }
   if (stream.state.kind !== "streaming") {
     console.warn(
-      `Stream trying to abort but not currently streaming (${stream.state.kind}): ${args.streamId}`
+      `Stream trying to abort but not currently streaming (${stream.state.kind}): ${args.streamId}`,
     );
     return false;
   }
@@ -210,7 +210,7 @@ async function abortById(
 
 async function cleanupTimeoutFn(
   ctx: MutationCtx,
-  stream: Doc<"streamingMessages">
+  stream: Doc<"streamingMessages">,
 ) {
   if (stream.state.kind === "streaming" && stream.state.timeoutFnId) {
     const timeoutFn = await ctx.db.system.get(stream.state.timeoutFnId);
@@ -236,7 +236,7 @@ export const finish = mutation({
     }
     if (stream.state.kind !== "streaming") {
       console.warn(
-        `Stream trying to finish but not currently streaming: ${args.streamId}`
+        `Stream trying to finish but not currently streaming: ${args.streamId}`,
       );
       return;
     }
@@ -244,7 +244,7 @@ export const finish = mutation({
     const cleanupFnId = await ctx.scheduler.runAfter(
       DELETE_STREAM_DELAY,
       api.streams.deleteStreamAsync,
-      { streamId: args.streamId }
+      { streamId: args.streamId },
     );
     await ctx.db.patch(args.streamId, {
       state: { kind: "finished", endedAt: Date.now(), cleanupFnId },
@@ -254,7 +254,7 @@ export const finish = mutation({
 
 async function heartbeatStream(
   ctx: MutationCtx,
-  args: { streamId: Id<"streamingMessages"> }
+  args: { streamId: Id<"streamingMessages"> },
 ) {
   const stream = await ctx.db.get(args.streamId);
   if (!stream) {
@@ -283,7 +283,7 @@ async function heartbeatStream(
   const timeoutFnId = await ctx.scheduler.runAfter(
     TIMEOUT_INTERVAL,
     internal.streams.timeoutStream,
-    { streamId: args.streamId }
+    { streamId: args.streamId },
   );
   await ctx.db.patch(args.streamId, {
     state: {
@@ -314,7 +314,7 @@ export const timeoutStream = internalMutation({
 
 async function deletePageForStreamId(
   ctx: MutationCtx,
-  args: { streamId: Id<"streamingMessages">; cursor?: string }
+  args: { streamId: Id<"streamingMessages">; cursor?: string },
 ) {
   const deltas = await paginator(ctx.db, schema)
     .query("streamDeltas")
@@ -339,7 +339,7 @@ async function deletePageForStreamId(
 
 export async function deleteStreamsPageForThreadId(
   ctx: MutationCtx,
-  args: { threadId: Id<"threads">; streamOrder?: number; deltaCursor?: string }
+  args: { threadId: Id<"threads">; streamOrder?: number; deltaCursor?: string },
 ) {
   const allStreamMessages =
     schema.tables.streamingMessages.validator.fields.state.members
@@ -351,8 +351,8 @@ export async function deleteStreamsPageForThreadId(
             q
               .eq("threadId", args.threadId)
               .eq("state.kind", stateKind)
-              .gte("order", args.streamOrder ?? 0)
-          )
+              .gte("order", args.streamOrder ?? 0),
+          ),
       );
   let deltaCursor = args.deltaCursor;
   const streamMessage = await mergedStream(allStreamMessages, [
@@ -417,7 +417,7 @@ export const deleteAllStreamsForThreadIdAsync = mutation({
           threadId: args.threadId,
           streamOrder: result.streamOrder,
           deltaCursor: result.deltaCursor,
-        }
+        },
       );
     } else {
       await ctx.db.delete(args.threadId);
@@ -460,7 +460,7 @@ export const deleteAllStreamsForThreadIdSync = action({
   handler: async (ctx, args) => {
     let result = await ctx.runMutation(
       internal.streams.deleteStreamsPageForThreadIdMutation,
-      args
+      args,
     );
     while (!result.isDone) {
       result = await ctx.runMutation(
@@ -469,7 +469,7 @@ export const deleteAllStreamsForThreadIdSync = action({
           ...args,
           streamOrder: result.streamOrder,
           deltaCursor: result.deltaCursor,
-        }
+        },
       );
     }
   },

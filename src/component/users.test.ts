@@ -60,7 +60,7 @@ describe("users", () => {
     // Should not have duplicate users
     console.log(firstPage.page, secondPage.page);
     expect(
-      firstPage.page.every((user) => !secondPage.page.includes(user))
+      firstPage.page.every((user) => !secondPage.page.includes(user)),
     ).toBe(true);
   });
 
@@ -470,7 +470,7 @@ describe("users", () => {
 
     // Try to delete for a user that doesn't exist
     await expect(
-      t.action(api.users.deleteAllForUserId, { userId: "nonexistentUser" })
+      t.action(api.users.deleteAllForUserId, { userId: "nonexistentUser" }),
     ).resolves.not.toThrow();
 
     // Should complete successfully without errors

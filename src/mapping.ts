@@ -20,7 +20,6 @@ import type { ActionCtx, AgentComponent } from "./client/types.js";
 import type { RunMutationCtx } from "./client/types.js";
 import { MAX_FILE_SIZE, storeFile } from "./client/files.js";
 
-
 export type AIMessageWithoutId = Omit<AIMessage, "id">;
 
 export type SerializeUrlsAndUint8Arrays<T> = T extends URL
@@ -42,13 +41,13 @@ export type SerializedMessage = SerializeUrlsAndUint8Arrays<CoreMessage>;
 export async function serializeMessage(
   ctx: ActionCtx | RunMutationCtx,
   component: AgentComponent,
-  messageWithId: CoreMessage & { id?: string }
+  messageWithId: CoreMessage & { id?: string },
 ): Promise<{ message: SerializedMessage; fileIds?: string[] }> {
   const { id: _, experimental_providerMetadata, ...message } = messageWithId;
   const { content, fileIds } = await serializeContent(
     ctx,
     component,
-    message.content
+    message.content,
   );
   return {
     message: {
@@ -72,7 +71,7 @@ export async function serializeNewMessagesInStep<TOOLS extends ToolSet>(
   ctx: ActionCtx,
   component: AgentComponent,
   step: StepResult<TOOLS>,
-  metadata: { model: string; provider: string }
+  metadata: { model: string; provider: string },
 ): Promise<MessageWithMetadata[]> {
   // If there are tool results, there's another message with the tool results
   // ref: https://github.com/vercel/ai/blob/main/packages/ai/core/generate-text/to-response-messages.ts
@@ -98,7 +97,7 @@ export async function serializeNewMessagesInStep<TOOLS extends ToolSet>(
       const { message, fileIds } = await serializeMessage(
         ctx,
         component,
-        messageWithId
+        messageWithId,
       );
       return {
         message,
@@ -109,7 +108,7 @@ export async function serializeNewMessagesInStep<TOOLS extends ToolSet>(
         text: step.text,
         fileIds,
       };
-    })
+    }),
   );
   return messages;
 }
@@ -118,7 +117,7 @@ export async function serializeObjectResult(
   ctx: ActionCtx,
   component: AgentComponent,
   result: GenerateObjectResult<unknown>,
-  metadata: { model: string; provider: string }
+  metadata: { model: string; provider: string },
 ): Promise<{ messages: MessageWithMetadata[] }> {
   const text = JSON.stringify(result.object);
 
@@ -147,7 +146,7 @@ export async function serializeObjectResult(
 export async function serializeContent(
   ctx: ActionCtx | RunMutationCtx,
   component: AgentComponent,
-  content: Content
+  content: Content,
 ): Promise<{ content: SerializedContent; fileIds?: string[] }> {
   if (typeof content === "string") {
     return { content };
@@ -166,7 +165,9 @@ export async function serializeContent(
             const { file } = await storeFile(
               ctx,
               component,
-              new Blob([image], { type: part.mimeType || guessMimeType(image) })
+              new Blob([image], {
+                type: part.mimeType || guessMimeType(image),
+              }),
             );
             image = file.url;
             fileIds.push(file.fileId);
@@ -179,7 +180,7 @@ export async function serializeContent(
             const { file } = await storeFile(
               ctx,
               component,
-              new Blob([data], { type: part.mimeType })
+              new Blob([data], { type: part.mimeType }),
             );
             data = file.url;
             fileIds.push(file.fileId);
@@ -192,7 +193,7 @@ export async function serializeContent(
         default:
           return part;
       }
-    })
+    }),
   );
   return {
     content: serialized as SerializedContent,
@@ -289,7 +290,7 @@ export function guessMimeType(buf: ArrayBuffer | string): string {
  * @returns The serialized data as an ArrayBuffer or the URL as a string.
  */
 export function serializeDataOrUrl(
-  dataOrUrl: DataContent | URL
+  dataOrUrl: DataContent | URL,
 ): ArrayBuffer | string {
   if (typeof dataOrUrl === "string") {
     return dataOrUrl;
@@ -302,12 +303,12 @@ export function serializeDataOrUrl(
   }
   return dataOrUrl.buffer.slice(
     dataOrUrl.byteOffset,
-    dataOrUrl.byteOffset + dataOrUrl.byteLength
+    dataOrUrl.byteOffset + dataOrUrl.byteLength,
   ) as ArrayBuffer;
 }
 
 export function deserializeUrl(
-  urlOrString: string | ArrayBuffer
+  urlOrString: string | ArrayBuffer,
 ): URL | DataContent {
   if (typeof urlOrString === "string") {
     if (
@@ -323,7 +324,7 @@ export function deserializeUrl(
 
 export function toUIFilePart(part: ImagePart | FilePart): FileUIPart {
   const dataOrUrl = serializeDataOrUrl(
-    part.type === "image" ? part.image : part.data
+    part.type === "image" ? part.image : part.data,
   );
 
   return {
@@ -346,7 +347,7 @@ export function promptOrMessagesToCoreMessages(args: {
   const messages: CoreMessage[] = [];
   assert(
     args.prompt || args.messages || args.promptMessageId,
-    "messages or prompt or promptMessageId is required"
+    "messages or prompt or promptMessageId is required",
   );
   if (args.messages) {
     if (
@@ -357,7 +358,7 @@ export function promptOrMessagesToCoreMessages(args: {
           (m.role === "data" || // UI-only role
             "toolInvocations" in m || // UI-specific field
             "parts" in m || // UI-specific field
-            "experimental_attachments" in m)
+            "experimental_attachments" in m),
       )
     ) {
       messages.push(...convertToCoreMessages(args.messages as AIMessage[]));

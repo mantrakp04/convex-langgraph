@@ -2,9 +2,12 @@ import type { Schema, Tool, ToolExecutionOptions, ToolSet } from "ai";
 import { tool } from "ai";
 import { z } from "zod";
 import type { Agent } from "./index.js";
-import type { ActionCtx } from "./types.js";
+import type { GenericActionCtx, GenericDataModel } from "convex/server";
 
-export type ToolCtx<TOOLS extends ToolSet = ToolSet> = ActionCtx & {
+export type ToolCtx<
+  DataModel extends GenericDataModel = GenericDataModel,
+  TOOLS extends ToolSet = ToolSet,
+> = GenericActionCtx<DataModel> & {
   agent: Agent<TOOLS>;
   userId?: string;
   threadId?: string;
@@ -41,13 +44,13 @@ export function createTool<PARAMETERS extends ToolParameters, RESULT>(t: {
   handler: (
     ctx: ToolCtx,
     args: inferParameters<PARAMETERS>,
-    options: ToolExecutionOptions
+    options: ToolExecutionOptions,
   ) => PromiseLike<RESULT>;
   ctx?: ToolCtx;
 }): Tool<PARAMETERS, RESULT> & {
   execute: (
     args: inferParameters<PARAMETERS>,
-    options: ToolExecutionOptions
+    options: ToolExecutionOptions,
   ) => PromiseLike<RESULT>;
 } {
   const args = {
@@ -57,13 +60,13 @@ export function createTool<PARAMETERS extends ToolParameters, RESULT>(t: {
     parameters: t.args,
     async execute(
       args: inferParameters<PARAMETERS>,
-      options: ToolExecutionOptions
+      options: ToolExecutionOptions,
     ) {
       if (!this.ctx) {
         throw new Error(
           "To use a Convex tool, you must either provide the ctx" +
             " at definition time (dynamically in an action), or use the Agent to" +
-            " call it (which injects the ctx, userId and threadId)"
+            " call it (which injects the ctx, userId and threadId)",
         );
       }
       return t.handler(this.ctx, args, options);

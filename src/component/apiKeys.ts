@@ -69,6 +69,6 @@ export const destroy = mutation({
     v.literal("missing"),
     v.literal("deleted"),
     v.literal("name mismatch"),
-    v.literal("must provide either apiKey or name")
+    v.literal("must provide either apiKey or name"),
   ),
 });

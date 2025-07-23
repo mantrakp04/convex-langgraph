@@ -32,7 +32,7 @@ interface MessageComposerProps {
     agentName: string,
     context: ContextOptions | undefined,
     storage: StorageOptions | undefined,
-    systemPrompt?: string
+    systemPrompt?: string,
   ) => Promise<string | undefined>;
 }
 
@@ -51,7 +51,7 @@ const MessageComposer: React.FC<MessageComposerProps> = ({
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   // System prompt state
   const [systemPrompt, setSystemPrompt] = useState<string | undefined>(
-    undefined
+    undefined,
   );
   const [isSystemPromptDirty, setIsSystemPromptDirty] = useState(false);
   const handleResetSystemPrompt = () => {
@@ -61,7 +61,7 @@ const MessageComposer: React.FC<MessageComposerProps> = ({
 
   // When user edits system prompt
   const handleSystemPromptChange = (
-    e: React.ChangeEvent<HTMLTextAreaElement>
+    e: React.ChangeEvent<HTMLTextAreaElement>,
   ) => {
     const isDirty = e.target.value !== (selectedAgent?.instructions || "");
     setSystemPrompt(isDirty ? e.target.value : undefined);
@@ -81,7 +81,7 @@ const MessageComposer: React.FC<MessageComposerProps> = ({
         selectedAgent.name,
         contextOptions,
         storageOptions,
-        isSystemPromptDirty ? systemPrompt : undefined
+        isSystemPromptDirty ? systemPrompt : undefined,
       );
       return setResponse(
         storageOptions.saveMessages === "none" ? null : text ?? null,

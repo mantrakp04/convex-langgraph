@@ -22,13 +22,14 @@ import type {
   Auth,
   Expand,
   FunctionReference,
-  GenericActionCtx,
-  GenericDataModel,
-  GenericMutationCtx,
-  GenericQueryCtx,
   StorageActionWriter,
   StorageReader,
   WithoutSystemFields,
+  FunctionArgs,
+  FunctionReturnType,
+  GenericActionCtx,
+  GenericDataModel,
+  OptionalRestArgs,
 } from "convex/server";
 import type { GenericId } from "convex/values";
 import type { Schema } from "zod";
@@ -127,7 +128,7 @@ export type UsageHandler = (
     providerMetadata: ProviderMetadata | undefined;
     model: string;
     provider: string;
-  }
+  },
 ) => void | Promise<void>;
 
 export type RawRequestResponseHandler = (
@@ -138,7 +139,7 @@ export type RawRequestResponseHandler = (
     agentName: string | undefined;
     request: LanguageModelRequestMetadata;
     response: LanguageModelResponseMetadata;
-  }
+  },
 ) => void | Promise<void>;
 
 export type AgentComponent = UseApi<Mounts>;
@@ -335,7 +336,7 @@ export interface Thread<DefaultTools extends ToolSet> {
    * Update the metadata for the thread.
    */
   updateMetadata: (
-    patch: Partial<WithoutSystemFields<ThreadDoc>>
+    patch: Partial<WithoutSystemFields<ThreadDoc>>,
   ) => Promise<ThreadDoc>;
   /**
    * This behaves like {@link generateText} from the "ai" package except that
@@ -358,7 +359,7 @@ export interface Thread<DefaultTools extends ToolSet> {
       OUTPUT,
       OUTPUT_PARTIAL
     >,
-    options?: Options
+    options?: Options,
   ): Promise<
     GenerateTextResult<TOOLS extends undefined ? DefaultTools : TOOLS, OUTPUT> &
       ThreadOutputMetadata
@@ -397,7 +398,7 @@ export interface Thread<DefaultTools extends ToolSet> {
        * iterating over the text, streaming it over HTTP, etc.
        */
       saveStreamDeltas?: boolean | StreamingOptions;
-    }
+    },
   ): Promise<
     StreamTextResult<
       TOOLS extends undefined ? DefaultTools : TOOLS,
@@ -417,7 +418,7 @@ export interface Thread<DefaultTools extends ToolSet> {
    */
   generateObject<T>(
     args: OurObjectArgs<T>,
-    options?: Options
+    options?: Options,
   ): Promise<GenerateObjectResult<T> & ThreadOutputMetadata>;
   /**
    * This behaves like {@link generateObject} from the "ai" package except that
@@ -431,7 +432,7 @@ export interface Thread<DefaultTools extends ToolSet> {
    */
   generateObject(
     args: GenerateObjectNoSchemaOptions,
-    options?: Options
+    options?: Options,
   ): Promise<GenerateObjectResult<JSONValue> & ThreadOutputMetadata>;
   /**
    * This behaves like {@link streamObject} from the "ai" package except that
@@ -445,7 +446,7 @@ export interface Thread<DefaultTools extends ToolSet> {
    */
   streamObject<T>(
     args: OurStreamObjectArgs<T>,
-    options?: Options
+    options?: Options,
   ): Promise<
     StreamObjectResult<DeepPartial<T>, T, never> & ThreadOutputMetadata
   >;
@@ -469,17 +470,24 @@ export type SyncStreamsReturnValue =
 
 /* Type utils follow */
 export type RunQueryCtx = {
-  runQuery: GenericQueryCtx<GenericDataModel>["runQuery"];
+  runQuery: <Query extends FunctionReference<"query", "internal">>(
+    query: Query,
+    args: FunctionArgs<Query>,
+  ) => Promise<FunctionReturnType<Query>>;
 };
-export type RunMutationCtx = {
-  runQuery: GenericMutationCtx<GenericDataModel>["runQuery"];
-  runMutation: GenericMutationCtx<GenericDataModel>["runMutation"];
+export type RunMutationCtx = RunQueryCtx & {
+  runMutation: <Mutation extends FunctionReference<"mutation", "internal">>(
+    mutation: Mutation,
+    args: FunctionArgs<Mutation>,
+  ) => Promise<FunctionReturnType<Mutation>>;
 };
-export type RunActionCtx = {
-  runQuery: GenericActionCtx<GenericDataModel>["runQuery"];
-  runMutation: GenericActionCtx<GenericDataModel>["runMutation"];
-  runAction: GenericActionCtx<GenericDataModel>["runAction"];
+export type RunActionCtx = RunMutationCtx & {
+  runAction<Action extends FunctionReference<"action", "internal">>(
+    action: Action,
+    args: FunctionArgs<Action>,
+  ): Promise<FunctionReturnType<Action>>;
 };
+export type UserActionCtx = GenericActionCtx<GenericDataModel>;
 export type ActionCtx = RunActionCtx & {
   auth: Auth;
   storage: StorageActionWriter;

@@ -2,6 +2,8 @@
 import { components } from "../_generated/api";
 import { createTool, fetchContextMessages } from "@convex-dev/agent";
 import z from "zod";
+import { embed } from "ai";
+import { textEmbedding } from "../modelsForDemo";
 
 /**
  * Manual search
@@ -26,6 +28,13 @@ export const searchMessages = createTool({
           messageRange: { before: 0, after: 0 },
           limit: 10,
         },
+      },
+      getEmbedding: async (text) => {
+        const e = await embed({ model: textEmbedding, value: text });
+        return {
+          embedding: e.embedding,
+          embeddingModel: textEmbedding.modelId,
+        };
       },
     });
   },

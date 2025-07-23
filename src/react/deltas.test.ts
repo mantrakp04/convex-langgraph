@@ -10,7 +10,7 @@ import { omit } from "convex-helpers";
 function makeStreamMessage(
   streamId: string,
   order: number,
-  stepOrder: number
+  stepOrder: number,
 ): StreamMessage {
   return {
     streamId,
@@ -23,7 +23,7 @@ function makeDelta(
   streamId: string,
   start: number,
   end: number,
-  parts: TextStreamPart[]
+  parts: TextStreamPart[],
 ): StreamDelta {
   return {
     streamId,
@@ -44,7 +44,7 @@ describe("mergeDeltas", () => {
       "thread1",
       streamMessages,
       [],
-      deltas
+      deltas,
     );
     expect(messages).toHaveLength(1);
     expect(messages[0].text).toBe("Hello");
@@ -66,7 +66,7 @@ describe("mergeDeltas", () => {
       "thread1",
       streamMessages,
       [],
-      deltas
+      deltas,
     );
     expect(messages).toHaveLength(1);
     expect(messages[0].text).toBe("Hello World!");
@@ -99,7 +99,7 @@ describe("mergeDeltas", () => {
       "thread1",
       streamMessages,
       [],
-      deltas
+      deltas,
     );
     expect(messages).toHaveLength(2);
     expect(messages[0].message?.role).toBe("assistant");
@@ -134,7 +134,7 @@ describe("mergeDeltas", () => {
       "thread1",
       streamMessages,
       [],
-      deltas
+      deltas,
     );
     expect(messages).toHaveLength(0);
     expect(changed).toBe(false);
@@ -195,7 +195,7 @@ describe("mergeDeltas", () => {
     expect(messages).toHaveLength(1);
     if (Array.isArray(messages[0].message?.content)) {
       const reasoningParts = messages[0].message.content.filter(
-        (p) => p.type === "reasoning"
+        (p) => p.type === "reasoning",
       );
       expect(reasoningParts).toHaveLength(1);
       expect(reasoningParts[0].text).toBe("I'm thinking... Still thinking...");
@@ -216,7 +216,7 @@ describe("mergeDeltas", () => {
       "thread1",
       streamMessage,
       undefined,
-      deltas
+      deltas,
     );
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0].text).toBe("Hello World!");
@@ -225,7 +225,7 @@ describe("mergeDeltas", () => {
       "thread1",
       streamMessage,
       result,
-      deltas
+      deltas,
     );
     expect(result.messages).toHaveLength(1);
     expect(result.messages[0].text).toBe("Hello World!");
@@ -238,7 +238,7 @@ describe("mergeDeltas", () => {
       "thread1",
       streamMessage,
       result,
-      moreDeltas
+      moreDeltas,
     );
     expect(changed).toBe(true);
     expect(result.messages).toHaveLength(1);
@@ -248,7 +248,7 @@ describe("mergeDeltas", () => {
       "thread1",
       streamMessage,
       result,
-      moreDeltas
+      moreDeltas,
     );
     expect(changed).toBe(false);
     expect(result.messages).toHaveLength(1);
@@ -280,27 +280,27 @@ describe("mergeDeltas", () => {
       "thread1",
       streamMessages,
       [],
-      deltas
+      deltas,
     );
     const [messages2, streams2, changed2] = mergeDeltas(
       "thread1",
       streamMessages,
       [],
-      deltas
+      deltas,
     );
     expect(messages1.map((m) => omit(m, ["_creationTime"]))).toEqual(
-      messages2.map((m) => omit(m, ["_creationTime"]))
+      messages2.map((m) => omit(m, ["_creationTime"])),
     );
     expect(
       streams1.map((s) => ({
         ...s,
         messages: s.messages.map((m) => omit(m, ["_creationTime"])),
-      }))
+      })),
     ).toEqual(
       streams2.map((s) => ({
         ...s,
         messages: s.messages.map((m) => omit(m, ["_creationTime"])),
-      }))
+      })),
     );
     expect(changed1).toBe(changed2);
     // Inputs should remain unchanged

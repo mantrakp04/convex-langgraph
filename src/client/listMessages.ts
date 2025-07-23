@@ -22,7 +22,7 @@ export async function listMessages(
     paginationOpts: PaginationOptions;
     excludeToolMessages?: boolean;
     statuses?: MessageStatus[];
-  }
+  },
 ): Promise<PaginationResult<MessageDoc>> {
   if (args.paginationOpts.numItems === 0) {
     return {

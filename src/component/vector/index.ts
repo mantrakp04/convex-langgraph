@@ -40,7 +40,7 @@ export const paginate = query({
         args.table
           ? // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (q.eq("model", args.targetModel) as any).eq("table", args.table)
-          : q.eq("model", args.targetModel)
+          : q.eq("model", args.targetModel),
       )
       .paginate({
         cursor: args.cursor ?? null,
@@ -77,10 +77,10 @@ export const deleteBatchForThread = mutation({
             q
               .eq("model", args.model)
               .eq("table", table)
-              .eq("threadId", args.threadId)
-          )
+              .eq("threadId", args.threadId),
+          ),
       ),
-      ["threadId"]
+      ["threadId"],
     ).paginate({
       cursor: args.cursor ?? null,
       numItems: args.limit,
@@ -101,7 +101,7 @@ export const insertBatch = mutation({
       v.object({
         ...vEmbeddingsWithoutDenormalizedFields.fields,
         messageId: v.optional(v.id("messages")),
-      })
+      }),
     ),
   },
   returns: v.array(vVectorId),
@@ -113,7 +113,7 @@ export const insertBatch = mutation({
           await ctx.db.patch(messageId, { embeddingId });
         }
         return embeddingId;
-      })
+      }),
     );
   },
 });
@@ -121,7 +121,7 @@ export const insertBatch = mutation({
 export async function insertVector(
   ctx: MutationCtx,
   dimension: VectorDimension,
-  v: EmbeddingsWithoutDenormalizedFields
+  v: EmbeddingsWithoutDenormalizedFields,
 ) {
   return ctx.db.insert(getVectorTableName(dimension), {
     ...v,
@@ -143,7 +143,7 @@ export function searchVectors(
     threadId?: Id<"threads">;
     searchAllMessagesForUserId?: string;
     limit?: number;
-  }
+  },
 ) {
   const tableName = getVectorTableName(args.dimension);
   return ctx.vectorSearch(tableName, "vector", {
@@ -176,7 +176,7 @@ export const updateBatch = mutation({
         // deleting from one table and inserting into another.
         // However this requires updating all the messages that reference
         // the vector.
-      })
+      }),
     ),
   },
   returns: v.null(),
@@ -186,8 +186,8 @@ export const updateBatch = mutation({
         ctx.db.patch(embedding.id, {
           model: embedding.model,
           vector: embedding.vector,
-        })
-      )
+        }),
+      ),
     );
   },
 });

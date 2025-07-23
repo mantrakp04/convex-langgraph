@@ -13,7 +13,7 @@ export type UIMessage = AIUIMessage & {
 };
 
 export function toUIMessages(
-  messages: (MessageDoc & { streaming?: boolean })[]
+  messages: (MessageDoc & { streaming?: boolean })[],
 ): UIMessage[] {
   const uiMessages: UIMessage[] = [];
   let assistantMessage: UIMessage | undefined;
@@ -63,7 +63,7 @@ export function toUIMessages(
       if (coreMessage.role === "tool" && !assistantMessage) {
         console.warn(
           "Tool message without preceding assistant message.. skipping",
-          message
+          message,
         );
         continue;
       }
@@ -118,7 +118,7 @@ export function toUIMessages(
               toolInvocation: {
                 state: "call",
                 step: assistantMessage.parts.filter(
-                  (part) => part.type === "tool-invocation"
+                  (part) => part.type === "tool-invocation",
                 ).length,
                 toolCallId: contentPart.toolCallId,
                 toolName: contentPart.toolName,
@@ -130,7 +130,7 @@ export function toUIMessages(
             const call = assistantMessage.parts.find(
               (part) =>
                 part.type === "tool-invocation" &&
-                part.toolInvocation.toolCallId === contentPart.toolCallId
+                part.toolInvocation.toolCallId === contentPart.toolCallId,
             ) as ToolInvocationUIPart | undefined;
             const toolInvocation: ToolInvocationUIPart["toolInvocation"] = {
               state: "result",
@@ -141,7 +141,7 @@ export function toUIMessages(
               step:
                 call?.toolInvocation.step ??
                 assistantMessage.parts.filter(
-                  (part) => part.type === "tool-invocation"
+                  (part) => part.type === "tool-invocation",
                 ).length,
             };
             if (call) {
@@ -149,7 +149,7 @@ export function toUIMessages(
             } else {
               console.warn(
                 "Tool result without preceding tool call.. adding anyways",
-                contentPart
+                contentPart,
               );
               assistantMessage.parts.push({
                 type: "tool-invocation",

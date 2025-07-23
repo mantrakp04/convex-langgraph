@@ -280,7 +280,7 @@ describe("agent", () => {
         patch: {
           message: { role: "user", content: "test" },
         },
-      })
+      }),
     ).rejects.toThrow();
   });
 
@@ -311,7 +311,7 @@ describe("agent", () => {
       {
         threadId: thread._id as Id<"threads">,
         order: "asc",
-      }
+      },
     );
     expect(remainingMessages.page).toHaveLength(1);
     expect(remainingMessages.page[0]._id).toBe(messageIds[1]);
@@ -346,7 +346,7 @@ describe("agent", () => {
       {
         threadId: thread._id as Id<"threads">,
         order: "asc",
-      }
+      },
     );
     expect(remainingMessages.page).toHaveLength(0);
   });
@@ -398,7 +398,7 @@ describe("agent", () => {
       {
         threadId: thread._id as Id<"threads">,
         order: "asc",
-      }
+      },
     );
 
     expect(remainingMessages.page).toHaveLength(3); // Should have messages from order 1 and 2
@@ -441,7 +441,7 @@ describe("agent", () => {
       {
         threadId: thread._id as Id<"threads">,
         order: "asc",
-      }
+      },
     );
 
     expect(remainingMessages.page).toHaveLength(2);
@@ -504,7 +504,7 @@ describe("agent", () => {
       {
         threadId: thread._id as Id<"threads">,
         order: "asc",
-      }
+      },
     );
     expect(remainingMessages.page).toHaveLength(1);
   });

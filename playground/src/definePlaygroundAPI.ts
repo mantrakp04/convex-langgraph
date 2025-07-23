@@ -28,7 +28,7 @@ export type PlaygroundAPI = ApiFromModules<{
 
 export type AgentsFn<DataModel extends GenericDataModel> = (
   ctx: GenericActionCtx<DataModel> | GenericQueryCtx<DataModel>,
-  args: { userId: string | undefined; threadId: string | undefined }
+  args: { userId: string | undefined; threadId: string | undefined },
 ) => Agent<ToolSet>[] | Promise<Agent<ToolSet>[]>;
 
 // Playground API definition
@@ -41,15 +41,15 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
     agents: Agent<ToolSet>[] | AgentsFn<DataModel>;
     userNameLookup?: (
       ctx: GenericQueryCtx<DataModel>,
-      userId: string
+      userId: string,
     ) => string | Promise<string>;
-  }
+  },
 ) {
   function validateAgents(agents: Agent<ToolSet>[]) {
     for (const agent of agents) {
       if (!agent.options.name) {
         console.warn(
-          `Agent has no name (instructions: ${agent.options.instructions})`
+          `Agent has no name (instructions: ${agent.options.instructions})`,
         );
       }
     }
@@ -76,7 +76,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
 
   async function getAgents(
     ctx: GenericActionCtx<DataModel> | GenericQueryCtx<DataModel>,
-    args: { userId: string | undefined; threadId: string | undefined }
+    args: { userId: string | undefined; threadId: string | undefined },
   ) {
     const agents = Array.isArray(agentsOrFn)
       ? agentsOrFn
@@ -129,7 +129,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
           users.page.map(async (userId) => ({
             _id: userId,
             name: userNameLookup ? await userNameLookup(ctx, userId) : userId,
-          }))
+          })),
         ),
       };
     },
@@ -137,7 +137,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
       v.object({
         _id: v.string(),
         name: v.string(),
-      })
+      }),
     ),
   });
 
@@ -156,7 +156,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
           userId: args.userId,
           paginationOpts: args.paginationOpts,
           order: "desc",
-        }
+        },
       );
       return {
         ...results,
@@ -177,7 +177,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
               latestMessage: last?.text,
               lastMessageAt: last?._creationTime,
             };
-          })
+          }),
         ),
       };
     },
@@ -186,7 +186,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
         ...vThreadDoc.fields,
         latestMessage: v.optional(v.string()),
         lastMessageAt: v.optional(v.number()),
-      })
+      }),
     ),
   });
 
@@ -276,7 +276,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
         {
           contextOptions,
           storageOptions,
-        }
+        },
       );
       return { messageId, text };
     },
@@ -319,7 +319,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
         upToAndIncludingMessageId: args.beforeMessageId,
       });
       return messages.filter(
-        (m) => !args.beforeMessageId || m._id !== args.beforeMessageId
+        (m) => !args.beforeMessageId || m._id !== args.beforeMessageId,
       );
     },
   });

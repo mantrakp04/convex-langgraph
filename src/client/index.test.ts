@@ -113,7 +113,7 @@ export const generateTextWithThread = action({
       {
         contextOptions: args.contextOptions,
         storageOptions: args.storageOptions,
-      }
+      },
     );
     return { text: result.text };
   },
@@ -313,7 +313,7 @@ describe("Agent thread management", () => {
   test("createThread returns threadId (mutation context)", async () => {
     const t = initConvexTest(schema);
     const threadId = await t.run(async (ctx) =>
-      agent.createThread(ctx, { userId: "2" }).then(({ threadId }) => threadId)
+      agent.createThread(ctx, { userId: "2" }).then(({ threadId }) => threadId),
     );
     expect(threadId).toBeTypeOf("string");
   });
@@ -321,7 +321,7 @@ describe("Agent thread management", () => {
   test("continueThread returns thread object", async () => {
     const t = initConvexTest(schema);
     const threadId = await t.run(async (ctx) =>
-      agent.createThread(ctx, { userId: "3" }).then(({ threadId }) => threadId)
+      agent.createThread(ctx, { userId: "3" }).then(({ threadId }) => threadId),
     );
     const result = await t.action(testApi.continueThreadAction, {
       threadId,
@@ -335,14 +335,14 @@ describe("Agent message operations", () => {
   test("saveMessage and saveMessages store messages", async () => {
     const t = initConvexTest(schema);
     const threadId = await t.run(async (ctx) =>
-      agent.createThread(ctx, { userId: "4" }).then(({ threadId }) => threadId)
+      agent.createThread(ctx, { userId: "4" }).then(({ threadId }) => threadId),
     );
     const { messageId } = await t.run(async (ctx) =>
       agent.saveMessage(ctx, {
         threadId,
         userId: "4",
         message: { role: "user", content: "Hello" },
-      })
+      }),
     );
     expect(messageId).toBeTypeOf("string");
 
@@ -354,7 +354,7 @@ describe("Agent message operations", () => {
           { role: "user", content: "Hi" },
           { role: "assistant", content: "Hello!" },
         ],
-      })
+      }),
     );
     expect(messages.length).toBe(2);
     expect(lastMessageId).toBe(messages[1]._id);
@@ -365,7 +365,7 @@ describe("Agent text/object generation", () => {
   test("generateText with custom context and storage options", async () => {
     const t = initConvexTest(schema);
     const threadId = await t.run(async (ctx) =>
-      agent.createThread(ctx, { userId: "5" }).then(({ threadId }) => threadId)
+      agent.createThread(ctx, { userId: "5" }).then(({ threadId }) => threadId),
     );
     const result = await t.action(testApi.generateTextWithThread, {
       threadId,
@@ -380,7 +380,7 @@ describe("Agent text/object generation", () => {
   test("generateObject returns object", async () => {
     const t = initConvexTest(schema);
     const threadId = await t.run(async (ctx) =>
-      agent.createThread(ctx, { userId: "6" }).then(({ threadId }) => threadId)
+      agent.createThread(ctx, { userId: "6" }).then(({ threadId }) => threadId),
     );
     const result = await t.action(testApi.generateObjectWithThread, {
       threadId,
@@ -402,7 +402,7 @@ describe("Agent-generated mutations/actions/queries", () => {
   test("asTextAction and asObjectAction work via t.action", async () => {
     const t = initConvexTest(schema);
     const threadId = await t.run(async (ctx) =>
-      agent.createThread(ctx, { userId: "8" }).then(({ threadId }) => threadId)
+      agent.createThread(ctx, { userId: "8" }).then(({ threadId }) => threadId),
     );
     const textResult = await t.action(testApi.generateTextAction, {
       userId: "8",
@@ -422,7 +422,7 @@ describe("Agent-generated mutations/actions/queries", () => {
   test("asSaveMessagesMutation works via t.mutation", async () => {
     const t = initConvexTest(schema);
     const threadId = await t.run(async (ctx) =>
-      agent.createThread(ctx, { userId: "9" }).then(({ threadId }) => threadId)
+      agent.createThread(ctx, { userId: "9" }).then(({ threadId }) => threadId),
     );
     const result = await t.mutation(testApi.saveMessageMutation, {
       threadId,
@@ -442,14 +442,16 @@ describe("Agent context and search options", () => {
   test("fetchContextMessages returns context messages", async () => {
     const t = initConvexTest(schema);
     const threadId = await t.run(async (ctx) =>
-      agent.createThread(ctx, { userId: "10" }).then(({ threadId }) => threadId)
+      agent
+        .createThread(ctx, { userId: "10" })
+        .then(({ threadId }) => threadId),
     );
     await t.run(async (ctx) =>
       agent.saveMessage(ctx, {
         threadId,
         userId: "10",
         message: { role: "user", content: "Context test" },
-      })
+      }),
     );
     const context = await t.action(testApi.fetchContextAction, {
       userId: "10",

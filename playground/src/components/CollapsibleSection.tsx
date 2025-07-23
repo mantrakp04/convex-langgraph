@@ -1,5 +1,4 @@
-
-import React, { useState } from 'react';
+import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
@@ -9,10 +8,10 @@ interface CollapsibleSectionProps {
   defaultOpen?: boolean;
 }
 
-const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({ 
-  title, 
+const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
+  title,
   children,
-  defaultOpen = false
+  defaultOpen = false,
 }) => {
   const [isOpen, setIsOpen] = useState(defaultOpen);
 
@@ -26,12 +25,8 @@ const CollapsibleSection: React.FC<CollapsibleSectionProps> = ({
         <span className="font-medium">{title}</span>
         {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
       </Button>
-      
-      {isOpen && (
-        <div className="p-3 border-t">
-          {children}
-        </div>
-      )}
+
+      {isOpen && <div className="p-3 border-t">{children}</div>}
     </div>
   );
 };

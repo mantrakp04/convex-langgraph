@@ -77,7 +77,7 @@ function ConvexProviderGate({ children }: { children: ReactNode }) {
     } catch {
       setInstanceName(null);
       setError(
-        "Could not validate deployment URL. Please check the URL and try again."
+        "Could not validate deployment URL. Please check the URL and try again.",
       );
       setLoading(false);
       setIsValid(false);
@@ -122,7 +122,7 @@ function ConvexProviderGate({ children }: { children: ReactNode }) {
   const convex = useMemo(
     () =>
       isValid && deploymentUrl ? new ConvexReactClient(deploymentUrl) : null,
-    [isValid, deploymentUrl]
+    [isValid, deploymentUrl],
   );
 
   if (!deploymentUrl || !isValid || !convex) {

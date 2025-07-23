@@ -118,7 +118,7 @@ export const schema = defineSchema({
       v.object({
         kind: v.literal("aborted"),
         reason: v.string(),
-      })
+      }),
     ),
   })
     // There should only be one per "order" index
@@ -196,6 +196,5 @@ export const vMessageDoc = v.object({
   fileIds: v.optional(v.array(v.string())),
 });
 export type MessageDoc = Infer<typeof vMessageDoc>;
-
 
 export default schema;

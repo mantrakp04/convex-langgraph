@@ -33,26 +33,26 @@ export async function storeFile(
   component: AgentComponent,
   blob: Blob,
   filename?: string,
-  sha256?: string
+  sha256?: string,
 ): Promise<{
   file: File;
   filePart: FilePart;
   imagePart: ImagePart | undefined;
 }> {
-  if (!("runAction" in ctx)) {
+  if (!("runAction" in ctx) || !("storage" in ctx)) {
     throw new Error(
-      "You're trying to save a file that's too large in a mutation. " +
+      "You're trying to save a file that's too large in a mutation / workflow. " +
         "You can store the file in file storage from an action first, then pass a URL instead. " +
         "To have the agent component track the file, you can use `saveFile` from an action then use the fileId with getFile in the mutation. " +
-        "Read more in the docs."
+        "Read more in the docs.",
     );
   }
   const hash =
     sha256 ||
     Array.from(
       new Uint8Array(
-        await crypto.subtle.digest("SHA-256", await blob.arrayBuffer())
-      )
+        await crypto.subtle.digest("SHA-256", await blob.arrayBuffer()),
+      ),
     )
       .map((b) => b.toString(16).padStart(2, "0"))
       .join("");
@@ -124,7 +124,7 @@ export async function storeFile(
 export async function getFile(
   ctx: ActionCtx | QueryCtx,
   component: AgentComponent,
-  fileId: string
+  fileId: string,
 ) {
   const file = await ctx.runQuery(component.files.get, { fileId });
   if (!file) {
@@ -149,7 +149,7 @@ export async function getFile(
 function getParts(
   url: string,
   mimeType: string,
-  filename: string | undefined
+  filename: string | undefined,
 ): {
   filePart: FilePart;
   imagePart: ImagePart | undefined;

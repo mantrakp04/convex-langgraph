@@ -185,7 +185,7 @@ const MessageItem: React.FC<MessageItemProps> = ({
                       src={URL.createObjectURL(
                         new Blob([part.data], {
                           type: part.mimeType,
-                        })
+                        }),
                       )}
                       className="rounded-lg max-w-full max-h-[300px]"
                     />

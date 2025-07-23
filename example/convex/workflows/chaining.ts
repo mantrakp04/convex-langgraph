@@ -1,6 +1,6 @@
 // See the docs at https://docs.convex.dev/agents/workflows
 import { WorkflowId, WorkflowManager } from "@convex-dev/workflow";
-import { createThread } from "@convex-dev/agent";
+import { createThread, saveMessage } from "@convex-dev/agent";
 import { components, internal } from "../_generated/api";
 import { action, mutation } from "../_generated/server";
 import { v } from "convex/values";
@@ -56,19 +56,29 @@ const workflow = new WorkflowManager(components.workflow);
 export const weatherAgentWorkflow = workflow.define({
   args: { location: v.string(), threadId: v.string() },
   handler: async (step, { location, threadId }): Promise<void> => {
-    await step.runAction(
+    const weatherQ = await saveMessage(step, components.agent, {
+      threadId,
+      prompt: `What is the weather in ${location}?`,
+    });
+    const forecast = await step.runAction(
       internal.workflows.chaining.getForecast,
-      { prompt: `What is the weather in ${location}?`, threadId },
+      { promptMessageId: weatherQ.messageId, threadId },
       { retry: true },
     );
-    await step.runAction(
+    const fashionQ = await saveMessage(step, components.agent, {
+      threadId,
+      prompt: `What should I wear based on the weather?`,
+    });
+    const fashion = await step.runAction(
       internal.workflows.chaining.getFashionAdvice,
-      { prompt: `What should I wear based on the weather?`, threadId },
+      { promptMessageId: fashionQ.messageId, threadId },
       {
         retry: { maxAttempts: 5, initialBackoffMs: 1000, base: 2 },
         // runAfter: 2 * 1000, // To add artificial delay
       },
     );
+    console.log("Weather forecast:", forecast);
+    console.log("Fashion advice:", fashion.object);
   },
 });
 

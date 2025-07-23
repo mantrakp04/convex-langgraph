@@ -31,7 +31,7 @@ const embeddings = {
 };
 
 export const vEmbeddingsWithoutDenormalizedFields = v.object(
-  omit(embeddings, ["model_table_userId", "model_table_threadId"])
+  omit(embeddings, ["model_table_userId", "model_table_threadId"]),
 );
 export type EmbeddingsWithoutDenormalizedFields = Infer<
   typeof vEmbeddingsWithoutDenormalizedFields
@@ -71,17 +71,17 @@ export const VectorDimensions = [
   128, 256, 512, 768, 1024, 1408, 1536, 2048, 3072, 4096,
 ] as const;
 export function validateVectorDimension(
-  dimension: number
+  dimension: number,
 ): asserts dimension is VectorDimension {
   if (!VectorDimensions.includes(dimension as VectorDimension)) {
     throw new Error(
-      `Unsupported vector dimension${dimension}. Supported: ${VectorDimensions.join(", ")}`
+      `Unsupported vector dimension${dimension}. Supported: ${VectorDimensions.join(", ")}`,
     );
   }
 }
 export type VectorDimension = (typeof VectorDimensions)[number];
 export const VectorTableNames = VectorDimensions.map(
-  (d) => `embeddings_${d}`
+  (d) => `embeddings_${d}`,
 ) as `embeddings_${(typeof VectorDimensions)[number]}`[];
 export type VectorTableName = (typeof VectorTableNames)[number];
 export type VectorTableId = GenericId<(typeof VectorTableNames)[number]>;
@@ -89,7 +89,7 @@ export type VectorTableId = GenericId<(typeof VectorTableNames)[number]>;
 export const vVectorDimension = literals(...VectorDimensions);
 export const vVectorTableName = literals(...VectorTableNames);
 export const vVectorId = v.union(
-  ...VectorTableNames.map((name) => v.id(name))
+  ...VectorTableNames.map((name) => v.id(name)),
 ) as VUnion<
   GenericId<(typeof VectorTableNames)[number]>,
   VId<(typeof VectorTableNames)[number]>[]
@@ -117,7 +117,7 @@ const tables: {
   VectorDimensions.map((dimensions) => [
     `embeddings_${dimensions}`,
     table(dimensions),
-  ])
+  ]),
 ) as Record<
   `embeddings_${(typeof VectorDimensions)[number]}`,
   VectorTable<(typeof VectorDimensions)[number]>
