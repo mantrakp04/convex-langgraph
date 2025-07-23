@@ -13,7 +13,13 @@ import type {
   ToolSet,
   UserContent,
 } from "ai";
-import { generateObject, generateText, streamObject, streamText } from "ai";
+import {
+  embedMany,
+  generateObject,
+  generateText,
+  streamObject,
+  streamText,
+} from "ai";
 import { assert } from "convex-helpers";
 import {
   internalActionGeneric,
@@ -1643,29 +1649,29 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       threadId: string | undefined;
       values: string[];
       abortSignal?: AbortSignal;
-      headers?: Record<string, string | undefined>;
+      headers?: Record<string, string>;
     }
   ): Promise<{ embeddings: number[][] }> {
-    const embedding = this.options.textEmbedding;
+    const embeddingModel = this.options.textEmbedding;
     assert(
-      embedding,
+      embeddingModel,
       "a textEmbedding model is required to be set on the Agent that you're doing vector search with"
     );
-    const result = await embedding.doEmbed({
+    const result = await embedMany({
+      model: embeddingModel,
       values: options.values,
       abortSignal: options.abortSignal,
       headers: options.headers,
+      maxRetries: this.options.maxRetries,
     });
     if (this.options.usageHandler && result.usage) {
       await this.options.usageHandler(ctx, {
         userId: options.userId,
         threadId: options.threadId,
         agentName: this.options.name,
-        model: embedding.modelId,
-        provider: embedding.provider,
-        providerMetadata: result.rawResponse
-          ? { [embedding.provider]: result.rawResponse }
-          : undefined,
+        model: embeddingModel.modelId,
+        provider: embeddingModel.provider,
+        providerMetadata: undefined,
         usage: {
           promptTokens: result.usage.tokens,
           completionTokens: 0,
