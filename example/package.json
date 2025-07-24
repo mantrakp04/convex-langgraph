@@ -19,7 +19,7 @@
     "@convex-dev/agent": "file:..",
     "@convex-dev/agent-playground": "file:../playground",
     "@convex-dev/rag": "^0.3.0",
-    "@convex-dev/rate-limiter": "^0.2.12-alpha.0",
+    "@convex-dev/rate-limiter": "^0.2.12",
     "@convex-dev/workflow": "^0.2.6-alpha.1",
     "@hookform/resolvers": "^5.0.1",
     "@openrouter/ai-sdk-provider": "^0.7.1",
