@@ -49,7 +49,7 @@ workflows.
 - [Usage tracking](./docs/usage-tracking.mdx) is easy to set up, enabling usage
   attribution per-provider, per-model, per-user, per-agent, for billing & more.
 - [Rate limiting](./docs/rate-limiting.mdx), powered by the
-  [Rate Limiting Component](https://www.convex.dev/components/rate-limiting),
+  [Rate Limiter Component](https://www.convex.dev/components/rate-limiter),
   helps control the rate at which users can interact with agents and keep you
   from exceeding your LLM provider's limits.
 
