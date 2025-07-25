@@ -219,7 +219,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
        * The userId to associate with the thread. If not provided, the thread will be
        * anonymous.
        */
-      userId?: string;
+      userId?: string | null;
       /**
        * The title of the thread. Not currently used for anything.
        */
@@ -259,7 +259,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
        * The userId to associate with the thread. If not provided, the thread will be
        * anonymous.
        */
-      userId?: string;
+      userId?: string | null;
       /**
        * The title of the thread. Not currently used for anything.
        */
@@ -285,7 +285,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
   async createThread<ThreadTools extends ToolSet | undefined = undefined>(
     ctx: ActionCtx | RunMutationCtx,
     args?: {
-      userId: string;
+      userId: string | null;
       title?: string;
       summary?: string;
       usageHandler?: UsageHandler;
@@ -330,7 +330,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
        * If supplied, the userId can be used to search across other threads for
        * relevant messages from the same user as context for the LLM calls.
        */
-      userId?: string;
+      userId?: string | null;
       /**
        * The usage handler to use for this thread. Overrides any handler
        * set in the agent constructor.
@@ -412,7 +412,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       usageHandler,
       tools: threadTools,
     }: {
-      userId?: string;
+      userId?: string | null;
       threadId?: string;
       /**
        * The usage handler to use for this thread. Overrides any handler
@@ -429,7 +429,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       GenerationOutputMetadata
   > {
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
-      userId: argsUserId,
+      userId: argsUserId ?? undefined,
       threadId,
       ...options,
     });
@@ -528,7 +528,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       /** Note: to get better type inference, pass tools in the next arg */
       tools: threadTools,
     }: {
-      userId?: string;
+      userId?: string | null;
       threadId?: string;
       usageHandler?: UsageHandler;
       tools?: ToolSet;
@@ -562,7 +562,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       GenerationOutputMetadata
   > {
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
-      userId: argsUserId,
+      userId: argsUserId ?? undefined,
       threadId,
       ...options,
     });
@@ -681,7 +681,11 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       userId: argsUserId,
       threadId,
       usageHandler,
-    }: { userId?: string; threadId?: string; usageHandler?: UsageHandler },
+    }: {
+      userId?: string | null;
+      threadId?: string;
+      usageHandler?: UsageHandler;
+    },
     /**
      * The arguments to the generateObject function, similar to the ai.generateObject function.
      */
@@ -693,7 +697,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     options?: Options,
   ): Promise<GenerateObjectResult<T> & GenerationOutputMetadata> {
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
-      userId: argsUserId,
+      userId: argsUserId ?? undefined,
       threadId,
       ...options,
     });
@@ -765,7 +769,11 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       userId: argsUserId,
       threadId,
       usageHandler,
-    }: { userId?: string; threadId?: string; usageHandler?: UsageHandler },
+    }: {
+      userId?: string | null;
+      threadId?: string;
+      usageHandler?: UsageHandler;
+    },
     /**
      * The arguments to the streamObject function, similar to the ai `streamObject` function.
      */
@@ -780,7 +788,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
   > {
     // TODO: unify all this shared code between all the generate* and stream* functions
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
-      userId: argsUserId,
+      userId: argsUserId ?? undefined,
       threadId,
       ...options,
     });
@@ -938,7 +946,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
         embeddings = await this.generateEmbeddings(
           ctx,
           {
-            userId: args.userId,
+            userId: args.userId ?? undefined,
             threadId: args.threadId,
           },
           args.messages,
@@ -2011,14 +2019,18 @@ export async function createThread(
   ctx: RunMutationCtx,
   component: AgentComponent,
   args?: {
-    userId?: string;
+    userId?: string | null;
     title?: string;
     summary?: string;
   },
 ) {
   const { _id: threadId } = await ctx.runMutation(
     component.threads.createThread,
-    { userId: args?.userId, title: args?.title, summary: args?.summary },
+    {
+      userId: args?.userId ?? undefined,
+      title: args?.title,
+      summary: args?.summary,
+    },
   );
   return threadId;
 }
@@ -2045,7 +2057,7 @@ export async function getThreadMetadata(
 
 type SaveMessagesArgs = {
   threadId: string;
-  userId?: string;
+  userId?: string | null;
   /**
    * The message that these messages are in response to. They will be
    * the same "order" as this message, at increasing stepOrder(s).
@@ -2104,7 +2116,7 @@ export async function saveMessages(
   }
   const result = await ctx.runMutation(component.messages.addMessages, {
     threadId: args.threadId,
-    userId: args.userId,
+    userId: args.userId ?? undefined,
     agentName: args.agentName,
     promptMessageId: args.promptMessageId,
     embeddings,
@@ -2129,7 +2141,7 @@ export async function saveMessages(
 
 type SaveMessageArgs = {
   threadId: string;
-  userId?: string;
+  userId?: string | null;
   /**
    * Metadata to save with the messages. Each element corresponds to the
    * message at the same index.
@@ -2190,7 +2202,7 @@ export async function saveMessage(
   }
   const { lastMessageId, messages } = await saveMessages(ctx, component, {
     threadId: args.threadId,
-    userId: args.userId,
+    userId: args.userId ?? undefined,
     agentName: args.agentName,
     messages:
       args.prompt !== undefined
