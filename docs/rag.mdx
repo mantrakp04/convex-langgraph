@@ -56,6 +56,19 @@ for details, but here are some key features:
 - **Graceful Migrations**: Migrate content or whole namespaces without
   disruption.
 
+import { ComponentCardList } from "@site/src/components/ComponentCard";
+
+<ComponentCardList
+  items={[
+    {
+      title: "RAG (Retrieval-Augmented Generation)",
+      description:
+        "Search documents for relevant content to prompt an LLM using embeddings.",
+      href: "https://www.convex.dev/components/rag",
+    },
+  ]}
+/>
+
 ## RAG Approaches
 
 This directory contains two different approaches to implementing RAG:
@@ -197,16 +210,3 @@ cd rag
 npm run setup
 npm run example
 ```
-
-import { ComponentCardList } from "@site/src/components/ComponentCard";
-
-<ComponentCardList
-  items={[
-    {
-      title: "RAG (Retrieval-Augmented Generation)",
-      description:
-        "Search documents for relevant content to prompt an LLM using embeddings.",
-      href: "https://www.convex.dev/components/rag",
-    },
-  ]}
-/>
