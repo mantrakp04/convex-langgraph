@@ -185,6 +185,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
     returns: vPaginationResult(
       v.object({
         ...vThreadDoc.fields,
+        lastAgentName: v.optional(v.string()),
         latestMessage: v.optional(v.string()),
         lastMessageAt: v.optional(v.number()),
       }),
