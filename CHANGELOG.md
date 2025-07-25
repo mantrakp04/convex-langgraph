@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.1.16 alpha
+## 0.1.16
 
 - It's possible to call many agent functions directly from a workflow.
 - Support calling generate/stream with the same `promptMessageId` multiple times
@@ -14,7 +14,7 @@
 - Fix embedding/vector argument to search messages
 - Fix handling of `undefined` in streaming text
 - Return the last agent name to the playground UI
-- Validate the playground backend less aggressively
+- Validate the playground backend less frantically
 - Allow passing null for userId arguments
 
 ## 0.1.15
