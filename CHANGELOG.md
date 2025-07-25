@@ -13,6 +13,9 @@
   custom id provided from the AI SDK. Shouldn't affect ~anyone.
 - Fix embedding/vector argument to search messages
 - Fix handling of `undefined` in streaming text
+- Return the last agent name to the playground UI
+- Validate the playground backend less aggressively
+- Allow passing null for userId arguments
 
 ## 0.1.15
 
