@@ -77,7 +77,6 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
-    "convex-helpers": "^0.1.99",
     "date-fns": "^3.2.0",
     "dotenv": "^16.5.0",
     "embla-carousel-react": "^8.3.0",
@@ -99,23 +98,23 @@
     "vite": "^6.3.5"
   },
   "peerDependencies": {
-    "@convex-dev/agent": "^0.1.14 || ^0.0.15-alpha.1",
+    "@convex-dev/agent": "^0.1.14 || ^0.0.15-alpha.1 || ^0.1.16-alpha.3",
+    "convex-helpers": "^0.1.100",
     "convex": "^1.23.0",
-    "convex-helpers": "^0.1.99",
     "zod": "^3.23.8"
   },
   "devDependencies": {
     "@convex-dev/agent": "../",
-    "convex": "../node_modules/convex",
-    "react": "../node_modules/react",
     "@eslint/js": "^9.9.0",
     "@types/node": "^22.5.5",
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
+    "convex": "../node_modules/convex",
     "eslint": "^9.9.0",
     "eslint-plugin-react-hooks": "^5.1.0-rc.0",
     "eslint-plugin-react-refresh": "^0.4.9",
     "globals": "^15.9.0",
+    "react": "../node_modules/react",
     "typescript": "^5.5.3",
     "typescript-eslint": "^8.0.1"
   }
