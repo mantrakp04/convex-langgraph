@@ -45,9 +45,12 @@ function ConvexProviderGate({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   // Don't optimistically set isValid to true - wait for async validation
   const [isValid, setIsValid] = useState(false);
+  const [isValidating, setIsValidating] = useState(false);
 
   // Extracted validation logic for reuse
   const validateDeploymentUrl = async (url: string) => {
+    if (isValidating) return;
+    setIsValidating(true);
     if (!url) {
       setIsValid(false);
       setInstanceName(null);
@@ -81,6 +84,8 @@ function ConvexProviderGate({ children }: { children: ReactNode }) {
       );
       setLoading(false);
       setIsValid(false);
+    } finally {
+      setIsValidating(false);
     }
   };
 
