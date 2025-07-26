@@ -20,7 +20,7 @@
     "example": "cd example && npm run dev",
     "dev": "run-p -r 'example' 'build:watch'",
     "prepare": "npm run build",
-    "setup": "node setup.cjs --init && cd example && npm run dev:backend -- --once",
+    "setup": "node setup.cjs --init",
     "dashboard": "cd example && npx convex dashboard",
     "build:watch": "npx chokidar 'tsconfig*.json' 'src/**/*.ts' -c 'npm run build' --initial",
     "build": "tsc --project ./tsconfig.build.json && npm run copy:dts && echo '{\\n  \"type\": \"module\"\\n}' > dist/package.json",
