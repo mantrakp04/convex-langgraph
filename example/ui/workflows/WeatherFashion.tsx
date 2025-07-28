@@ -4,14 +4,13 @@ import { usePaginatedQuery } from "convex-helpers/react";
 import { api } from "../../convex/_generated/api";
 import ReactMarkdown from "react-markdown";
 import { useStreamingText, useThreadMessages } from "@convex-dev/agent/react";
-const userId = "test_user"; // You'd use auth to access this on the server in a real app
 
 export function WeatherFashion() {
   const [content, setContent] = useState("");
   const [threadId, setThreadId] = useState<string | null>(null);
   const threads = usePaginatedQuery(
     api.threads.listThreads,
-    { userId },
+    {},
     { initialNumItems: 10 },
   );
   const messages = useThreadMessages(

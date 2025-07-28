@@ -24,7 +24,6 @@ import z from "zod";
 export const listThreads = query({
   args: {
     paginationOpts: paginationOptsValidator,
-    userId: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
     const userId = await getAuthUserId(ctx);
