@@ -5,7 +5,7 @@ import type {
   RunQueryCtx,
 } from "./types.js";
 import type { MessageDoc } from "../component/schema.js";
-import type { CoreMessage } from "ai";
+import type { ModelMessage } from "ai";
 import { assert } from "convex-helpers";
 import {
   DEFAULT_MESSAGE_RANGE,
@@ -34,7 +34,7 @@ export async function fetchContextMessages(
   args: {
     userId: string | undefined;
     threadId: string | undefined;
-    messages: CoreMessage[];
+    messages: ModelMessage[];
     /**
      * If provided, it will search for messages up to and including this message.
      * Note: if this is far in the past, text and vector search results may be more

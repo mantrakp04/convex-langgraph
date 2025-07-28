@@ -1,6 +1,6 @@
 // See the docs at https://docs.convex.dev/agents/tools
 import { components } from "../_generated/api";
-import { Agent, createTool } from "@convex-dev/agent";
+import { Agent, createTool, stepCountIs } from "@convex-dev/agent";
 import { openai } from "@ai-sdk/openai";
 import z from "zod";
 import { action } from "../_generated/server";
@@ -31,7 +31,7 @@ export const runAgentAsTool = action({
           },
         }),
       },
-      maxSteps: 20,
+      stopWhen: stepCountIs(20),
     });
     const agentWithToolsAsTool = createTool({
       description:
@@ -64,7 +64,7 @@ export const runAgentAsTool = action({
       instructions:
         "You can call agentWithToolsAsTool as many times as told with the argument whatToDo.",
       tools: { agentWithToolsAsTool },
-      maxSteps: 5,
+      stopWhen: stepCountIs(5),
     });
 
     const { thread } = await dispatchAgent.createThread(ctx);

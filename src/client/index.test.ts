@@ -300,7 +300,7 @@ describe("Agent option variations and normal behavior", () => {
       instructions: "Test instructions",
       contextOptions: { recentMessages: 5 },
       storageOptions: { saveMessages: "all" },
-      maxSteps: 2,
+      stopWhen: stepCountIs(2),
       maxRetries: 1,
       usageHandler: async () => {},
       rawRequestResponseHandler: async () => {},

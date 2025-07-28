@@ -9,6 +9,7 @@ import {
   GenericActionCtx,
 } from "convex/server";
 import {
+  deserializeMessage,
   vMessageDoc,
   vThreadDoc,
   vPaginationResult,
@@ -106,7 +107,6 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
         instructions: agent.options.instructions,
         contextOptions: agent.options.contextOptions,
         storageOptions: agent.options.storageOptions,
-        maxSteps: agent.options.maxSteps,
         maxRetries: agent.options.maxRetries,
         tools: agent.options.tools ? Object.keys(agent.options.tools) : [],
       }));
@@ -262,6 +262,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
         contextOptions,
         storageOptions,
         system,
+        messages,
         ...rest
       } = args;
       await validateApiKey(ctx, apiKey);
@@ -274,7 +275,11 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
       const { agent } = namedAgent;
       const { thread } = await agent.continueThread(ctx, { threadId, userId });
       const { messageId, text } = await thread.generateText(
-        { ...rest, ...(system ? { system } : {}) },
+        {
+          ...rest,
+          ...(system ? { system } : {}),
+          ...(messages ? { messages: messages.map(deserializeMessage) } : {}),
+        },
         {
           contextOptions,
           storageOptions,
@@ -316,7 +321,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
       const messages = await agent.fetchContextMessages(ctx, {
         userId: args.userId,
         threadId: args.threadId,
-        messages: args.messages,
+        messages: args.messages.map(deserializeMessage),
         contextOptions: args.contextOptions,
         upToAndIncludingMessageId: args.beforeMessageId,
       });
