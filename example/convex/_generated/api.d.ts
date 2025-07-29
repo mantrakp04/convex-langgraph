@@ -2738,17 +2738,6 @@ export declare const components: {
         {
           created: boolean;
           entryId: string;
-          replacedEntry: {
-            contentHash?: string;
-            entryId: string;
-            filterValues: Array<{ name: string; value: any }>;
-            importance: number;
-            key?: string;
-            metadata?: Record<string, any>;
-            replacedAt?: number;
-            status: "pending" | "ready" | "replaced";
-            title?: string;
-          } | null;
           status: "pending" | "ready" | "replaced";
         }
       >;
@@ -2774,6 +2763,24 @@ export declare const components: {
         "mutation",
         "internal",
         { entryId: string; startOrder: number },
+        null
+      >;
+      deleteByKeyAsync: FunctionReference<
+        "mutation",
+        "internal",
+        { beforeVersion?: number; key: string; namespaceId: string },
+        null
+      >;
+      deleteByKeySync: FunctionReference<
+        "action",
+        "internal",
+        { key: string; namespaceId: string },
+        null
+      >;
+      deleteSync: FunctionReference<
+        "action",
+        "internal",
+        { entryId: string },
         null
       >;
       findByContentHash: FunctionReference<
