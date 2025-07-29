@@ -5,19 +5,22 @@ import RightPanel from "@/components/RightPanel";
 import { useToast } from "@/components/ui/use-toast";
 import { useQuery, useAction } from "convex/react";
 import { usePaginatedQuery } from "convex-helpers/react";
-import type { PlaygroundAPI } from "../definePlaygroundAPI.js";
+import {
+  DEFAULT_CONTEXT_OPTIONS,
+  type PlaygroundAPI,
+} from "../definePlaygroundAPI.js";
 import { ContextMessage, Thread, Agent } from "@/types";
 import { ContextOptions, StorageOptions } from "@convex-dev/agent";
 import { useThreadMessages } from "@convex-dev/agent/react";
-import {
-  DEFAULT_CONTEXT_OPTIONS,
-  DEFAULT_STORAGE_OPTIONS,
-} from "@/types/defaults";
 
 interface PlayProps {
   apiKey: string;
   api: PlaygroundAPI;
 }
+
+const DEFAULT_STORAGE_OPTIONS = {
+  saveMessages: "promptAndOutput",
+} as const satisfies StorageOptions;
 
 function Play({ apiKey, api }: PlayProps) {
   const { toast } = useToast();

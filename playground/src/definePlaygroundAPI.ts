@@ -3,10 +3,10 @@ import {
   queryGeneric,
   mutationGeneric,
   actionGeneric,
-  GenericDataModel,
-  GenericQueryCtx,
-  ApiFromModules,
-  GenericActionCtx,
+  type GenericDataModel,
+  type GenericQueryCtx,
+  type ApiFromModules,
+  type GenericActionCtx,
 } from "convex/server";
 import {
   deserializeMessage,
@@ -18,10 +18,23 @@ import {
   vStorageOptions,
   type AgentComponent,
   type Agent,
+  type ContextOptions,
 } from "@convex-dev/agent";
 import type { ToolSet } from "ai";
 import { v } from "convex/values";
-import { DEFAULT_CONTEXT_OPTIONS } from "./types/defaults.js";
+
+// TODO: store preferences in local storage
+export const DEFAULT_CONTEXT_OPTIONS = {
+  recentMessages: 10,
+  excludeToolMessages: false,
+  searchOtherThreads: false,
+  searchOptions: {
+    limit: 0,
+    textSearch: true,
+    vectorSearch: true,
+    messageRange: { before: 2, after: 1 },
+  },
+} as const satisfies ContextOptions;
 
 export type PlaygroundAPI = ApiFromModules<{
   playground: ReturnType<typeof definePlaygroundAPI>;
@@ -270,8 +283,8 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
         userId: args.userId,
         threadId: args.threadId,
       });
-      const namedAgent = agents.find(({ name }) => name === args.agentName);
-      if (!namedAgent) throw new Error(`Unknown agent: ${args.agentName}`);
+      const namedAgent = agents.find(({ name }) => name === agentName);
+      if (!namedAgent) throw new Error(`Unknown agent: ${agentName}`);
       const { agent } = namedAgent;
       const { thread } = await agent.continueThread(ctx, { threadId, userId });
       const { messageId, text } = await thread.generateText(

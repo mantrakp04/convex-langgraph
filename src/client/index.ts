@@ -118,6 +118,11 @@ export {
 } from "./search.js";
 export { abortStream, listStreams, syncStreams } from "./streaming.js";
 export { createTool, extractText, isTool, listMessages };
+export {
+  definePlaygroundAPI,
+  type PlaygroundAPI,
+  type AgentsFn,
+} from "./definePlaygroundAPI.js";
 export type {
   AgentComponent,
   ContextOptions,
