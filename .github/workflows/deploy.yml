@@ -29,10 +29,6 @@ jobs:
       - name: Install root dependencies & build
         run: npm ci && npm run build
 
-  test:
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
       - name: Install playground dependencies
         run: cd playground && npm ci
 
