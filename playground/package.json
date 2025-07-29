@@ -33,7 +33,7 @@
     "agent-playground": "./bin/agent-playground.cjs"
   },
   "exports": {
-    ".": "./src/definePlaygroundAPI.ts",
+    ".": "./src/index.ts",
     "./ui": "./src/pages/Play.tsx"
   },
   "files": [
@@ -98,7 +98,7 @@
     "vite": "^6.3.5"
   },
   "peerDependencies": {
-    "@convex-dev/agent": "^0.1.14 || ^0.0.15-alpha.1 || ^0.1.16-alpha.3",
+    "@convex-dev/agent": "^0.1.17",
     "convex-helpers": "^0.1.100",
     "convex": "^1.23.0",
     "zod": "^3.23.8"

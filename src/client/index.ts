@@ -114,6 +114,11 @@ export {
   listMessages,
   syncStreams,
 };
+export {
+  definePlaygroundAPI,
+  type PlaygroundAPI,
+  type AgentsFn,
+} from "./definePlaygroundAPI.js";
 export type {
   AgentComponent,
   ContextOptions,

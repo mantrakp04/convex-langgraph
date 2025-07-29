@@ -3,10 +3,10 @@ import {
   queryGeneric,
   mutationGeneric,
   actionGeneric,
-  GenericDataModel,
-  GenericQueryCtx,
-  ApiFromModules,
-  GenericActionCtx,
+  type GenericDataModel,
+  type GenericQueryCtx,
+  type ApiFromModules,
+  type GenericActionCtx,
 } from "convex/server";
 import {
   vMessageDoc,
@@ -17,10 +17,10 @@ import {
   vStorageOptions,
   type AgentComponent,
   type Agent,
+  type ContextOptions,
 } from "@convex-dev/agent";
 import type { ToolSet } from "ai";
 import { v } from "convex/values";
-import { DEFAULT_CONTEXT_OPTIONS } from "./types/defaults.js";
 
 export type PlaygroundAPI = ApiFromModules<{
   playground: ReturnType<typeof definePlaygroundAPI>;
@@ -269,8 +269,8 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
         userId: args.userId,
         threadId: args.threadId,
       });
-      const namedAgent = agents.find(({ name }) => name === args.agentName);
-      if (!namedAgent) throw new Error(`Unknown agent: ${args.agentName}`);
+      const namedAgent = agents.find(({ name }) => name === agentName);
+      if (!namedAgent) throw new Error(`Unknown agent: ${agentName}`);
       const { agent } = namedAgent;
       const { thread } = await agent.continueThread(ctx, { threadId, userId });
       const { messageId, text } = await thread.generateText(
@@ -304,14 +304,10 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
       const namedAgent = agents.find(({ name }) => name === args.agentName);
       if (!namedAgent) throw new Error(`Unknown agent: ${args.agentName}`);
       const { agent } = namedAgent;
-      const contextOptions =
-        args.contextOptions ??
-        agent.options.contextOptions ??
-        DEFAULT_CONTEXT_OPTIONS;
+      const contextOptions = args.contextOptions;
       if (args.beforeMessageId) {
         contextOptions.recentMessages =
-          (contextOptions.recentMessages ??
-            DEFAULT_CONTEXT_OPTIONS.recentMessages) + 1;
+          (contextOptions.recentMessages ?? 10) + 1;
       }
       const messages = await agent.fetchContextMessages(ctx, {
         userId: args.userId,

@@ -1,5 +1,5 @@
 // See the docs at https://docs.convex.dev/agents/playground
-import { definePlaygroundAPI } from "@convex-dev/agent-playground";
+import { definePlaygroundAPI } from "@convex-dev/agent";
 import { components } from "./_generated/api";
 import { weatherAgent } from "./agents/weather";
 import { fashionAgent } from "./agents/fashion";
