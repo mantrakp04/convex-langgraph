@@ -625,7 +625,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       },
       onStepFinish: async (step) => {
         // console.log("onStepFinish", step);
-        if (threadId && messageId) {
+        if (threadId && messageId && saveOutputMessages) {
           const saved = await this.saveStep(ctx, {
             userId,
             threadId,
