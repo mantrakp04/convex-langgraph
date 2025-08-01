@@ -29,7 +29,6 @@ import type {
   FunctionReturnType,
   GenericActionCtx,
   GenericDataModel,
-  OptionalRestArgs,
 } from "convex/server";
 import type { GenericId } from "convex/values";
 import type { Schema } from "zod";
