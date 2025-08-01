@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.1.17
+
+- Importing `definePlaygroundAPI` from @convex-dev/agent directly
+- Supports adding a file to the message history from an httpAction
+- Fix: enforce storageOptions "none" in streamText (credit: fvaldes33)
+
 ## 0.1.16
 
 - It's possible to call many agent functions directly from a workflow.
