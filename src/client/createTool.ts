@@ -5,15 +5,13 @@ import type { Agent } from "./index.js";
 import type { GenericActionCtx, GenericDataModel } from "convex/server";
 import type { ProviderOptions } from "../validators.js";
 
-export type ToolCtx<
-  DataModel extends GenericDataModel = GenericDataModel,
-  TOOLS extends ToolSet = ToolSet,
-> = GenericActionCtx<DataModel> & {
-  agent: Agent<TOOLS>;
-  userId?: string;
-  threadId?: string;
-  messageId?: string;
-};
+export type ToolCtx<DataModel extends GenericDataModel = GenericDataModel> =
+  GenericActionCtx<DataModel> & {
+    agent: Agent;
+    userId?: string;
+    threadId?: string;
+    messageId?: string;
+  };
 
 /**
  * This is a wrapper around the ai.tool function that adds extra context to the
@@ -22,12 +20,7 @@ export type ToolCtx<
  * but swap parameters for args and handler for execute.
  * @returns A tool to be used with the AI SDK.
  */
-export function createTool<
-  DataModel extends GenericDataModel,
-  TOOLS extends ToolSet,
-  INPUT,
-  OUTPUT,
->(t: {
+export function createTool<INPUT, OUTPUT, Ctx extends ToolCtx = ToolCtx>(def: {
   /**
   An optional description of what the tool does.
   Will be used by the language model to decide whether to use the tool.
@@ -48,20 +41,20 @@ export function createTool<
   @options.abortSignal is a signal that can be used to abort the tool call.
      */
   handler: (
-    ctx: ToolCtx<DataModel, TOOLS>,
+    ctx: Ctx,
     args: INPUT,
     options: ToolCallOptions,
   ) => PromiseLike<OUTPUT>;
   /**
    * Provide the context to use, e.g. when defining the tool at runtime.
    */
-  ctx?: ToolCtx<DataModel, TOOLS>;
+  ctx?: Ctx;
   /**
    * Optional function that is called when the argument streaming starts.
    * Only called when the tool is used in a streaming context.
    */
   onInputStart?: (
-    ctx: ToolCtx,
+    ctx: Ctx,
     options: ToolCallOptions,
   ) => void | PromiseLike<void>;
   /**
@@ -69,7 +62,7 @@ export function createTool<
    * Only called when the tool is used in a streaming context.
    */
   onInputDelta?: (
-    ctx: ToolCtx,
+    ctx: Ctx,
     options: {
       inputTextDelta: string;
     } & ToolCallOptions,
@@ -79,7 +72,7 @@ export function createTool<
    * even if the execute function is not provided.
    */
   onInputAvailable?: (
-    ctx: ToolCtx,
+    ctx: Ctx,
     options: {
       input: [INPUT] extends [never] ? undefined : INPUT;
     } & ToolCallOptions,
@@ -88,12 +81,12 @@ export function createTool<
   // Extra AI SDK pass-through options.
   providerOptions?: ProviderOptions;
 }): Tool<INPUT, OUTPUT> {
-  const args = tool({
+  const t = tool({
     type: "function",
     __acceptsCtx: true,
-    ctx: t.ctx,
-    description: t.description,
-    inputSchema: t.args,
+    ctx: def.ctx,
+    description: def.description,
+    inputSchema: def.args,
     async execute(args: INPUT, options: ToolCallOptions) {
       if (!getCtx(this)) {
         throw new Error(
@@ -102,30 +95,29 @@ export function createTool<
             " call it (which injects the ctx, userId and threadId)",
         );
       }
-      return t.handler(getCtx(this), args, options);
+      return def.handler(getCtx(this), args, options);
     },
-    providerOptions: t.providerOptions,
+    providerOptions: def.providerOptions,
   });
-  if (t.onInputStart) {
-    args.onInputStart = t.onInputStart.bind(args, getCtx(args));
+  if (def.onInputStart) {
+    t.onInputStart = def.onInputStart.bind(t, getCtx(t));
   }
-  if (t.onInputDelta) {
-    args.onInputDelta = t.onInputDelta.bind(args, getCtx(args));
+  if (def.onInputDelta) {
+    t.onInputDelta = def.onInputDelta.bind(t, getCtx(t));
   }
-  if (t.onInputAvailable) {
-    args.onInputAvailable = t.onInputAvailable.bind(args, getCtx(args));
+  if (def.onInputAvailable) {
+    t.onInputAvailable = def.onInputAvailable.bind(t, getCtx(t));
   }
-  return args;
+  return t;
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-function getCtx(tool: any): ToolCtx<any, any> {
-  return (tool as { ctx: ToolCtx }).ctx;
+function getCtx<Ctx extends ToolCtx>(tool: any): Ctx {
+  return (tool as { ctx: Ctx }).ctx;
 }
 
 export function wrapTools(
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  ctx: ToolCtx<GenericDataModel, any>,
+  ctx: ToolCtx,
   ...toolSets: (ToolSet | undefined)[]
 ): ToolSet {
   const output = {} as ToolSet;

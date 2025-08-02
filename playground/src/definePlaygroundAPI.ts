@@ -1,40 +1,25 @@
 import {
+  actionGeneric,
+  mutationGeneric,
   paginationOptsValidator,
   queryGeneric,
-  mutationGeneric,
-  actionGeneric,
-  type GenericDataModel,
-  type GenericQueryCtx,
   type ApiFromModules,
   type GenericActionCtx,
+  type GenericDataModel,
+  type GenericQueryCtx,
 } from "convex/server";
+import { v } from "convex/values";
 import {
   deserializeMessage,
-  vMessageDoc,
-  vThreadDoc,
-  vPaginationResult,
-  vMessage,
   vContextOptions,
+  vMessage,
+  vMessageDoc,
+  vPaginationResult,
   vStorageOptions,
-  type AgentComponent,
+  vThreadDoc,
   type Agent,
-  type ContextOptions,
-} from "@convex-dev/agent";
-import type { ToolSet } from "ai";
-import { v } from "convex/values";
-
-// TODO: store preferences in local storage
-export const DEFAULT_CONTEXT_OPTIONS = {
-  recentMessages: 10,
-  excludeToolMessages: false,
-  searchOtherThreads: false,
-  searchOptions: {
-    limit: 0,
-    textSearch: true,
-    vectorSearch: true,
-    messageRange: { before: 2, after: 1 },
-  },
-} as const satisfies ContextOptions;
+  type AgentComponent,
+} from "./index.js";
 
 export type PlaygroundAPI = ApiFromModules<{
   playground: ReturnType<typeof definePlaygroundAPI>;
@@ -43,7 +28,7 @@ export type PlaygroundAPI = ApiFromModules<{
 export type AgentsFn<DataModel extends GenericDataModel> = (
   ctx: GenericActionCtx<DataModel> | GenericQueryCtx<DataModel>,
   args: { userId: string | undefined; threadId: string | undefined },
-) => Agent<ToolSet>[] | Promise<Agent<ToolSet>[]>;
+) => Agent[] | Promise<Agent[]>;
 
 // Playground API definition
 export function definePlaygroundAPI<DataModel extends GenericDataModel>(
@@ -52,14 +37,14 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
     agents: agentsOrFn,
     userNameLookup,
   }: {
-    agents: Agent<ToolSet>[] | AgentsFn<DataModel>;
+    agents: Agent[] | AgentsFn<DataModel>;
     userNameLookup?: (
       ctx: GenericQueryCtx<DataModel>,
       userId: string,
     ) => string | Promise<string>;
   },
 ) {
-  function validateAgents(agents: Agent<ToolSet>[]) {
+  function validateAgents(agents: Agent[]) {
     for (const agent of agents) {
       if (!agent.options.name) {
         console.warn(
@@ -322,14 +307,10 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
       const namedAgent = agents.find(({ name }) => name === args.agentName);
       if (!namedAgent) throw new Error(`Unknown agent: ${args.agentName}`);
       const { agent } = namedAgent;
-      const contextOptions =
-        args.contextOptions ??
-        agent.options.contextOptions ??
-        DEFAULT_CONTEXT_OPTIONS;
+      const contextOptions = args.contextOptions;
       if (args.beforeMessageId) {
         contextOptions.recentMessages =
-          (contextOptions.recentMessages ??
-            DEFAULT_CONTEXT_OPTIONS.recentMessages) + 1;
+          (contextOptions.recentMessages ?? 10) + 1;
       }
       const messages = await agent.fetchContextMessages(ctx, {
         userId: args.userId,

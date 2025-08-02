@@ -24,10 +24,12 @@ import {
   streamObject,
   streamText,
 } from "ai";
-import { assert } from "convex-helpers";
+import { assert, omit, pick } from "convex-helpers";
 import {
   internalActionGeneric,
   internalMutationGeneric,
+  type GenericActionCtx,
+  type GenericDataModel,
   type PaginationOptions,
   type PaginationResult,
   type WithoutSystemFields,
@@ -138,7 +140,30 @@ export type {
   UsageHandler,
 };
 
-export class Agent<AgentTools extends ToolSet = ToolSet> {
+export class Agent<
+  /**
+   * You can require that all `ctx` args to generateText & streamText
+   * have a certain shape by passing a type here.
+   * e.g.
+   * ```ts
+   * const myAgent = new Agent<{ orgId: string }>(...);
+   * ```
+   * This is useful if you want to share that type in `createTool`
+   * e.g.
+   * ```ts
+   * type MyCtx = ToolCtx & { orgId: string };
+   * const myTool = createTool({
+   *   args: z.object({...}),
+   *   description: "...",
+   *   handler: async (ctx: MyCtx, args) => {
+   *     // use ctx.orgId
+   *   },
+   * });
+   */
+  CustomCtx extends object = object,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  AgentTools extends ToolSet = any,
+> {
   constructor(
     public component: AgentComponent,
     public options: {
@@ -224,7 +249,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
    * @returns The threadId of the new thread and the thread object.
    */
   async createThread<ThreadTools extends ToolSet | undefined = undefined>(
-    ctx: RunActionCtx,
+    ctx: RunActionCtx & CustomCtx,
     args?: {
       /**
        * The userId to associate with the thread. If not provided, the thread will be
@@ -294,7 +319,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     threadId: string;
   }>;
   async createThread<ThreadTools extends ToolSet | undefined = undefined>(
-    ctx: ActionCtx | RunMutationCtx,
+    ctx: (ActionCtx & CustomCtx) | RunMutationCtx,
     args?: {
       userId: string | null;
       title?: string;
@@ -331,7 +356,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
    * @returns Functions bound to the userId and threadId on a `{thread}` object.
    */
   async continueThread<ThreadTools extends ToolSet | undefined = undefined>(
-    ctx: ActionCtx,
+    ctx: ActionCtx & CustomCtx,
     args: {
       /**
        * The associated thread created by {@link createThread}
@@ -416,7 +441,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     OUTPUT = never,
     OUTPUT_PARTIAL = never,
   >(
-    ctx: ActionCtx,
+    ctx: ActionCtx & CustomCtx,
     {
       userId: argsUserId,
       threadId,
@@ -439,29 +464,26 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     GenerateTextResult<TOOLS extends undefined ? AgentTools : TOOLS, OUTPUT> &
       GenerationOutputMetadata
   > {
+    const opts = { ...this.options, ...options, usageHandler };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
-      ...options,
+      ...opts,
     });
     const { args: aiArgs, messageId, order, userId } = context;
     const toolCtx = {
-      ...(ctx as UserActionCtx),
+      ...(ctx as UserActionCtx & CustomCtx),
       userId,
       threadId,
       messageId,
       agent: this,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    } satisfies ToolCtx<any, any>;
+    } satisfies ToolCtx;
     type Tools = TOOLS extends undefined ? AgentTools : TOOLS;
     const tools = wrapTools(
       toolCtx,
       args.tools ?? threadTools ?? this.options.tools,
     ) as Tools;
-    const saveOutputMessages = this._shouldSaveOutputMessages(
-      options?.storageOptions,
-    );
-    const trackUsage = usageHandler ?? this.options.usageHandler;
+    const saveOutput = opts.storageOptions?.saveMessages !== "none";
     try {
       const result = (await generateText<Tools, OUTPUT, OUTPUT_PARTIAL>({
         // Can be overridden
@@ -469,7 +491,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
         ...aiArgs,
         tools,
         onStepFinish: async (step) => {
-          if (threadId && messageId && saveOutputMessages) {
+          if (threadId && messageId && saveOutput) {
             await this.saveStep(ctx, {
               userId,
               threadId,
@@ -488,8 +510,8 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
               response: step.response,
             });
           }
-          if (trackUsage && step.usage) {
-            await trackUsage(ctx, {
+          if (opts.usageHandler && step.usage) {
+            await opts.usageHandler(ctx, {
               userId,
               threadId,
               agentName: this.options.name,
@@ -529,7 +551,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     OUTPUT = never,
     PARTIAL_OUTPUT = never,
   >(
-    ctx: ActionCtx,
+    ctx: ActionCtx & CustomCtx,
     {
       userId: argsUserId,
       threadId,
@@ -570,14 +592,15 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     > &
       GenerationOutputMetadata
   > {
+    const opts = { ...this.options, ...options, usageHandler };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
-      ...options,
+      ...opts,
     });
     const { args: aiArgs, messageId, order, stepOrder, userId } = context;
     const toolCtx = {
-      ...(ctx as UserActionCtx),
+      ...(ctx as UserActionCtx & CustomCtx),
       userId,
       threadId,
       messageId,
@@ -587,13 +610,10 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       toolCtx,
       args.tools ?? threadTools ?? this.options.tools,
     ) as TOOLS extends undefined ? AgentTools : TOOLS;
-    const saveOutputMessages = this._shouldSaveOutputMessages(
-      options?.storageOptions,
-    );
-    const trackUsage = usageHandler ?? this.options.usageHandler;
+    const saveOutput = opts.storageOptions?.saveMessages !== "none";
     const streamer =
-      threadId && options?.saveStreamDeltas
-        ? new DeltaStreamer(this.component, ctx, options.saveStreamDeltas, {
+      threadId && opts.saveStreamDeltas
+        ? new DeltaStreamer(this.component, ctx, opts.saveStreamDeltas, {
             threadId,
             userId,
             agentName: this.options.name,
@@ -623,7 +643,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       },
       onError: async (error) => {
         console.error("onError", error);
-        if (threadId && messageId && saveOutputMessages) {
+        if (threadId && messageId && saveOutput) {
           await ctx.runMutation(this.component.messages.rollbackMessage, {
             messageId,
             error: (error.error as Error).message,
@@ -634,7 +654,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       },
       onStepFinish: async (step) => {
         // console.log("onStepFinish", step);
-        if (threadId && messageId) {
+        if (threadId && messageId && saveOutput) {
           const saved = await this.saveStep(ctx, {
             userId,
             threadId,
@@ -654,8 +674,8 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
             response: step.response,
           });
         }
-        if (trackUsage && step.usage) {
-          await trackUsage(ctx, {
+        if (opts.usageHandler && step.usage) {
+          await opts.usageHandler(ctx, {
             userId,
             threadId,
             agentName: this.options.name,
@@ -705,23 +725,21 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
      */
     options?: Options,
   ): Promise<GenerateObjectResult<T> & GenerationOutputMetadata> {
+    const opts = { ...this.options, ...options, usageHandler };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
-      ...options,
+      ...opts,
     });
     const { args: aiArgs, messageId, order, userId } = context;
-    const trackUsage = usageHandler ?? this.options.usageHandler;
-    const saveOutputMessages = this._shouldSaveOutputMessages(
-      options?.storageOptions,
-    );
+    const saveOutput = opts.storageOptions?.saveMessages !== "none";
     try {
       const result = (await generateObject(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         aiArgs as any,
       )) as GenerateObjectResult<T> & GenerationOutputMetadata;
 
-      if (threadId && messageId && saveOutputMessages) {
+      if (threadId && messageId && saveOutput) {
         await this.saveObject(ctx, {
           threadId,
           promptMessageId: messageId,
@@ -742,8 +760,8 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
           response: result.response,
         });
       }
-      if (trackUsage && result.usage) {
-        await trackUsage(ctx, {
+      if (opts.usageHandler && result.usage) {
+        await opts.usageHandler(ctx, {
           userId,
           threadId,
           agentName: this.options.name,
@@ -796,16 +814,14 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     StreamObjectResult<DeepPartial<T>, T, never> & GenerationOutputMetadata
   > {
     // TODO: unify all this shared code between all the generate* and stream* functions
+    const opts = { ...this.options, ...options, usageHandler };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
-      ...options,
+      ...opts,
     });
     const { args: aiArgs, messageId, order, userId } = context;
-    const trackUsage = usageHandler ?? this.options.usageHandler;
-    const saveOutputMessages = this._shouldSaveOutputMessages(
-      options?.storageOptions,
-    );
+    const saveOutput = opts.storageOptions?.saveMessages !== "none";
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const stream = streamObject<any>({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -815,7 +831,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
         return args.onError?.(error);
       },
       onFinish: async (result) => {
-        if (threadId && messageId && saveOutputMessages) {
+        if (threadId && messageId && saveOutput) {
           await this.saveObject(ctx, {
             userId,
             threadId,
@@ -834,8 +850,8 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
             provider: aiArgs.model.provider,
           });
         }
-        if (trackUsage && result.usage) {
-          await trackUsage(ctx, {
+        if (opts.usageHandler && result.usage) {
+          await opts.usageHandler(ctx, {
             userId,
             threadId,
             agentName: this.options.name,
@@ -1033,10 +1049,13 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     },
   ): Promise<MessageDoc[]> {
     assert(args.userId || args.threadId, "Specify userId or threadId");
-    const opts = this._mergedContextOptions(args.contextOptions);
+    const contextOptions = {
+      ...this.options.contextOptions,
+      ...args.contextOptions,
+    };
     return fetchContextMessages(ctx, this.component, {
       ...args,
-      contextOptions: opts,
+      contextOptions,
       getEmbedding: async (text) => {
         assert("runAction" in ctx);
         assert(
@@ -1131,7 +1150,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     const textEmbeddings = await this.doEmbed(ctx, {
       userId,
       threadId,
-      values: messageTexts.filter((t): t is string => !!t),
+      values: messageTexts as string[],
     });
     // TODO: record usage of embeddings
     // Then assemble the embeddings into a single array with nulls for the messages without text.
@@ -1568,8 +1587,6 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     order: number | undefined;
     stepOrder: number | undefined;
   }> {
-    contextOptions ||= this.options.contextOptions;
-    storageOptions ||= this.options.storageOptions;
     // If only a promptMessageId is provided, this will be empty.
     const messages = args.messages ?? [];
     const prompt: ModelMessage[] = !args.prompt
@@ -1681,25 +1698,6 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       messageId,
       order,
       stepOrder,
-    };
-  }
-
-  _shouldSaveOutputMessages(storageOpts?: StorageOptions): boolean {
-    const opts = storageOpts ?? this.options.storageOptions;
-    return opts?.saveMessages !== "none";
-  }
-
-  _mergedContextOptions(opts: ContextOptions | undefined): ContextOptions {
-    const searchOptions = {
-      ...this.options.contextOptions?.searchOptions,
-      ...opts?.searchOptions,
-    };
-    return {
-      ...this.options.contextOptions,
-      ...opts,
-      searchOptions: searchOptions.limit
-        ? (searchOptions as ContextOptions["searchOptions"])
-        : undefined,
     };
   }
 
@@ -1874,65 +1872,93 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
    * @param spec Configuration for the agent acting as an action, including
    *   {@link ContextOptions}, {@link StorageOptions}, and {@link stopWhen}.
    */
-  asTextAction(spec?: {
-    /**
-     * When to stop generating text.
-     * Defaults to the {@link Agent["options"].stopWhen} option.
-     */
-    stopWhen?:
-      | StopCondition<NoInfer<AgentTools>>
-      | Array<StopCondition<NoInfer<AgentTools>>>;
-    /**
-     * The {@link ContextOptions} to use for fetching contextual messages and
-     * saving input/output messages.
-     * Defaults to the {@link Agent.contextOptions} option.
-     */
-    contextOptions?: ContextOptions;
-    /**
-     * The {@link StorageOptions} to use for saving input/output messages.
-     * Defaults to the {@link Agent.storageOptions} option.
-     */
-    storageOptions?: StorageOptions;
-    /**
-     * Whether to stream the text.
-     * If false, it will generate the text in a single call. (default)
-     * If true or {@link StreamingOptions}, it will stream the text from the LLM
-     * and save the chunks to the database with the options you specify, or the
-     * defaults if you pass true.
-     */
-    stream?: boolean | StreamingOptions;
-  }) {
+  asTextAction<DataModel extends GenericDataModel>(
+    spec?: {
+      /**
+       * When to stop generating text.
+       * Defaults to the {@link Agent["options"].stopWhen} option.
+       */
+      stopWhen?:
+        | StopCondition<NoInfer<AgentTools>>
+        | Array<StopCondition<NoInfer<AgentTools>>>;
+      /**
+       * The {@link ContextOptions} to use for fetching contextual messages and
+       * saving input/output messages.
+       * Defaults to the {@link Agent.contextOptions} option.
+       */
+      contextOptions?: ContextOptions;
+      /**
+       * The {@link StorageOptions} to use for saving input/output messages.
+       * Defaults to the {@link Agent.storageOptions} option.
+       */
+      storageOptions?: StorageOptions;
+      /**
+       * Whether to stream the text.
+       * If false, it will generate the text in a single call. (default)
+       * If true or {@link StreamingOptions}, it will stream the text from the LLM
+       * and save the chunks to the database with the options you specify, or the
+       * defaults if you pass true.
+       */
+      stream?: boolean | StreamingOptions;
+    } & (CustomCtx extends Record<string, unknown>
+      ? {
+          /**
+           * If you have a custom ctx that you use with the Agent
+           * (e.g. new Agent<{ orgId: string }>(...))
+           * you need to provide this function to add any extra fields.
+           * e.g.
+           * ```ts
+           * const myAgent = new Agent<{ orgId: string }>(...);
+           * const myAction = myAgent.asTextAction({
+           *   customCtx: (ctx: ActionCtx, target, llmArgs) => {
+           *     const orgId = await lookupOrgId(ctx, target.threadId);
+           *     return { orgId };
+           *   },
+           * });
+           * ```
+           * Then, in your tools, you can
+           */
+          customCtx: (
+            ctx: GenericActionCtx<DataModel>,
+            target: {
+              userId?: string | undefined;
+              threadId?: string | undefined;
+            },
+            llmArgs: TextArgs<AgentTools>,
+          ) => CustomCtx;
+        }
+      : { customCtx?: never }),
+  ) {
     const stopWhen = spec?.stopWhen ?? this.options.stopWhen;
     return internalActionGeneric({
       args: vTextArgs,
-      handler: async (ctx, args) => {
-        const { contextOptions, storageOptions, prompt, ...rest } = args;
+      handler: async (ctx_, args) => {
         const stream =
           args.stream === true ? spec?.stream || true : spec?.stream ?? false;
         const targetArgs = { userId: args.userId, threadId: args.threadId };
         const llmArgs = {
           stopWhen,
-          ...rest,
-          messages: rest.messages?.map(deserializeMessage),
-          prompt: Array.isArray(prompt)
-            ? prompt.map(deserializeMessage)
-            : prompt,
-          toolChoice: rest.toolChoice as ToolChoice<AgentTools>,
+          ...omit(args, ["storageOptions", "contextOptions"]),
+          messages: args.messages?.map(deserializeMessage),
+          prompt: Array.isArray(args.prompt)
+            ? args.prompt.map(deserializeMessage)
+            : args.prompt,
+          toolChoice: args.toolChoice as ToolChoice<AgentTools>,
         } satisfies StreamingTextArgs<AgentTools>;
         if (args.maxSteps) {
           llmArgs.stopWhen = stepCountIs(args.maxSteps);
         }
         const opts = {
-          contextOptions:
-            contextOptions ??
-            spec?.contextOptions ??
-            this.options.contextOptions,
-          storageOptions:
-            storageOptions ??
-            spec?.storageOptions ??
-            this.options.storageOptions,
+          ...this.options,
+          ...(spec && pick(spec, ["contextOptions", "storageOptions"])),
+          ...pick(args, ["contextOptions", "storageOptions"]),
           saveStreamDeltas: stream,
         };
+        const ctx = (
+          spec?.customCtx
+            ? { ...ctx_, ...spec.customCtx(ctx_, targetArgs, llmArgs) }
+            : ctx_
+        ) as UserActionCtx & CustomCtx;
         if (stream) {
           // eslint-disable-next-line @typescript-eslint/no-explicit-any
           const result = await this.streamText<any>(
@@ -1985,21 +2011,16 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     return internalActionGeneric({
       args: vSafeObjectArgs,
       handler: async (ctx, args) => {
-        const { contextOptions, storageOptions, ...rest } = args;
+        const { userId, threadId, ...rest } = args;
+        const overrides = pick(rest, ["contextOptions", "storageOptions"]);
         const value = await this.generateObject(
           ctx,
-          { userId: args.userId, threadId: args.threadId },
-          { ...spec, ...rest } as OurObjectArgs<unknown>,
+          { userId, threadId },
           {
-            contextOptions:
-              contextOptions ??
-              options?.contextOptions ??
-              this.options.contextOptions,
-            storageOptions:
-              storageOptions ??
-              options?.storageOptions ??
-              this.options.storageOptions,
-          },
+            ...spec,
+            ...omit(rest, ["contextOptions", "storageOptions"]),
+          } as OurObjectArgs<unknown>,
+          { ...this.options, ...options, ...overrides },
         );
         return {
           object: value.object as T,
