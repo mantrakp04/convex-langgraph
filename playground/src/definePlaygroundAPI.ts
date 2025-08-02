@@ -220,11 +220,6 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
       agentName: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
-      // if (args.agentName) {
-      //   console.warn(
-      //     "Upgrade to the latest version of @convex-dev/agent-playground"
-      //   );
-      // }
       await validateApiKey(ctx, args.apiKey);
       const { _id } = await ctx.runMutation(component.threads.createThread, {
         userId: args.userId,

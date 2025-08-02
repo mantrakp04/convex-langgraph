@@ -18,7 +18,6 @@
     "@ai-sdk/openai": "^2.0.0",
     "@ai-sdk/provider": "^2.0.0",
     "@convex-dev/agent": "file:..",
-    "@convex-dev/agent-playground": "file:../playground",
     "@convex-dev/rag": "^0.5.0-alpha.1",
     "@convex-dev/rate-limiter": "^0.2.12",
     "@convex-dev/workflow": "^0.2.6-alpha.1",
