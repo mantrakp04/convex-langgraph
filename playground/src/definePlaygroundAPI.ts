@@ -10,6 +10,8 @@ import {
 } from "convex/server";
 import { v } from "convex/values";
 import {
+  createThread as createThread_,
+  listMessages as listMessages_,
   deserializeMessage,
   vContextOptions,
   vMessage,
@@ -199,10 +201,9 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
     },
     handler: async (ctx, args) => {
       await validateApiKey(ctx, args.apiKey);
-      return ctx.runQuery(component.messages.listMessagesByThreadId, {
+      return listMessages_(ctx, component, {
         threadId: args.threadId,
         paginationOpts: args.paginationOpts,
-        order: "desc",
         statuses: ["success", "failed", "pending"],
       });
     },
@@ -221,12 +222,12 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
     },
     handler: async (ctx, args) => {
       await validateApiKey(ctx, args.apiKey);
-      const { _id } = await ctx.runMutation(component.threads.createThread, {
+      const threadId = await createThread_(ctx, component, {
         userId: args.userId,
         title: args.title,
         summary: args.summary,
       });
-      return { threadId: _id };
+      return { threadId };
     },
     returns: v.object({ threadId: v.string() }),
   });
@@ -266,17 +267,15 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
       const namedAgent = agents.find(({ name }) => name === agentName);
       if (!namedAgent) throw new Error(`Unknown agent: ${agentName}`);
       const { agent } = namedAgent;
-      const { thread } = await agent.continueThread(ctx, { threadId, userId });
-      const { messageId, text } = await thread.generateText(
+      const { messageId, text } = await agent.generateText(
+        ctx,
+        { threadId, userId },
         {
           ...rest,
           ...(system ? { system } : {}),
           ...(messages ? { messages: messages.map(deserializeMessage) } : {}),
         },
-        {
-          contextOptions,
-          storageOptions,
-        },
+        { contextOptions, storageOptions },
       );
       return { messageId, text };
     },
