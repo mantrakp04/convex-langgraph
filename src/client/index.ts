@@ -1152,7 +1152,6 @@ export class Agent<
       threadId,
       values: messageTexts as string[],
     });
-    // TODO: record usage of embeddings
     // Then assemble the embeddings into a single array with nulls for the messages without text.
     const embeddingsOrNull = Array(messages.length).fill(null);
     textIndexes.forEach((i, j) => {
