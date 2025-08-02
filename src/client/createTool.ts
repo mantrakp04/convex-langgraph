@@ -21,7 +21,11 @@ export type ToolCtx<
  * but swap parameters for args and handler for execute.
  * @returns A tool to be used with the AI SDK.
  */
-export function createTool<PARAMETERS extends ToolParameters, RESULT>(t: {
+export function createTool<
+  PARAMETERS extends ToolParameters,
+  RESULT,
+  Ctx extends ToolCtx = ToolCtx,
+>(t: {
   /**
   An optional description of what the tool does.
   Will be used by the language model to decide whether to use the tool.
@@ -42,11 +46,11 @@ export function createTool<PARAMETERS extends ToolParameters, RESULT>(t: {
   @options.abortSignal is a signal that can be used to abort the tool call.
      */
   handler: (
-    ctx: ToolCtx,
+    ctx: Ctx,
     args: inferParameters<PARAMETERS>,
     options: ToolExecutionOptions,
   ) => PromiseLike<RESULT>;
-  ctx?: ToolCtx;
+  ctx?: Ctx;
 }): Tool<PARAMETERS, RESULT> & {
   execute: (
     args: inferParameters<PARAMETERS>,
