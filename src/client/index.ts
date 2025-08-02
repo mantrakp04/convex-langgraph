@@ -433,7 +433,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     GenerateTextResult<TOOLS extends undefined ? AgentTools : TOOLS, OUTPUT> &
       GenerationOutputMetadata
   > {
-    const opts = { ...this.options, ...options };
+    const opts = { ...this.options, ...options, usageHandler };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
@@ -452,7 +452,6 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       args.tools ?? threadTools ?? this.options.tools,
     ) as TOOLS extends undefined ? AgentTools : TOOLS;
     const saveOutput = opts.storageOptions?.saveMessages !== "none";
-    const trackUsage = usageHandler ?? this.options.usageHandler;
     try {
       const result = (await generateText({
         // Can be overridden
@@ -479,8 +478,8 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
               response: step.response,
             });
           }
-          if (trackUsage && step.usage) {
-            await trackUsage(ctx, {
+          if (opts.usageHandler && step.usage) {
+            await opts.usageHandler(ctx, {
               userId,
               threadId,
               agentName: this.options.name,
@@ -565,7 +564,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     > &
       GenerationOutputMetadata
   > {
-    const opts = { ...this.options, ...options };
+    const opts = { ...this.options, ...options, usageHandler };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
@@ -584,7 +583,6 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       args.tools ?? threadTools ?? this.options.tools,
     ) as TOOLS extends undefined ? AgentTools : TOOLS;
     const saveOutput = opts.storageOptions?.saveMessages !== "none";
-    const trackUsage = usageHandler ?? this.options.usageHandler;
     const streamer =
       threadId && opts.saveStreamDeltas
         ? new DeltaStreamer(this.component, ctx, opts.saveStreamDeltas, {
@@ -648,8 +646,8 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
             response: step.response,
           });
         }
-        if (trackUsage && step.usage) {
-          await trackUsage(ctx, {
+        if (opts.usageHandler && step.usage) {
+          await opts.usageHandler(ctx, {
             userId,
             threadId,
             agentName: this.options.name,
@@ -699,14 +697,13 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
      */
     options?: Options,
   ): Promise<GenerateObjectResult<T> & GenerationOutputMetadata> {
-    const opts = { ...this.options, ...options };
+    const opts = { ...this.options, ...options, usageHandler };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
       ...opts,
     });
     const { args: aiArgs, messageId, order, userId } = context;
-    const trackUsage = usageHandler ?? this.options.usageHandler;
     const saveOutput = opts.storageOptions?.saveMessages !== "none";
     try {
       const result = (await generateObject(
@@ -735,8 +732,8 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
           response: result.response,
         });
       }
-      if (trackUsage && result.usage) {
-        await trackUsage(ctx, {
+      if (opts.usageHandler && result.usage) {
+        await opts.usageHandler(ctx, {
           userId,
           threadId,
           agentName: this.options.name,
@@ -789,14 +786,13 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     StreamObjectResult<DeepPartial<T>, T, never> & GenerationOutputMetadata
   > {
     // TODO: unify all this shared code between all the generate* and stream* functions
-    const opts = { ...this.options, ...options };
+    const opts = { ...this.options, ...options, usageHandler };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
       ...opts,
     });
     const { args: aiArgs, messageId, order, userId } = context;
-    const trackUsage = usageHandler ?? this.options.usageHandler;
     const saveOutput = opts.storageOptions?.saveMessages !== "none";
     const stream = streamObject<T>({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -828,8 +824,8 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
             provider: aiArgs.model.provider,
           });
         }
-        if (trackUsage && result.usage) {
-          await trackUsage(ctx, {
+        if (opts.usageHandler && result.usage) {
+          await opts.usageHandler(ctx, {
             userId,
             threadId,
             agentName: this.options.name,
