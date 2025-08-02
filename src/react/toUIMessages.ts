@@ -42,8 +42,10 @@ export function toUIMessages(
       text,
     };
     const partCommon = {
-      providerMetadata: message.providerMetadata,
       state: message.streaming ? ("streaming" as const) : ("done" as const),
+      ...(message.providerMetadata
+        ? { providerMetadata: message.providerMetadata }
+        : {}),
     };
     if (coreMessage.role === "system") {
       uiMessages.push({
@@ -93,7 +95,10 @@ export function toUIMessages(
       }
       // update it to the last message's id
       assistantMessage.id = message._id;
-      if (message.reasoning) {
+      if (
+        message.reasoning &&
+        !nonStringContent.some((c) => c.type === "reasoning")
+      ) {
         assistantMessage.parts.push({
           type: "reasoning",
           text: message.reasoning,
