@@ -206,27 +206,13 @@ export function applyDeltasToStreamMessage(
         break;
       case "tool-call": {
         currentMessage.tool = true;
-        const args = "args" in part ? part.args : part.input;
-        contentToAdd = {
-          type: "tool-call",
-          toolCallId: part.toolCallId,
-          toolName: part.toolName,
-          providerExecuted: part.providerExecuted,
-          args,
-        } satisfies Infer<typeof vToolCallPart>;
+        contentToAdd = toolCallContent(part);
         break;
       }
-      case "tool-result":
-        contentToAdd = {
-          type: "tool-result",
-          toolCallId: part.toolCallId,
-          toolName: part.toolName,
-          result: part.output,
-          args: part.input,
-          providerExecuted: part.providerExecuted,
-          // part.dynamic?
-        } satisfies Infer<typeof vToolResultPart>;
+      case "tool-result": {
+        contentToAdd = toolResultContent(part);
         break;
+      }
       case "reasoning":
         currentMessage.reasoning =
           (currentMessage.reasoning ?? "") + part.textDelta;
@@ -289,6 +275,35 @@ export function applyDeltasToStreamMessage(
   return [newStream, true];
 }
 
+function toolCallContent(
+  part: Extract<TextStreamPart, { type: "tool-call" }>,
+): Infer<typeof vToolCallPart> {
+  const args = "args" in part ? part.args : part.input;
+  return {
+    type: "tool-call",
+    toolCallId: part.toolCallId,
+    toolName: part.toolName,
+    args,
+    providerExecuted: part.providerExecuted,
+  } satisfies Infer<typeof vToolCallPart>;
+}
+
+function toolResultContent(
+  part: Extract<TextStreamPart, { type: "tool-result" }>,
+): Infer<typeof vToolResultPart> {
+  const result =
+    "output" in part ? part.output : "result" in part ? part.result : undefined;
+  const args =
+    "input" in part ? part.input : "args" in part ? part.args : undefined;
+  return {
+    type: "tool-result",
+    toolCallId: part.toolCallId,
+    toolName: part.toolName,
+    result,
+    args,
+    providerExecuted: part.providerExecuted,
+  } satisfies Infer<typeof vToolResultPart>;
+}
 function cloneMessageAndContent(
   message: Message | undefined,
 ): Message | undefined {
@@ -400,21 +415,12 @@ export function createStreamingMessage(
       };
     }
     case "tool-call": {
-      const args = "args" in part ? part.args : part.input;
       return {
         ...metadata,
         tool: true,
         message: {
           role: "assistant",
-          content: [
-            {
-              type: "tool-call",
-              toolCallId: part.toolCallId,
-              toolName: part.toolName,
-              providerExecuted: part.providerExecuted,
-              args,
-            } satisfies Infer<typeof vToolCallPart>,
-          ],
+          content: [toolCallContent(part)],
         },
       };
     }
@@ -424,17 +430,7 @@ export function createStreamingMessage(
         tool: true,
         message: {
           role: "tool",
-          content: [
-            {
-              type: "tool-result",
-              toolCallId: part.toolCallId,
-              toolName: part.toolName,
-              result: part.output,
-              args: part.input,
-              providerExecuted: part.providerExecuted,
-              // part.dynamic?
-            } satisfies Infer<typeof vToolResultPart>,
-          ],
+          content: [toolResultContent(part)],
         },
       };
     case "reasoning":

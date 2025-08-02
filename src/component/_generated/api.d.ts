@@ -1494,6 +1494,20 @@ export type Mounts = {
               type: "tool-call";
             }
           | {
+              args?: any;
+              experimental_content?: Array<
+                | { text: string; type: "text" }
+                | { data: string; mimeType?: string; type: "image" }
+              >;
+              isError?: boolean;
+              providerExecuted?: boolean;
+              providerOptions?: Record<string, Record<string, any>>;
+              result: any;
+              toolCallId: string;
+              toolName: string;
+              type: "tool-result";
+            }
+          | {
               toolCallId: string;
               toolName: string;
               type: "tool-call-streaming-start";
@@ -1639,6 +1653,20 @@ export type Mounts = {
                 type: "tool-call";
               }
             | {
+                args?: any;
+                experimental_content?: Array<
+                  | { text: string; type: "text" }
+                  | { data: string; mimeType?: string; type: "image" }
+                >;
+                isError?: boolean;
+                providerExecuted?: boolean;
+                providerOptions?: Record<string, Record<string, any>>;
+                result: any;
+                toolCallId: string;
+                toolName: string;
+                type: "tool-result";
+              }
+            | {
                 toolCallId: string;
                 toolName: string;
                 type: "tool-call-streaming-start";
@@ -1768,6 +1796,20 @@ export type Mounts = {
               toolCallId: string;
               toolName: string;
               type: "tool-call";
+            }
+          | {
+              args?: any;
+              experimental_content?: Array<
+                | { text: string; type: "text" }
+                | { data: string; mimeType?: string; type: "image" }
+              >;
+              isError?: boolean;
+              providerExecuted?: boolean;
+              providerOptions?: Record<string, Record<string, any>>;
+              result: any;
+              toolCallId: string;
+              toolName: string;
+              type: "tool-result";
             }
           | {
               toolCallId: string;

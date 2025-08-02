@@ -428,6 +428,7 @@ export const vTextStreamPartV4 = v.union(
     }),
   }),
   vToolCallPart,
+  vToolResultPart,
   v.object({
     type: v.literal("tool-call-streaming-start"),
     toolCallId: v.string(),
