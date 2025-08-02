@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.1.18 alpha
+
+- Allow specifying a custom `ctx` type for use in tools created with `createTool`
+
 ## 0.1.17
 
 - Importing `definePlaygroundAPI` from @convex-dev/agent directly
