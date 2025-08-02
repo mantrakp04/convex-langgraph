@@ -49,6 +49,7 @@ import {
 } from "../mapping.js";
 import { extractText, isTool } from "../shared.js";
 import {
+  type Message,
   type MessageEmbeddings,
   type MessageStatus,
   type MessageWithMetadata,
@@ -1038,7 +1039,7 @@ export class Agent<
     args: {
       userId: string | undefined;
       threadId: string | undefined;
-      messages: ModelMessage[];
+      messages: (ModelMessage | Message)[];
       /**
        * If provided, it will search for messages up to and including this message.
        * Note: if this is far in the past, text and vector search results may be more
@@ -1126,7 +1127,7 @@ export class Agent<
       userId: string | undefined;
       threadId: string | undefined;
     },
-    messages: ModelMessage[],
+    messages: (ModelMessage | Message)[],
   ) {
     if (!this.options.textEmbedding) {
       return undefined;
@@ -1392,7 +1393,7 @@ export class Agent<
       messageId: string;
       patch: {
         /** The message to replace the existing message. */
-        message: ModelMessage & { id?: string };
+        message: (ModelMessage & { id?: string }) | Message;
         /** The status to set on the message. */
         status: "success" | "error";
         /** The error message to set on the message. */
@@ -1560,8 +1561,8 @@ export class Agent<
   async _saveMessagesAndFetchContext<
     T extends {
       id?: string;
-      prompt?: string | ModelMessage[];
-      messages?: ModelMessage[];
+      prompt?: string | (ModelMessage | Message)[];
+      messages?: (ModelMessage | Message)[];
       system?: string;
       promptMessageId?: string;
       model?: LanguageModelV2;
@@ -1588,7 +1589,7 @@ export class Agent<
   }> {
     // If only a promptMessageId is provided, this will be empty.
     const messages = args.messages ?? [];
-    const prompt: ModelMessage[] = !args.prompt
+    const prompt: (ModelMessage | Message)[] = !args.prompt
       ? []
       : Array.isArray(args.prompt)
         ? args.prompt
@@ -1746,11 +1747,11 @@ export class Agent<
    * able to access localhost URLs.
    */
   private async _inlineMessagesFiles(
-    messages: ModelMessage[],
-  ): Promise<ModelMessage[]> {
+    messages: (ModelMessage | Message)[],
+  ): Promise<(ModelMessage | Message)[]> {
     // Process each message to convert localhost URLs to base64
     return Promise.all(
-      messages.map(async (message): Promise<ModelMessage> => {
+      messages.map(async (message): Promise<ModelMessage | Message> => {
         if (
           (message.role !== "user" && message.role !== "assistant") ||
           typeof message.content === "string" ||
@@ -2077,8 +2078,6 @@ export class Agent<
   }
 }
 
-type CoreMessageMaybeWithId = ModelMessage & { id?: string | undefined };
-
 /**
  * Create a thread to store messages with an Agent.
  * @param ctx The context from a mutation or action.
@@ -2137,7 +2136,7 @@ type SaveMessagesArgs = {
   /**
    * The messages to save.
    */
-  messages: CoreMessageMaybeWithId[];
+  messages: ((ModelMessage & { id?: string | undefined }) | Message)[];
   /**
    * Metadata to save with the messages. Each element corresponds to the
    * message at the same index.
@@ -2231,7 +2230,7 @@ type SaveMessageArgs = {
       /**
        * The message to save.
        */
-      message: ModelMessage;
+      message: ModelMessage | Message;
     }
   | {
       /*

@@ -12,6 +12,7 @@ import {
   DEFAULT_RECENT_MESSAGES,
   extractText,
 } from "../shared.js";
+import type { Message } from "../validators.js";
 
 const DEFAULT_VECTOR_SCORE_THRESHOLD = 0.0;
 
@@ -34,7 +35,7 @@ export async function fetchContextMessages(
   args: {
     userId: string | undefined;
     threadId: string | undefined;
-    messages: ModelMessage[];
+    messages: (ModelMessage | Message)[];
     /**
      * If provided, it will search for messages up to and including this message.
      * Note: if this is far in the past, text and vector search results may be more

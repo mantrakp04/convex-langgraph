@@ -26,6 +26,7 @@ import type {
   vFilePart,
   vImagePart,
   vReasoningPart,
+  vRedactedReasoningPart,
   vTextPart,
   vToolCallPart,
   vToolResultPart,
@@ -34,6 +35,7 @@ import type { ActionCtx, AgentComponent } from "./client/types.js";
 import type { RunMutationCtx } from "./client/types.js";
 import { MAX_FILE_SIZE, storeFile } from "./client/files.js";
 import type { Infer } from "convex/values";
+import { omit } from "convex-helpers";
 
 export type AIMessageWithoutId = Omit<AIMessage, "id">;
 
@@ -56,9 +58,10 @@ export type SerializedMessage = Message;
 export async function serializeMessage(
   ctx: ActionCtx | RunMutationCtx,
   component: AgentComponent,
-  messageWithId: ModelMessage & { id?: string },
+  messageWithId: (ModelMessage & { id?: string }) | Message,
 ): Promise<{ message: SerializedMessage; fileIds?: string[] }> {
-  const { id: _, ...message } = messageWithId;
+  const message =
+    "id" in messageWithId ? omit(messageWithId, ["id"]) : messageWithId;
   const { content, fileIds } = await serializeContent(
     ctx,
     component,
@@ -203,12 +206,21 @@ export async function serializeObjectResult(
 export async function serializeContent(
   ctx: ActionCtx | RunMutationCtx,
   component: AgentComponent,
-  content: Content,
+  content: Content | Message["content"],
 ): Promise<{ content: SerializedContent; fileIds?: string[] }> {
   if (typeof content === "string") {
     return { content };
   }
   const fileIds: string[] = [];
+  function getMimeType(part: { mediaType?: string; mimeType?: string }) {
+    if ("mediaType" in part) {
+      return part.mediaType;
+    }
+    if ("mimeType" in part) {
+      return part.mimeType;
+    }
+    return undefined;
+  }
   const serialized = await Promise.all(
     content.map(async (part) => {
       switch (part.type) {
@@ -229,7 +241,7 @@ export async function serializeContent(
               ctx,
               component,
               new Blob([image], {
-                type: part.mediaType || guessMimeType(image),
+                type: getMimeType(part) || guessMimeType(image),
               }),
             );
             image = file.url;
@@ -237,7 +249,7 @@ export async function serializeContent(
           }
           return {
             type: part.type,
-            mimeType: part.mediaType,
+            mimeType: getMimeType(part),
             providerOptions: part.providerOptions,
             image,
           } satisfies Infer<typeof vImagePart>;
@@ -248,7 +260,7 @@ export async function serializeContent(
             const { file } = await storeFile(
               ctx,
               component,
-              new Blob([data], { type: part.mediaType }),
+              new Blob([data], { type: getMimeType(part) }),
             );
             data = file.url;
             fileIds.push(file.fileId);
@@ -257,14 +269,15 @@ export async function serializeContent(
             type: part.type,
             data,
             filename: part.filename,
-            mimeType: part.mediaType,
+            mimeType: getMimeType(part)!,
             providerOptions: part.providerOptions,
           } satisfies Infer<typeof vFilePart>;
         }
         case "tool-call": {
+          const args = "input" in part ? part.input : part.args;
           return {
             type: part.type,
-            args: part.input ?? null,
+            args: args ?? null,
             toolCallId: part.toolCallId,
             toolName: part.toolName,
             providerOptions: part.providerOptions,
@@ -272,9 +285,10 @@ export async function serializeContent(
           } satisfies Infer<typeof vToolCallPart>;
         }
         case "tool-result": {
+          const result = "output" in part ? part.output : part.result;
           return {
             type: part.type,
-            result: part.output ?? null,
+            result: result ?? null,
             toolCallId: part.toolCallId,
             toolName: part.toolName,
             providerOptions: part.providerOptions,
@@ -286,6 +300,13 @@ export async function serializeContent(
             text: part.text,
             providerOptions: part.providerOptions,
           } satisfies Infer<typeof vReasoningPart>;
+        }
+        case "redacted-reasoning": {
+          return {
+            type: part.type,
+            data: part.data,
+            providerOptions: part.providerOptions,
+          } satisfies Infer<typeof vRedactedReasoningPart>;
         }
         default:
           return part satisfies Infer<typeof vContent>;
