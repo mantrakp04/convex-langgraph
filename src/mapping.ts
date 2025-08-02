@@ -111,7 +111,7 @@ export function serializeWarnings(
     }
     return {
       ...warning,
-      setting: JSON.stringify(warning.setting),
+      setting: warning.setting.toString(),
     };
   });
 }
@@ -119,18 +119,8 @@ export function serializeWarnings(
 export function deserializeWarnings(
   warnings: MessageWithMetadata["warnings"],
 ): CallWarning[] | undefined {
-  if (!warnings) {
-    return undefined;
-  }
-  return warnings.map((warning) => {
-    if (warning.type !== "unsupported-setting") {
-      return warning;
-    }
-    return {
-      ...warning,
-      setting: JSON.parse(warning.setting),
-    };
-  });
+  // We don't need to do anythign here for now
+  return warnings;
 }
 
 export async function serializeNewMessagesInStep<TOOLS extends ToolSet>(
