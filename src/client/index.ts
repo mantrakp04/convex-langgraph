@@ -24,6 +24,8 @@ import { assert, omit, pick } from "convex-helpers";
 import {
   internalActionGeneric,
   internalMutationGeneric,
+  type GenericActionCtx,
+  type GenericDataModel,
   type PaginationOptions,
   type PaginationResult,
   type WithoutSystemFields,
@@ -134,7 +136,30 @@ export type {
   UsageHandler,
 };
 
-export class Agent<AgentTools extends ToolSet = ToolSet> {
+export class Agent<
+  /**
+   * You can require that all `ctx` args to generateText & streamText
+   * have a certain shape by passing a type here.
+   * e.g.
+   * ```ts
+   * const myAgent = new Agent<{ orgId: string }>(...);
+   * ```
+   * This is useful if you want to share that type in `createTool`
+   * e.g.
+   * ```ts
+   * type MyCtx = ToolCtx & { orgId: string };
+   * const myTool = createTool({
+   *   args: z.object({...}),
+   *   description: "...",
+   *   handler: async (ctx: MyCtx, args) => {
+   *     // use ctx.orgId
+   *   },
+   * });
+   */
+  CustomCtx extends object = object,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  AgentTools extends ToolSet = any,
+> {
   constructor(
     public component: AgentComponent,
     public options: {
@@ -218,7 +243,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
    * @returns The threadId of the new thread and the thread object.
    */
   async createThread<ThreadTools extends ToolSet | undefined = undefined>(
-    ctx: RunActionCtx,
+    ctx: RunActionCtx & CustomCtx,
     args?: {
       /**
        * The userId to associate with the thread. If not provided, the thread will be
@@ -288,7 +313,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     threadId: string;
   }>;
   async createThread<ThreadTools extends ToolSet | undefined = undefined>(
-    ctx: ActionCtx | RunMutationCtx,
+    ctx: (ActionCtx & CustomCtx) | RunMutationCtx,
     args?: {
       userId: string | null;
       title?: string;
@@ -325,7 +350,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
    * @returns Functions bound to the userId and threadId on a `{thread}` object.
    */
   async continueThread<ThreadTools extends ToolSet | undefined = undefined>(
-    ctx: ActionCtx,
+    ctx: ActionCtx & CustomCtx,
     args: {
       /**
        * The associated thread created by {@link createThread}
@@ -410,7 +435,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     OUTPUT = never,
     OUTPUT_PARTIAL = never,
   >(
-    ctx: ActionCtx,
+    ctx: ActionCtx & CustomCtx,
     {
       userId: argsUserId,
       threadId,
@@ -441,7 +466,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     });
     const { args: aiArgs, messageId, order, userId } = context;
     const toolCtx = {
-      ...(ctx as UserActionCtx),
+      ...(ctx as UserActionCtx & CustomCtx),
       userId,
       threadId,
       messageId,
@@ -523,7 +548,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     OUTPUT = never,
     PARTIAL_OUTPUT = never,
   >(
-    ctx: ActionCtx,
+    ctx: ActionCtx & CustomCtx,
     {
       userId: argsUserId,
       threadId,
@@ -572,7 +597,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     });
     const { args: aiArgs, messageId, order, stepOrder, userId } = context;
     const toolCtx = {
-      ...(ctx as UserActionCtx),
+      ...(ctx as UserActionCtx & CustomCtx),
       userId,
       threadId,
       messageId,
@@ -1124,7 +1149,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     const textEmbeddings = await this.doEmbed(ctx, {
       userId,
       threadId,
-      values: messageTexts.filter((t): t is string => !!t),
+      values: messageTexts as string[],
     });
     // TODO: record usage of embeddings
     // Then assemble the embeddings into a single array with nulls for the messages without text.
@@ -1822,36 +1847,65 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
    * @param spec Configuration for the agent acting as an action, including
    *   {@link ContextOptions}, {@link StorageOptions}, and maxSteps.
    */
-  asTextAction(spec?: {
-    /**
-     * The maximum number of steps to take in this action.
-     * Defaults to the {@link Agent.maxSteps} option.
-     */
-    maxSteps?: number;
-    /**
-     * The {@link ContextOptions} to use for fetching contextual messages and
-     * saving input/output messages.
-     * Defaults to the {@link Agent.contextOptions} option.
-     */
-    contextOptions?: ContextOptions;
-    /**
-     * The {@link StorageOptions} to use for saving input/output messages.
-     * Defaults to the {@link Agent.storageOptions} option.
-     */
-    storageOptions?: StorageOptions;
-    /**
-     * Whether to stream the text.
-     * If false, it will generate the text in a single call. (default)
-     * If true or {@link StreamingOptions}, it will stream the text from the LLM
-     * and save the chunks to the database with the options you specify, or the
-     * defaults if you pass true.
-     */
-    stream?: boolean | StreamingOptions;
-  }) {
+  asTextAction<DataModel extends GenericDataModel>(
+    spec?: {
+      /**
+       * The maximum number of steps to take in this action.
+       * Defaults to the {@link Agent.maxSteps} option.
+       */
+      maxSteps?: number;
+      /**
+       * The {@link ContextOptions} to use for fetching contextual messages and
+       * saving input/output messages.
+       * Defaults to the {@link Agent.contextOptions} option.
+       */
+      contextOptions?: ContextOptions;
+      /**
+       * The {@link StorageOptions} to use for saving input/output messages.
+       * Defaults to the {@link Agent.storageOptions} option.
+       */
+      storageOptions?: StorageOptions;
+      /**
+       * Whether to stream the text.
+       * If false, it will generate the text in a single call. (default)
+       * If true or {@link StreamingOptions}, it will stream the text from the LLM
+       * and save the chunks to the database with the options you specify, or the
+       * defaults if you pass true.
+       */
+      stream?: boolean | StreamingOptions;
+    } & (CustomCtx extends Record<string, unknown>
+      ? {
+          /**
+           * If you have a custom ctx that you use with the Agent
+           * (e.g. new Agent<{ orgId: string }>(...))
+           * you need to provide this function to add any extra fields.
+           * e.g.
+           * ```ts
+           * const myAgent = new Agent<{ orgId: string }>(...);
+           * const myAction = myAgent.asTextAction({
+           *   customCtx: (ctx: ActionCtx, target, llmArgs) => {
+           *     const orgId = await lookupOrgId(ctx, target.threadId);
+           *     return { orgId };
+           *   },
+           * });
+           * ```
+           * Then, in your tools, you can
+           */
+          customCtx: (
+            ctx: GenericActionCtx<DataModel>,
+            target: {
+              userId?: string | undefined;
+              threadId?: string | undefined;
+            },
+            llmArgs: TextArgs<AgentTools>,
+          ) => CustomCtx;
+        }
+      : { customCtx?: never }),
+  ) {
     const maxSteps = spec?.maxSteps ?? this.options.maxSteps;
     return internalActionGeneric({
       args: vTextArgs,
-      handler: async (ctx, args) => {
+      handler: async (ctx_, args) => {
         const stream =
           args.stream === true ? spec?.stream || true : spec?.stream ?? false;
         const targetArgs = { userId: args.userId, threadId: args.threadId };
@@ -1865,6 +1919,11 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
           ...pick(args, ["contextOptions", "storageOptions"]),
           saveStreamDeltas: stream,
         };
+        const ctx = (
+          spec?.customCtx
+            ? { ...ctx_, ...spec.customCtx(ctx_, targetArgs, llmArgs) }
+            : ctx_
+        ) as UserActionCtx & CustomCtx;
         if (stream) {
           const result = await this.streamText(ctx, targetArgs, llmArgs, opts);
           await result.consumeStream();

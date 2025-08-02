@@ -28,7 +28,7 @@ export type PlaygroundAPI = ApiFromModules<{
 export type AgentsFn<DataModel extends GenericDataModel> = (
   ctx: GenericActionCtx<DataModel> | GenericQueryCtx<DataModel>,
   args: { userId: string | undefined; threadId: string | undefined },
-) => Agent<ToolSet>[] | Promise<Agent<ToolSet>[]>;
+) => Agent[] | Promise<Agent[]>;
 
 // Playground API definition
 export function definePlaygroundAPI<DataModel extends GenericDataModel>(
@@ -37,14 +37,14 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
     agents: agentsOrFn,
     userNameLookup,
   }: {
-    agents: Agent<ToolSet>[] | AgentsFn<DataModel>;
+    agents: Agent[] | AgentsFn<DataModel>;
     userNameLookup?: (
       ctx: GenericQueryCtx<DataModel>,
       userId: string,
     ) => string | Promise<string>;
   },
 ) {
-  function validateAgents(agents: Agent<ToolSet>[]) {
+  function validateAgents(agents: Agent[]) {
     for (const agent of agents) {
       if (!agent.options.name) {
         console.warn(

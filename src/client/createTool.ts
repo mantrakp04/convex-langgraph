@@ -4,15 +4,13 @@ import { z } from "zod";
 import type { Agent } from "./index.js";
 import type { GenericActionCtx, GenericDataModel } from "convex/server";
 
-export type ToolCtx<
-  DataModel extends GenericDataModel = GenericDataModel,
-  TOOLS extends ToolSet = ToolSet,
-> = GenericActionCtx<DataModel> & {
-  agent: Agent<TOOLS>;
-  userId?: string;
-  threadId?: string;
-  messageId?: string;
-};
+export type ToolCtx<DataModel extends GenericDataModel = GenericDataModel> =
+  GenericActionCtx<DataModel> & {
+    agent: Agent;
+    userId?: string;
+    threadId?: string;
+    messageId?: string;
+  };
 
 /**
  * This is a wrapper around the ai.tool function that adds extra context to the
