@@ -20,7 +20,7 @@ import {
   streamObject,
   streamText,
 } from "ai";
-import { assert } from "convex-helpers";
+import { assert, omit, pick } from "convex-helpers";
 import {
   internalActionGeneric,
   internalMutationGeneric,
@@ -433,10 +433,11 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     GenerateTextResult<TOOLS extends undefined ? AgentTools : TOOLS, OUTPUT> &
       GenerationOutputMetadata
   > {
+    const opts = { ...this.options, ...options };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
-      ...options,
+      ...opts,
     });
     const { args: aiArgs, messageId, order, userId } = context;
     const toolCtx = {
@@ -450,9 +451,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       toolCtx,
       args.tools ?? threadTools ?? this.options.tools,
     ) as TOOLS extends undefined ? AgentTools : TOOLS;
-    const saveOutputMessages = this._shouldSaveOutputMessages(
-      options?.storageOptions,
-    );
+    const saveOutput = opts.storageOptions?.saveMessages !== "none";
     const trackUsage = usageHandler ?? this.options.usageHandler;
     try {
       const result = (await generateText({
@@ -461,7 +460,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
         ...aiArgs,
         tools,
         onStepFinish: async (step) => {
-          if (threadId && messageId && saveOutputMessages) {
+          if (threadId && messageId && saveOutput) {
             await this.saveStep(ctx, {
               userId,
               threadId,
@@ -566,10 +565,11 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     > &
       GenerationOutputMetadata
   > {
+    const opts = { ...this.options, ...options };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
-      ...options,
+      ...opts,
     });
     const { args: aiArgs, messageId, order, stepOrder, userId } = context;
     const toolCtx = {
@@ -583,13 +583,11 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       toolCtx,
       args.tools ?? threadTools ?? this.options.tools,
     ) as TOOLS extends undefined ? AgentTools : TOOLS;
-    const saveOutputMessages = this._shouldSaveOutputMessages(
-      options?.storageOptions,
-    );
+    const saveOutput = opts.storageOptions?.saveMessages !== "none";
     const trackUsage = usageHandler ?? this.options.usageHandler;
     const streamer =
-      threadId && options?.saveStreamDeltas
-        ? new DeltaStreamer(this.component, ctx, options.saveStreamDeltas, {
+      threadId && opts.saveStreamDeltas
+        ? new DeltaStreamer(this.component, ctx, opts.saveStreamDeltas, {
             threadId,
             userId,
             agentName: this.options.name,
@@ -619,7 +617,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       },
       onError: async (error) => {
         console.error("onError", error);
-        if (threadId && messageId && saveOutputMessages) {
+        if (threadId && messageId && saveOutput) {
           await ctx.runMutation(this.component.messages.rollbackMessage, {
             messageId,
             error: (error.error as Error).message,
@@ -630,7 +628,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       },
       onStepFinish: async (step) => {
         // console.log("onStepFinish", step);
-        if (threadId && messageId && saveOutputMessages) {
+        if (threadId && messageId && saveOutput) {
           const saved = await this.saveStep(ctx, {
             userId,
             threadId,
@@ -701,23 +699,22 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
      */
     options?: Options,
   ): Promise<GenerateObjectResult<T> & GenerationOutputMetadata> {
+    const opts = { ...this.options, ...options };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
-      ...options,
+      ...opts,
     });
     const { args: aiArgs, messageId, order, userId } = context;
     const trackUsage = usageHandler ?? this.options.usageHandler;
-    const saveOutputMessages = this._shouldSaveOutputMessages(
-      options?.storageOptions,
-    );
+    const saveOutput = opts.storageOptions?.saveMessages !== "none";
     try {
       const result = (await generateObject(
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         aiArgs as any,
       )) as GenerateObjectResult<T> & GenerationOutputMetadata;
 
-      if (threadId && messageId && saveOutputMessages) {
+      if (threadId && messageId && saveOutput) {
         await this.saveObject(ctx, {
           threadId,
           promptMessageId: messageId,
@@ -792,16 +789,15 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     StreamObjectResult<DeepPartial<T>, T, never> & GenerationOutputMetadata
   > {
     // TODO: unify all this shared code between all the generate* and stream* functions
+    const opts = { ...this.options, ...options };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
-      ...options,
+      ...opts,
     });
     const { args: aiArgs, messageId, order, userId } = context;
     const trackUsage = usageHandler ?? this.options.usageHandler;
-    const saveOutputMessages = this._shouldSaveOutputMessages(
-      options?.storageOptions,
-    );
+    const saveOutput = opts.storageOptions?.saveMessages !== "none";
     const stream = streamObject<T>({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...(aiArgs as any),
@@ -810,7 +806,7 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
         return args.onError?.(error);
       },
       onFinish: async (result) => {
-        if (threadId && messageId && saveOutputMessages) {
+        if (threadId && messageId && saveOutput) {
           await this.saveObject(ctx, {
             userId,
             threadId,
@@ -1031,10 +1027,13 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     },
   ): Promise<MessageDoc[]> {
     assert(args.userId || args.threadId, "Specify userId or threadId");
-    const opts = this._mergedContextOptions(args.contextOptions);
+    const contextOptions = {
+      ...this.options.contextOptions,
+      ...args.contextOptions,
+    };
     return fetchContextMessages(ctx, this.component, {
       ...args,
-      contextOptions: opts,
+      contextOptions,
       getEmbedding: async (text) => {
         assert("runAction" in ctx);
         assert(
@@ -1566,8 +1565,6 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     order: number | undefined;
     stepOrder: number | undefined;
   }> {
-    contextOptions ||= this.options.contextOptions;
-    storageOptions ||= this.options.storageOptions;
     // If only a promptMessageId is provided, this will be empty.
     const messages = promptOrMessagesToCoreMessages(args);
     const userId =
@@ -1655,25 +1652,6 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
       messageId,
       order,
       stepOrder,
-    };
-  }
-
-  _shouldSaveOutputMessages(storageOpts?: StorageOptions): boolean {
-    const opts = storageOpts ?? this.options.storageOptions;
-    return opts?.saveMessages !== "none";
-  }
-
-  _mergedContextOptions(opts: ContextOptions | undefined): ContextOptions {
-    const searchOptions = {
-      ...this.options.contextOptions?.searchOptions,
-      ...opts?.searchOptions,
-    };
-    return {
-      ...this.options.contextOptions,
-      ...opts,
-      searchOptions: searchOptions.limit
-        ? (searchOptions as ContextOptions["searchOptions"])
-        : undefined,
     };
   }
 
@@ -1878,20 +1856,17 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     return internalActionGeneric({
       args: vTextArgs,
       handler: async (ctx, args) => {
-        const { contextOptions, storageOptions, ...rest } = args;
         const stream =
           args.stream === true ? spec?.stream || true : spec?.stream ?? false;
         const targetArgs = { userId: args.userId, threadId: args.threadId };
-        const llmArgs = { maxSteps, ...rest };
+        const llmArgs = {
+          maxSteps,
+          ...omit(args, ["storageOptions", "contextOptions"]),
+        };
         const opts = {
-          contextOptions:
-            contextOptions ??
-            spec?.contextOptions ??
-            this.options.contextOptions,
-          storageOptions:
-            storageOptions ??
-            spec?.storageOptions ??
-            this.options.storageOptions,
+          ...this.options,
+          ...(spec && pick(spec, ["contextOptions", "storageOptions"])),
+          ...pick(args, ["contextOptions", "storageOptions"]),
           saveStreamDeltas: stream,
         };
         if (stream) {
@@ -1935,25 +1910,16 @@ export class Agent<AgentTools extends ToolSet = ToolSet> {
     return internalActionGeneric({
       args: vSafeObjectArgs,
       handler: async (ctx, args) => {
-        const { contextOptions, storageOptions, ...rest } = args;
+        const overrides = pick(args, ["userId", "threadId"]);
         const value = await this.generateObject(
           ctx,
           { userId: args.userId, threadId: args.threadId },
           {
             ...spec,
             maxSteps,
-            ...rest,
+            ...omit(args, ["userId", "threadId"]),
           } as unknown as OurObjectArgs<unknown>,
-          {
-            contextOptions:
-              contextOptions ??
-              options?.contextOptions ??
-              this.options.contextOptions,
-            storageOptions:
-              storageOptions ??
-              options?.storageOptions ??
-              this.options.storageOptions,
-          },
+          { ...this.options, ...options, ...overrides },
         );
         return {
           object: value.object as T,
