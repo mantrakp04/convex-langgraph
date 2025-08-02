@@ -16,7 +16,7 @@ export const runAgentAsTool = action({
       tools: {
         doSomething: tool({
           description: "Call this function when asked to do something",
-          parameters: z.object({}),
+          inputSchema: z.object({}),
           execute: async (args, options) => {
             console.log("doingSomething", options.toolCallId);
             return "hello";
@@ -24,7 +24,7 @@ export const runAgentAsTool = action({
         }),
         doSomethingElse: tool({
           description: "Call this function when asked to do something else",
-          parameters: z.object({}),
+          inputSchema: z.object({}),
           execute: async (args, options) => {
             console.log("doSomethingElse", options.toolCallId);
             return "hello";
