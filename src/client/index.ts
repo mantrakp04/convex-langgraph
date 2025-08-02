@@ -219,9 +219,7 @@ export class Agent<
        * When generating or streaming text with tools available, this
        * determines when to stop. Defaults to stepCountIs(1).
        */
-      stopWhen?:
-        | StopCondition<NoInfer<AgentTools>>
-        | Array<StopCondition<NoInfer<AgentTools>>>;
+      stopWhen?: StopCondition<AgentTools> | Array<StopCondition<AgentTools>>;
       /**
        * The maximum number of calls to make to an LLM in case it fails.
        * This can be overridden at each generate/stream callsite.
@@ -1878,9 +1876,7 @@ export class Agent<
        * When to stop generating text.
        * Defaults to the {@link Agent["options"].stopWhen} option.
        */
-      stopWhen?:
-        | StopCondition<NoInfer<AgentTools>>
-        | Array<StopCondition<NoInfer<AgentTools>>>;
+      stopWhen?: StopCondition<AgentTools> | Array<StopCondition<AgentTools>>;
       /**
        * The {@link ContextOptions} to use for fetching contextual messages and
        * saving input/output messages.
