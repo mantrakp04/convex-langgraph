@@ -17,8 +17,11 @@ import {
   vStorageOptions,
   type AgentComponent,
   type Agent,
+  listMessages as listMessages_,
+  createThread as createThread_,
 } from "./index.js";
 import { v } from "convex/values";
+import { deserializeMessage } from "../mapping.js";
 
 export type PlaygroundAPI = ApiFromModules<{
   playground: ReturnType<typeof definePlaygroundAPI>;
@@ -199,10 +202,9 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
     },
     handler: async (ctx, args) => {
       await validateApiKey(ctx, args.apiKey);
-      return ctx.runQuery(component.messages.listMessagesByThreadId, {
+      return listMessages_(ctx, component, {
         threadId: args.threadId,
         paginationOpts: args.paginationOpts,
-        order: "desc",
         statuses: ["success", "failed", "pending"],
       });
     },
@@ -220,18 +222,13 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
       agentName: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
-      // if (args.agentName) {
-      //   console.warn(
-      //     "Upgrade to the latest version of @convex-dev/agent-playground"
-      //   );
-      // }
       await validateApiKey(ctx, args.apiKey);
-      const { _id } = await ctx.runMutation(component.threads.createThread, {
+      const threadId = await createThread_(ctx, component, {
         userId: args.userId,
         title: args.title,
         summary: args.summary,
       });
-      return { threadId: _id };
+      return { threadId };
     },
     returns: v.object({ threadId: v.string() }),
   });
@@ -260,6 +257,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
         contextOptions,
         storageOptions,
         system,
+        messages,
         ...rest
       } = args;
       await validateApiKey(ctx, apiKey);
@@ -270,13 +268,15 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
       const namedAgent = agents.find(({ name }) => name === agentName);
       if (!namedAgent) throw new Error(`Unknown agent: ${agentName}`);
       const { agent } = namedAgent;
-      const { thread } = await agent.continueThread(ctx, { threadId, userId });
-      const { messageId, text } = await thread.generateText(
-        { ...rest, ...(system ? { system } : {}) },
+      const { messageId, text } = await agent.generateText(
+        ctx,
+        { threadId, userId },
         {
-          contextOptions,
-          storageOptions,
+          ...rest,
+          ...(system ? { system } : {}),
+          ...(messages ? { messages: messages.map(deserializeMessage) } : {}),
         },
+        { contextOptions, storageOptions },
       );
       return { messageId, text };
     },
@@ -310,7 +310,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
       const messages = await agent.fetchContextMessages(ctx, {
         userId: args.userId,
         threadId: args.threadId,
-        messages: args.messages,
+        messages: args.messages.map(deserializeMessage),
         contextOptions: args.contextOptions,
         upToAndIncludingMessageId: args.beforeMessageId,
       });
