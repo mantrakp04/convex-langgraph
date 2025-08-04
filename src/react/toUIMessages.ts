@@ -177,7 +177,10 @@ export function toUIMessages(
                 call.output = contentPart.output;
               } else {
                 call.state = "output-available";
-                call.output = contentPart.output;
+                call.output =
+                  contentPart.output?.type === "json"
+                    ? contentPart.output.value
+                    : contentPart.output;
                 // Technically we could pull this from the doc.message
                 // but the ModelMessage doesn't have it
                 // call.providerExecuted = contentPart.providerExecuted;
@@ -205,7 +208,10 @@ export function toUIMessages(
                   toolCallId: contentPart.toolCallId,
                   state: "output-available",
                   input: undefined,
-                  output: contentPart.output,
+                  output:
+                    contentPart.output?.type === "json"
+                      ? contentPart.output.value
+                      : contentPart.output,
                   callProviderMetadata: message.providerMetadata,
                 } satisfies ToolUIPart);
               }
