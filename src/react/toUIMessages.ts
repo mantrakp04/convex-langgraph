@@ -155,7 +155,9 @@ export function toUIMessages(
               type: "step-start",
             } satisfies StepStartUIPart);
             assistantMessage.parts.push({
-              ...contentPart,
+              type: `tool-${contentPart.toolName}`,
+              toolCallId: contentPart.toolCallId,
+              input: contentPart.input,
               state: message.streaming ? "input-streaming" : "input-available",
               callProviderMetadata: message.providerMetadata,
             } satisfies ToolUIPart);

@@ -243,10 +243,9 @@ describe("toUIMessages", () => {
     expect(uiMessages).toHaveLength(1);
     expect(uiMessages[0].role).toBe("assistant");
     expect(
-      uiMessages[0].parts.filter((p) => p.type === "tool-call")[0],
+      uiMessages[0].parts.filter((p) => p.type === "tool-myTool")[0],
     ).toMatchObject({
-      type: "tool-call",
-      toolName: "myTool",
+      type: "tool-myTool",
       toolCallId: "call1",
       input: "hi",
       state: "input-available",
@@ -312,4 +311,60 @@ describe("toUIMessages", () => {
   });
 
   // Add more tests for array content, tool calls, etc. as needed
+
+  it("should update tool call state from input-available to output-available", () => {
+    const messages = [
+      baseMessageDoc({
+        message: {
+          role: "assistant",
+          content: [
+            {
+              type: "tool-call",
+              toolName: "calculator",
+              toolCallId: "call1",
+              args: { operation: "add", a: 1, b: 2 },
+            },
+          ],
+        },
+        tool: true,
+      }),
+      baseMessageDoc({
+        message: {
+          role: "tool",
+          content: [
+            {
+              type: "tool-result",
+              toolCallId: "call1",
+              toolName: "calculator",
+              result: { sum: 3 },
+            },
+          ],
+        },
+        tool: true,
+      }),
+    ];
+    
+    const uiMessages = toUIMessages(messages);
+    
+    // Should have one assistant message
+    expect(uiMessages).toHaveLength(1);
+    expect(uiMessages[0].role).toBe("assistant");
+    
+    // Should have a single tool-calculator part (not separate tool-call and tool-result parts)
+    const toolParts = uiMessages[0].parts.filter((p) => p.type === "tool-calculator");
+    expect(toolParts).toHaveLength(1);
+    
+    const toolPart = toolParts[0];
+    expect(toolPart).toMatchObject({
+      type: "tool-calculator",
+      toolCallId: "call1",
+      state: "output-available",
+      input: { operation: "add", a: 1, b: 2 },
+      output: { sum: 3 },
+    });
+    
+    // Should NOT have a tool-call part (which is what currently happens)
+    const toolCallParts = uiMessages[0].parts.filter((p) => p.type === "tool-call");
+    expect(toolCallParts).toHaveLength(0);
+  });
 });
