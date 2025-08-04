@@ -105,7 +105,7 @@ export function toUIMessages(
           ...partCommon,
         } satisfies ReasoningUIPart);
       }
-      if (message.text && !nonStringContent.some((c) => c.type === "text")) {
+      if (message.text && !nonStringContent.length) {
         assistantMessage.parts.push({
           type: "text",
           text: message.text,
