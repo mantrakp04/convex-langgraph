@@ -1507,8 +1507,8 @@ export class Agent<
       endOrder: number;
       endStepOrder?: number;
     },
-  ): Promise<void> {
-    await ctx.runMutation(this.component.messages.deleteByOrder, {
+  ): Promise<{ isDone: boolean; lastOrder?: number; lastStepOrder?: number }> {
+    return ctx.runMutation(this.component.messages.deleteByOrder, {
       threadId: args.threadId,
       startOrder: args.startOrder,
       startStepOrder: args.startStepOrder,
