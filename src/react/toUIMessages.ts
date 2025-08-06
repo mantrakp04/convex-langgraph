@@ -6,12 +6,18 @@ import type {
   StepStartUIPart,
   TextUIPart,
   ToolUIPart,
-} from "ai";
-import type { MessageDoc } from "../client/index.js";
-import { deserializeMessage, toUIFilePart } from "../mapping.js";
-import type { MessageStatus } from "../validators.js";
+  UIDataTypes,
+  UITools
+} from "ai"
+import type { MessageDoc } from "../client/index.js"
+import { deserializeMessage, toUIFilePart } from "../mapping.js"
+import type { MessageStatus } from "../validators.js"
 
-export type UIMessage = AIUIMessage & {
+export type UIMessage<
+  METADATA = unknown,
+  DATA_PARTS extends UIDataTypes = UIDataTypes,
+  TOOLS extends UITools = UITools,
+> = AIUIMessage<METADATA, DATA_PARTS, TOOLS> & {
   key: string;
   order: number;
   stepOrder: number;
@@ -20,11 +26,15 @@ export type UIMessage = AIUIMessage & {
   text: string;
 };
 
-export function toUIMessages(
+export function toUIMessages<
+  METADATA = unknown,
+  DATA_PARTS extends UIDataTypes = UIDataTypes,
+  TOOLS extends UITools = UITools,
+>(
   messages: (MessageDoc & { streaming?: boolean })[],
-): UIMessage[] {
-  const uiMessages: UIMessage[] = [];
-  let assistantMessage: UIMessage | undefined;
+): UIMessage<METADATA, DATA_PARTS, TOOLS>[] {
+  const uiMessages: UIMessage<METADATA, DATA_PARTS, TOOLS>[] = [];
+  let assistantMessage: UIMessage<METADATA, DATA_PARTS, TOOLS> | undefined;
   for (const message of messages) {
     const coreMessage = message.message && deserializeMessage(message.message);
     const text = message.text ?? "";
@@ -55,7 +65,7 @@ export function toUIMessages(
         parts: [{ type: "text", text, ...partCommon } satisfies TextUIPart],
       });
     } else if (coreMessage.role === "user") {
-      const parts: UIMessage["parts"] = [];
+      const parts: UIMessage<METADATA, DATA_PARTS, TOOLS>["parts"] = [];
       if (text) {
         parts.push({ type: "text", text });
       }
@@ -158,6 +168,7 @@ export function toUIMessages(
               type: `tool-${contentPart.toolName}`,
               toolCallId: contentPart.toolCallId,
               input: contentPart.input,
+              // @ts-expect-error
               providerExecuted: contentPart.providerExecuted,
               state: message.streaming ? "input-streaming" : "input-available",
               callProviderMetadata: message.providerMetadata,
@@ -201,7 +212,7 @@ export function toUIMessages(
                   // but the ModelMessage doesn't have it
                   // providerExecuted: contentPart.providerExecuted,
                   callProviderMetadata: message.providerMetadata,
-                } satisfies ToolUIPart);
+                } satisfies ToolUIPart<TOOLS>);
               } else {
                 assistantMessage.parts.push({
                   type: `tool-${contentPart.toolName}`,
@@ -213,7 +224,7 @@ export function toUIMessages(
                       ? contentPart.output.value
                       : contentPart.output,
                   callProviderMetadata: message.providerMetadata,
-                } satisfies ToolUIPart);
+                } satisfies ToolUIPart<TOOLS>);
               }
             }
             break;
