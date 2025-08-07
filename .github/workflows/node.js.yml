@@ -1,9 +1,9 @@
 name: Run tests
 on:
   push:
-    branches: ["main"]
+    branches: ["main", "ai-sdk-v5"]
   pull_request:
-    branches: ["main"]
+    branches: ["main", "ai-sdk-v5"]
 jobs:
   test:
     runs-on: ubuntu-latest
