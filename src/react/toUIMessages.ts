@@ -1,5 +1,6 @@
 import type {
   UIMessage as AIUIMessage,
+  DeepPartial,
   ReasoningUIPart,
   SourceDocumentUIPart,
   SourceUrlUIPart,
@@ -7,11 +8,11 @@ import type {
   TextUIPart,
   ToolUIPart,
   UIDataTypes,
-  UITools
-} from "ai"
-import type { MessageDoc } from "../client/index.js"
-import { deserializeMessage, toUIFilePart } from "../mapping.js"
-import type { MessageStatus } from "../validators.js"
+  UITools,
+} from "ai";
+import type { MessageDoc } from "../client/index.js";
+import { deserializeMessage, toUIFilePart } from "../mapping.js";
+import type { MessageStatus } from "../validators.js";
 
 export type UIMessage<
   METADATA = unknown,
@@ -160,20 +161,27 @@ export function toUIMessages<
           case "image":
             assistantMessage.parts.push(toUIFilePart(contentPart));
             break;
-          case "tool-call":
+          case "tool-call": {
             assistantMessage.parts.push({
               type: "step-start",
             } satisfies StepStartUIPart);
-            assistantMessage.parts.push({
-              type: `tool-${contentPart.toolName}`,
+            const toolPart: ToolUIPart<TOOLS> = {
+              type: `tool-${contentPart.toolName as keyof TOOLS & string}`,
               toolCallId: contentPart.toolCallId,
-              input: contentPart.input,
-              // @ts-expect-error
+              input: contentPart.input as DeepPartial<
+                TOOLS[keyof TOOLS & string]["input"]
+              >,
               providerExecuted: contentPart.providerExecuted,
-              state: message.streaming ? "input-streaming" : "input-available",
-              callProviderMetadata: message.providerMetadata,
-            } satisfies ToolUIPart);
+              ...(message.streaming
+                ? { state: "input-streaming" }
+                : {
+                    state: "input-available",
+                    callProviderMetadata: message.providerMetadata,
+                  }),
+            };
+            assistantMessage.parts.push(toolPart);
             break;
+          }
           case "tool-result": {
             const call = assistantMessage.parts.find(
               (part) =>
