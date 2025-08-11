@@ -46,7 +46,10 @@ export function optimisticallySendMessage(
 }
 
 export function randomUUID() {
-  if (typeof crypto !== "undefined") {
+  if (
+    typeof crypto !== "undefined" &&
+    typeof crypto.randomUUID === "function"
+  ) {
     return crypto.randomUUID();
   }
   return (
