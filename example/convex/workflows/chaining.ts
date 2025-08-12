@@ -4,7 +4,7 @@ import { createThread, saveMessage, stepCountIs } from "@convex-dev/agent";
 import { components, internal } from "../_generated/api";
 import { action, mutation } from "../_generated/server";
 import { v } from "convex/values";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { weatherAgent } from "../agents/weather";
 import { fashionAgent } from "../agents/fashion";
 import { getAuthUserId } from "../utils";

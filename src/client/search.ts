@@ -5,7 +5,7 @@ import type {
   RunQueryCtx,
 } from "./types.js";
 import type { MessageDoc } from "../component/schema.js";
-import type { ModelMessage } from "ai";
+import type { EmbeddingModel, LanguageModel, ModelMessage } from "ai";
 import { assert } from "convex-helpers";
 import {
   DEFAULT_MESSAGE_RANGE,
@@ -18,7 +18,7 @@ const DEFAULT_VECTOR_SCORE_THRESHOLD = 0.0;
 
 export type GetEmbedding = (text: string) => Promise<{
   embedding: number[];
-  embeddingModel: string;
+  embeddingModel: string | EmbeddingModel<string>;
 }>;
 
 /**
@@ -123,7 +123,9 @@ export async function fetchContextMessages(
           opts.searchOptions?.vectorScoreThreshold ??
           DEFAULT_VECTOR_SCORE_THRESHOLD,
         embedding: embeddingFields?.embedding,
-        embeddingModel: embeddingFields?.embeddingModel,
+        embeddingModel: embeddingFields?.embeddingModel
+          ? getModelName(embeddingFields.embeddingModel)
+          : undefined,
       },
     );
     // TODO: track what messages we used for context
@@ -170,4 +172,25 @@ export function filterOutOrphanedToolMessages(docs: MessageDoc[]) {
     }
   }
   return result;
+}
+
+export function getModelName(
+  embeddingModel: string | EmbeddingModel<string> | LanguageModel,
+): string {
+  if (typeof embeddingModel === "string") {
+    if (embeddingModel.includes("/")) {
+      return embeddingModel.split("/").slice(1).join("/");
+    }
+    return embeddingModel;
+  }
+  return embeddingModel.modelId;
+}
+
+export function getProviderName(
+  embeddingModel: string | EmbeddingModel<string> | LanguageModel,
+): string {
+  if (typeof embeddingModel === "string") {
+    return embeddingModel.split("/").at(0)!;
+  }
+  return embeddingModel.provider;
 }

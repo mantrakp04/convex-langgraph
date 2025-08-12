@@ -1,6 +1,6 @@
 import type { Schema, Tool, ToolCallOptions, ToolSet } from "ai";
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from "zod/v3";
 import type { Agent } from "./index.js";
 import type { GenericActionCtx, GenericDataModel } from "convex/server";
 import type { ProviderOptions } from "../validators.js";

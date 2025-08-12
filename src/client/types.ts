@@ -33,7 +33,7 @@ import type {
   GenericDataModel,
 } from "convex/server";
 import type { GenericId } from "convex/values";
-import type { z } from "zod";
+import type { z } from "zod/v3";
 import type { Mounts } from "../component/_generated/api.js";
 import type { ThreadDoc } from "../component/schema.js";
 import type {

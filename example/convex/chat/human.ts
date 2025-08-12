@@ -16,7 +16,7 @@ import { v } from "convex/values";
 import { components } from "../_generated/api";
 import { paginationOptsValidator } from "convex/server";
 import { authorizeThreadAccess } from "../threads";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { tool } from "ai";
 import { agent } from "../agents/simple";
 

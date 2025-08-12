@@ -26,7 +26,7 @@ import type {
 } from "@ai-sdk/provider";
 import { simulateReadableStream, stepCountIs } from "ai";
 import { components, initConvexTest } from "./setup.test.js";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 const schema = defineSchema({});
 type DataModel = DataModelFromSchemaDefinition<typeof schema>;
