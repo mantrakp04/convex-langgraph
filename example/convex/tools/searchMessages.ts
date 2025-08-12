@@ -33,7 +33,7 @@ export const searchMessages = createTool({
         const e = await embed({ model: textEmbedding, value: text });
         return {
           embedding: e.embedding,
-          embeddingModel: textEmbedding.modelId,
+          embeddingModel: textEmbedding,
         };
       },
     });

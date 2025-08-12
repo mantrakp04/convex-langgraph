@@ -1,4 +1,4 @@
-import type { LanguageModelV2, EmbeddingModelV2 } from "@ai-sdk/provider";
+import type { LanguageModelV2 } from "@ai-sdk/provider";
 import type {
   AssistantContent,
   ModelMessage,
@@ -15,6 +15,8 @@ import type {
   StopCondition,
   Schema,
   ToolChoice,
+  LanguageModel,
+  EmbeddingModel,
 } from "ai";
 import {
   embedMany,
@@ -62,7 +64,11 @@ import {
 } from "../validators.js";
 import { createTool, wrapTools, type ToolCtx } from "./createTool.js";
 import { listMessages } from "./listMessages.js";
-import { fetchContextMessages } from "./search.js";
+import {
+  fetchContextMessages,
+  getModelName,
+  getProviderName,
+} from "./search.js";
 import {
   DeltaStreamer,
   mergeTransforms,
@@ -180,7 +186,7 @@ export class Agent<
        * const myAgent = new Agent(components.agent, {
        *   chat: openai.chat("gpt-4o-mini"),
        */
-      chat: LanguageModelV2;
+      chat: LanguageModel;
       /**
        * The model to use for text embeddings. Optional.
        * If specified, it will use this for generating vector embeddings
@@ -191,7 +197,7 @@ export class Agent<
        * const myAgent = new Agent(components.agent, {
        *   textEmbedding: openai.embedding("text-embedding-3-small")
        */
-      textEmbedding?: EmbeddingModelV2<string>;
+      textEmbedding?: EmbeddingModel<string>;
       /**
        * The default system prompt to put in each request.
        * Override per-prompt by passing the "system" parameter.
@@ -1069,7 +1075,7 @@ export class Agent<
               values: [text],
             })
           ).embeddings[0],
-          embeddingModel: this.options.textEmbedding.modelId,
+          embeddingModel: this.options.textEmbedding,
         };
       },
     });
@@ -1159,10 +1165,11 @@ export class Agent<
     if (textEmbeddings.embeddings.length > 0) {
       const dimension = textEmbeddings.embeddings[0].length;
       validateVectorDimension(dimension);
+      const model = getModelName(this.options.textEmbedding);
       embeddings = {
         vectors: embeddingsOrNull,
         dimension,
-        model: this.options.textEmbedding.modelId,
+        model,
       };
     }
     return embeddings;
@@ -1283,8 +1290,8 @@ export class Agent<
       this.component,
       args.step,
       {
-        provider: args.provider ?? this.options.chat.provider,
-        model: args.model ?? this.options.chat.modelId,
+        provider: args.provider ?? getProviderName(this.options.chat),
+        model: args.model ?? getModelName(this.options.chat),
       },
     );
     const embeddings = await this.generateEmbeddings(
@@ -1328,8 +1335,8 @@ export class Agent<
       this.component,
       args.result,
       {
-        model: args.model ?? this.options.chat.modelId,
-        provider: args.provider ?? this.options.chat.provider,
+        model: args.model ?? getModelName(this.options.chat),
+        provider: args.provider ?? getProviderName(this.options.chat),
       },
     );
     const embeddings = await this.generateEmbeddings(
@@ -1726,8 +1733,8 @@ export class Agent<
         userId: options.userId,
         threadId: options.threadId,
         agentName: this.options.name,
-        model: embeddingModel.modelId,
-        provider: embeddingModel.provider,
+        model: getModelName(embeddingModel),
+        provider: getProviderName(embeddingModel),
         providerMetadata: undefined,
         usage: {
           inputTokens: result.usage.tokens,
