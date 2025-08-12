@@ -36,7 +36,7 @@ import type { RunMutationCtx } from "./client/types.js";
 import { MAX_FILE_SIZE, storeFile } from "./client/files.js";
 import type { Infer } from "convex/values";
 import { omit } from "convex-helpers";
-
+import { convertUint8ArrayToBase64 } from "@ai-sdk/provider-utils";
 export type AIMessageWithoutId = Omit<AIMessage, "id">;
 
 export type SerializeUrlsAndUint8Arrays<T> = T extends URL
@@ -492,7 +492,7 @@ export function toUIFilePart(part: ImagePart | FilePart): FileUIPart {
   const dataOrUrl = part.type === "image" ? part.image : part.data;
   const url =
     dataOrUrl instanceof ArrayBuffer
-      ? encodeBase64(dataOrUrl)
+      ? convertUint8ArrayToBase64(new Uint8Array(dataOrUrl))
       : dataOrUrl.toString();
 
   return {
@@ -502,10 +502,6 @@ export function toUIFilePart(part: ImagePart | FilePart): FileUIPart {
     url,
     providerMetadata: part.providerOptions,
   };
-}
-
-function encodeBase64(data: ArrayBuffer): string {
-  return Buffer.from(data).toString("base64");
 }
 
 // Currently unused
