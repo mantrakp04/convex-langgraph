@@ -89,7 +89,7 @@ import type {
   UsageHandler,
   UserActionCtx,
 } from "./types.js";
-import type z from "zod";
+import type z from "zod/v3";
 
 export { stepCountIs } from "ai";
 export { vMessageDoc, vThreadDoc } from "../component/schema.js";

@@ -1,7 +1,7 @@
 // See the docs at https://docs.convex.dev/agents/getting-started
 import { Agent, createTool, stepCountIs } from "@convex-dev/agent";
 import { components } from "../_generated/api";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { usageHandler } from "../usage_tracking/usageHandler";
 import { chat, textEmbedding } from "../modelsForDemo";
 

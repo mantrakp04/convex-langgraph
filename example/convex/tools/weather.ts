@@ -1,6 +1,6 @@
 // See the docs at https://docs.convex.dev/agents/tools
 import { tool } from "ai";
-import { z } from "zod";
+import { z } from "zod/v3";
 
 export const getGeocoding = tool({
   description: "Get the latitude and longitude of a location",

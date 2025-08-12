@@ -3,7 +3,7 @@ import { openai } from "@ai-sdk/openai";
 import { createTool } from "@convex-dev/agent";
 import { RAG } from "@convex-dev/rag";
 import { v } from "convex/values";
-import { z } from "zod";
+import { z } from "zod/v3";
 import { components, internal } from "../_generated/api";
 import { action } from "../_generated/server";
 import { agent } from "../agents/simple";
