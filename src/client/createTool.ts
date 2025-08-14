@@ -32,7 +32,7 @@ export function createTool<INPUT, OUTPUT, Ctx extends ToolCtx = ToolCtx>(def: {
   It is also used to validate the output of the language model.
   Use descriptions to make the input understandable for the language model.
      */
-  args: ToolParameters<INPUT>;
+  args: FlexibleSchema<INPUT>;
   /**
   An async function that is called with the arguments from the tool call and produces a result.
   If not provided, the tool will not be executed automatically.
@@ -63,9 +63,7 @@ export function createTool<INPUT, OUTPUT, Ctx extends ToolCtx = ToolCtx>(def: {
    */
   onInputDelta?: (
     ctx: Ctx,
-    options: {
-      inputTextDelta: string;
-    } & ToolCallOptions,
+    options: { inputTextDelta: string } & ToolCallOptions,
   ) => void | PromiseLike<void>;
   /**
    * Optional function that is called when a tool call can be started,
@@ -137,6 +135,3 @@ export function wrapTools(
   }
   return output;
 }
-
-// Vendoring in from "ai" package since it wasn't exported
-type ToolParameters<T> = FlexibleSchema<T>;

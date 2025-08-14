@@ -1,4 +1,3 @@
-import type { LanguageModelV2 } from "@ai-sdk/provider";
 import type { FlexibleSchema } from "@ai-sdk/provider-utils";
 import type {
   AssistantContent,
@@ -17,7 +16,6 @@ import type {
   ToolChoice,
   ToolSet,
   UserContent,
-  Schema,
   CallSettings,
 } from "ai";
 import {
@@ -127,11 +125,6 @@ export {
   vUserMessage,
 } from "../validators.js";
 export type { ToolCtx } from "./createTool.js";
-export {
-  definePlaygroundAPI,
-  type AgentsFn,
-  type PlaygroundAPI,
-} from "./definePlaygroundAPI.js";
 export { getFile, storeFile } from "./files.js";
 export {
   fetchContextMessages,
@@ -494,8 +487,8 @@ export class Agent<
               userId,
               threadId,
               promptMessageId: messageId,
-              model: aiArgs.model.modelId,
-              provider: aiArgs.model.provider,
+              model: getModelName(aiArgs.model),
+              provider: getProviderName(aiArgs.model),
               step,
             });
             messages.push(...saved.messages);
@@ -514,8 +507,8 @@ export class Agent<
               userId,
               threadId,
               agentName: this.options.name,
-              model: aiArgs.model.modelId,
-              provider: aiArgs.model.provider,
+              model: getModelName(aiArgs.model),
+              provider: getProviderName(aiArgs.model),
               usage: step.usage,
               providerMetadata: step.providerMetadata,
             });
@@ -618,8 +611,8 @@ export class Agent<
             threadId,
             userId,
             agentName: this.options.name,
-            model: aiArgs.model.modelId,
-            provider: aiArgs.model.provider,
+            model: getModelName(aiArgs.model),
+            provider: getProviderName(aiArgs.model),
             providerOptions: aiArgs.providerOptions,
             order,
             stepOrder,
@@ -659,8 +652,8 @@ export class Agent<
           const saved = await this.saveStep(ctx, {
             userId,
             threadId,
-            model: aiArgs.model.modelId,
-            provider: aiArgs.model.provider,
+            model: getModelName(aiArgs.model),
+            provider: getProviderName(aiArgs.model),
             promptMessageId: messageId,
             step,
           });
@@ -681,8 +674,8 @@ export class Agent<
             userId,
             threadId,
             agentName: this.options.name,
-            model: aiArgs.model.modelId,
-            provider: aiArgs.model.provider,
+            model: getModelName(aiArgs.model),
+            provider: getProviderName(aiArgs.model),
             usage: step.usage,
             providerMetadata: step.providerMetadata,
           });
@@ -749,8 +742,8 @@ export class Agent<
           promptMessageId: messageId,
           result,
           userId,
-          model: aiArgs.model.modelId,
-          provider: aiArgs.model.provider,
+          model: getModelName(aiArgs.model),
+          provider: getProviderName(aiArgs.model),
         });
         messages.push(...saved.messages);
       }
@@ -771,8 +764,8 @@ export class Agent<
           userId,
           threadId,
           agentName: this.options.name,
-          model: aiArgs.model.modelId,
-          provider: aiArgs.model.provider,
+          model: getModelName(aiArgs.model),
+          provider: getProviderName(aiArgs.model),
           usage: result.usage,
           providerMetadata: result.providerMetadata,
         });
@@ -853,8 +846,8 @@ export class Agent<
               providerMetadata: result.providerMetadata,
               toJsonResponse: stream.toTextStreamResponse,
             },
-            model: aiArgs.model.modelId,
-            provider: aiArgs.model.provider,
+            model: getModelName(aiArgs.model),
+            provider: getProviderName(aiArgs.model),
           });
           messages.push(...saved.messages);
         }
@@ -863,8 +856,8 @@ export class Agent<
             userId,
             threadId,
             agentName: this.options.name,
-            model: aiArgs.model.modelId,
-            provider: aiArgs.model.provider,
+            model: getModelName(aiArgs.model),
+            provider: getProviderName(aiArgs.model),
             usage: result.usage,
             providerMetadata: result.providerMetadata,
           });
@@ -1540,7 +1533,7 @@ export class Agent<
       messages?: (ModelMessage | Message)[];
       system?: string;
       promptMessageId?: string;
-      model?: LanguageModelV2;
+      model?: LanguageModel;
     },
   >(
     ctx: RunActionCtx,
@@ -1552,7 +1545,7 @@ export class Agent<
       storageOptions,
     }: { userId: string | undefined; threadId: string | undefined } & Options,
   ): Promise<{
-    args: T & { model: LanguageModelV2 };
+    args: T & { model: LanguageModel };
     userId: string | undefined;
     messageId: string | undefined;
     order: number | undefined;
@@ -1666,7 +1659,7 @@ export class Agent<
         model: model ?? this.options.chat,
         system: args.system ?? this.options.instructions,
         messages: processedMessages,
-      } as T & { model: LanguageModelV2 },
+      } as T & { model: LanguageModel },
       userId,
       messageId,
       savedMessages,
