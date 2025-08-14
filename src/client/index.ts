@@ -1,22 +1,23 @@
 import type { LanguageModelV2 } from "@ai-sdk/provider";
+import type { FlexibleSchema } from "@ai-sdk/provider-utils";
 import type {
   AssistantContent,
-  ModelMessage,
   DeepPartial,
+  EmbeddingModel,
   FilePart,
   GenerateObjectResult,
   GenerateTextResult,
   ImagePart,
+  LanguageModel,
+  ModelMessage,
   StepResult,
+  StopCondition,
   StreamObjectResult,
   StreamTextResult,
+  ToolChoice,
   ToolSet,
   UserContent,
-  StopCondition,
   Schema,
-  ToolChoice,
-  LanguageModel,
-  EmbeddingModel,
   CallSettings,
 } from "ai";
 import {
@@ -52,16 +53,16 @@ import {
 } from "../mapping.js";
 import { extractText, isTool } from "../shared.js";
 import {
+  vMessageWithMetadata,
+  vSafeObjectArgs,
+  vTextArgs,
+  vMessageEmbeddings,
   type Message,
   type MessageStatus,
   type MessageWithMetadata,
   type ProviderMetadata,
   type StreamArgs,
   type Usage,
-  vMessageEmbeddings,
-  vMessageWithMetadata,
-  vSafeObjectArgs,
-  vTextArgs,
 } from "../validators.js";
 import { createTool, wrapTools, type ToolCtx } from "./createTool.js";
 import {
@@ -79,8 +80,8 @@ import {
 import {
   DeltaStreamer,
   mergeTransforms,
-  type StreamingOptions,
   syncStreams,
+  type StreamingOptions,
 } from "./streaming.js";
 import type {
   ActionCtx,
@@ -102,13 +103,12 @@ import type {
   UsageHandler,
   UserActionCtx,
 } from "./types.js";
-import type z from "zod/v3";
 
 export { stepCountIs } from "ai";
 export { vMessageDoc, vThreadDoc } from "../component/schema.js";
 export {
-  serializeDataOrUrl,
   deserializeMessage,
+  serializeDataOrUrl,
   serializeMessage,
 } from "../mapping.js";
 // NOTE: these are also exported via @convex-dev/agent/validators
@@ -127,10 +127,15 @@ export {
   vUserMessage,
 } from "../validators.js";
 export type { ToolCtx } from "./createTool.js";
+export {
+  definePlaygroundAPI,
+  type AgentsFn,
+  type PlaygroundAPI,
+} from "./definePlaygroundAPI.js";
 export { getFile, storeFile } from "./files.js";
 export {
-  filterOutOrphanedToolMessages,
   fetchContextMessages,
+  filterOutOrphanedToolMessages,
 } from "./search.js";
 export { abortStream, listStreams, syncStreams } from "./streaming.js";
 export {
@@ -791,7 +796,7 @@ export class Agent<
    * Use {@link continueThread} to get a version of this function already scoped
    * to a thread (and optionally userId).
    */
-  async streamObject<T extends z.Schema | Schema>(
+  async streamObject<T extends FlexibleSchema<T>>(
     ctx: ActionCtx,
     {
       userId: argsUserId,
