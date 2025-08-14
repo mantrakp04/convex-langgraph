@@ -481,6 +481,7 @@ export class Agent<
       ...opts,
     });
     const { args: aiArgs, messageId, order, userId } = context;
+    const messages = context.savedMessages ?? [];
     const toolCtx = {
       ...(ctx as UserActionCtx & CustomCtx),
       userId,
@@ -502,7 +503,7 @@ export class Agent<
         tools,
         onStepFinish: async (step) => {
           if (threadId && messageId && saveOutput) {
-            await this.saveStep(ctx, {
+            const saved = await this.saveStep(ctx, {
               userId,
               threadId,
               promptMessageId: messageId,
@@ -510,6 +511,7 @@ export class Agent<
               provider: aiArgs.model.provider,
               step,
             });
+            messages.push(...saved.messages);
           }
           if (this.options.rawRequestResponseHandler) {
             await this.options.rawRequestResponseHandler(ctx, {
@@ -536,6 +538,7 @@ export class Agent<
       })) as GenerateTextResult<Tools, OUTPUT> & GenerationOutputMetadata;
       result.messageId = messageId;
       result.order = order;
+      result.messages = messages;
       return result;
     } catch (error) {
       if (threadId && messageId) {
@@ -609,6 +612,7 @@ export class Agent<
       ...opts,
     });
     const { args: aiArgs, messageId, order, stepOrder, userId } = context;
+    const messages = context.savedMessages ?? [];
     const toolCtx = {
       ...(ctx as UserActionCtx & CustomCtx),
       userId,
@@ -674,6 +678,7 @@ export class Agent<
             step,
           });
           await streamer?.finish(saved.messages);
+          messages.push(...saved.messages);
         }
         if (this.options.rawRequestResponseHandler) {
           await this.options.rawRequestResponseHandler(ctx, {
@@ -704,6 +709,7 @@ export class Agent<
       GenerationOutputMetadata;
     result.messageId = messageId;
     result.order = order;
+    result.messages = messages;
     return result;
   }
 
@@ -742,6 +748,7 @@ export class Agent<
       ...opts,
     });
     const { args: aiArgs, messageId, order, userId } = context;
+    const messages = context.savedMessages ?? [];
     const saveOutput = opts.storageOptions?.saveMessages !== "none";
     try {
       const result = (await generateObject(
@@ -750,7 +757,7 @@ export class Agent<
       )) as GenerateObjectResult<T> & GenerationOutputMetadata;
 
       if (threadId && messageId && saveOutput) {
-        await this.saveObject(ctx, {
+        const saved = await this.saveObject(ctx, {
           threadId,
           promptMessageId: messageId,
           result,
@@ -758,9 +765,11 @@ export class Agent<
           model: aiArgs.model.modelId,
           provider: aiArgs.model.provider,
         });
+        messages.push(...saved.messages);
       }
       result.messageId = messageId;
       result.order = order;
+      result.messages = messages;
       if (this.options.rawRequestResponseHandler) {
         await this.options.rawRequestResponseHandler(ctx, {
           userId,
@@ -831,6 +840,7 @@ export class Agent<
       ...opts,
     });
     const { args: aiArgs, messageId, order, userId } = context;
+    const messages = context.savedMessages ?? [];
     const saveOutput = opts.storageOptions?.saveMessages !== "none";
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const stream = streamObject<any>({
@@ -842,7 +852,7 @@ export class Agent<
       },
       onFinish: async (result) => {
         if (threadId && messageId && saveOutput) {
-          await this.saveObject(ctx, {
+          const saved = await this.saveObject(ctx, {
             userId,
             threadId,
             promptMessageId: messageId,
@@ -859,6 +869,7 @@ export class Agent<
             model: aiArgs.model.modelId,
             provider: aiArgs.model.provider,
           });
+          messages.push(...saved.messages);
         }
         if (opts.usageHandler && result.usage) {
           await opts.usageHandler(ctx, {
@@ -887,6 +898,7 @@ export class Agent<
       GenerationOutputMetadata;
     stream.messageId = messageId;
     stream.order = order;
+    stream.messages = messages;
     return stream;
   }
 
@@ -1282,7 +1294,7 @@ export class Agent<
       { userId: args.userId, threadId: args.threadId },
       messages.map((m) => m.message),
     );
-    const saved = await ctx.runMutation(this.component.messages.addMessages, {
+    return ctx.runMutation(this.component.messages.addMessages, {
       userId: args.userId,
       threadId: args.threadId,
       agentName: this.options.name,
@@ -1291,7 +1303,6 @@ export class Agent<
       embeddings,
       failPendingSteps: false,
     });
-    return saved;
   }
 
   /**
@@ -1312,7 +1323,7 @@ export class Agent<
       result: GenerateObjectResult<unknown>;
       metadata?: Omit<MessageWithMetadata, "message">;
     },
-  ): Promise<void> {
+  ): Promise<{ messages: MessageDoc[] }> {
     const { messages } = await serializeObjectResult(
       ctx,
       this.component,
@@ -1328,7 +1339,7 @@ export class Agent<
       messages.map((m) => deserializeMessage(m.message)),
     );
 
-    await ctx.runMutation(this.component.messages.addMessages, {
+    return ctx.runMutation(this.component.messages.addMessages, {
       userId: args.userId,
       threadId: args.threadId,
       promptMessageId: args.promptMessageId,
@@ -1561,6 +1572,7 @@ export class Agent<
     messageId: string | undefined;
     order: number | undefined;
     stepOrder: number | undefined;
+    savedMessages: MessageDoc[] | undefined;
   }> {
     // If only a promptMessageId is provided, this will be empty.
     const messages = args.messages ?? [];
@@ -1595,6 +1607,7 @@ export class Agent<
     let messageId = promptMessage?._id;
     let order = promptMessage?.order;
     let stepOrder = promptMessage?.stepOrder;
+    let savedMessages = undefined;
     if (
       threadId &&
       messages.length + prompt.length &&
@@ -1617,6 +1630,7 @@ export class Agent<
       messageId = saved.messages.at(-1)!._id;
       order = saved.messages.at(-1)!.order;
       stepOrder = saved.messages.at(-1)!.stepOrder;
+      savedMessages = saved.messages;
     }
 
     if (promptMessage?.message) {
@@ -1671,6 +1685,7 @@ export class Agent<
       } as T & { model: LanguageModelV2 },
       userId,
       messageId,
+      savedMessages,
       order,
       stepOrder,
     };

@@ -35,7 +35,7 @@ import type {
 import type { GenericId } from "convex/values";
 import type { z } from "zod/v3";
 import type { Mounts } from "../component/_generated/api.js";
-import type { ThreadDoc } from "../component/schema.js";
+import type { MessageDoc, ThreadDoc } from "../component/schema.js";
 import type {
   CallSettings,
   ProviderMetadata,
@@ -115,7 +115,21 @@ export type StorageOptions = {
   saveMessages?: "all" | "none" | "promptAndOutput";
 };
 
-export type GenerationOutputMetadata = { messageId?: string; order?: number };
+export type GenerationOutputMetadata = {
+  /**
+   * The ID of the prompt message for the generation.
+   */
+  messageId?: string;
+  /**
+   * The order of the prompt message for the generation.
+   */
+  order?: number;
+  /**
+   * The messages saved for the generation - both saved input and output.
+   * If you passed promptMessageId, it will not include that message.
+   */
+  messages?: MessageDoc[];
+};
 
 export type UsageHandler = (
   ctx: RunActionCtx,
