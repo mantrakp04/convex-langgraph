@@ -152,7 +152,6 @@ export type Mounts = {
             | "error"
             | "other"
             | "unknown";
-          id?: string;
           message:
             | {
                 content:

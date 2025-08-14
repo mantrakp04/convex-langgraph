@@ -232,12 +232,6 @@ async function addMessagesHandler(
       error: fail ? "Parent message failed" : undefined,
       stepOrder,
     });
-    // Let's just not set the id field and have it set only in explicit cases.
-    // if (!message.id) {
-    //   await ctx.db.patch(messageId, {
-    //     id: messageId,
-    //   });
-    // }
     if (message.fileIds) {
       await changeRefcount(ctx, [], message.fileIds);
     }

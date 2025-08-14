@@ -2,15 +2,17 @@ import type { ModelMessage } from "ai";
 import type { PaginationOptions, PaginationResult } from "convex/server";
 import type { MessageDoc } from "../component/schema.js";
 import { validateVectorDimension } from "../component/vector/tables.js";
-import type {
-  Message,
-  MessageEmbeddings,
-  MessageEmbeddingsWithDimension,
-  MessageStatus,
-  MessageWithMetadata,
+import {
+  vMessageWithMetadata,
+  type Message,
+  type MessageEmbeddings,
+  type MessageEmbeddingsWithDimension,
+  type MessageStatus,
+  type MessageWithMetadata,
 } from "../validators.js";
 import { serializeMessage } from "./index.js";
 import type { AgentComponent, RunMutationCtx, RunQueryCtx } from "./types.js";
+import { parse } from "convex-helpers/validators";
 
 /**
  * List messages from a thread.
@@ -57,7 +59,7 @@ export type SaveMessagesArgs = {
   /**
    * The messages to save.
    */
-  messages: ((ModelMessage & { id?: string | undefined }) | Message)[];
+  messages: (ModelMessage | Message)[];
   /**
    * Metadata to save with the messages. Each element corresponds to the
    * message at the same index.
@@ -114,11 +116,11 @@ export async function saveMessages(
     messages: await Promise.all(
       args.messages.map(async (m, i) => {
         const { message, fileIds } = await serializeMessage(ctx, component, m);
-        return {
+        return parse(vMessageWithMetadata, {
           ...args.metadata?.[i],
           message,
           fileIds,
-        } as MessageWithMetadata;
+        });
       }),
     ),
     failPendingSteps: args.failPendingSteps ?? false,

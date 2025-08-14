@@ -236,7 +236,6 @@ export declare const components: {
               | "error"
               | "other"
               | "unknown";
-            id?: string;
             message:
               | {
                   content:

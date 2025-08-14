@@ -35,7 +35,6 @@ import type { ActionCtx, AgentComponent } from "./client/types.js";
 import type { RunMutationCtx } from "./client/types.js";
 import { MAX_FILE_SIZE, storeFile } from "./client/files.js";
 import type { Infer } from "convex/values";
-import { omit } from "convex-helpers";
 import { convertUint8ArrayToBase64 } from "@ai-sdk/provider-utils";
 export type AIMessageWithoutId = Omit<AIMessage, "id">;
 
@@ -58,16 +57,23 @@ export type SerializedMessage = Message;
 export async function serializeMessage(
   ctx: ActionCtx | RunMutationCtx,
   component: AgentComponent,
-  messageWithId: (ModelMessage & { id?: string }) | Message,
+  message: ModelMessage | Message,
 ): Promise<{ message: SerializedMessage; fileIds?: string[] }> {
-  const message =
-    "id" in messageWithId ? omit(messageWithId, ["id"]) : messageWithId;
   const { content, fileIds } = await serializeContent(
     ctx,
     component,
     message.content,
   );
-  return { message: { ...message, content } as SerializedMessage, fileIds };
+  return {
+    message: {
+      role: message.role,
+      content,
+      ...(message.providerOptions
+        ? { providerOptions: message.providerOptions }
+        : {}),
+    } as SerializedMessage,
+    fileIds,
+  };
 }
 
 export function deserializeMessage(message: SerializedMessage): ModelMessage {
@@ -142,17 +148,10 @@ export async function serializeNewMessagesInStep<TOOLS extends ToolSet>(
     (step.toolResults.length > 0
       ? step.response.messages.slice(-2)
       : step.response.messages.slice(-1)
-    ).map(async (messageWithId): Promise<MessageWithMetadata> => {
-      const { message, fileIds } = await serializeMessage(
-        ctx,
-        component,
-        messageWithId,
-      );
+    ).map(async (msg): Promise<MessageWithMetadata> => {
+      const { message, fileIds } = await serializeMessage(ctx, component, msg);
       return {
         message,
-        // Let's not store the ID by default here. It's being generated internally
-        // and not referenced elsewhere that we know of.
-        // id: message.id,
         ...(message.role === "tool" ? toolFields : assistantFields),
         text: step.text,
         fileIds,
@@ -178,7 +177,6 @@ export async function serializeObjectResult(
     messages: [
       {
         message,
-        id: result.response.id,
         model: metadata.model,
         provider: metadata.provider,
         providerMetadata: result.providerMetadata,

@@ -1372,7 +1372,7 @@ export class Agent<
       messageId: string;
       patch: {
         /** The message to replace the existing message. */
-        message: (ModelMessage & { id?: string }) | Message;
+        message: ModelMessage | Message;
         /** The status to set on the message. */
         status: "success" | "error";
         /** The error message to set on the message. */
@@ -1599,7 +1599,6 @@ export class Agent<
       const coreMessages = [...messages, ...prompt];
       const toSave = saveAll ? coreMessages : coreMessages.slice(-1);
       const metadata = Array.from({ length: toSave.length }, () => ({}));
-      metadata[metadata.length - 1] = { id: args.id };
       const saved = await this.saveMessages(ctx, {
         threadId,
         userId,
