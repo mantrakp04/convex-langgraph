@@ -1,6 +1,5 @@
-import type { LanguageModelV2 } from "@ai-sdk/provider";
+import type { FlexibleSchema } from "@ai-sdk/provider-utils";
 import type {
-  ModelMessage,
   DeepPartial,
   generateObject,
   GenerateObjectResult,
@@ -9,6 +8,9 @@ import type {
   JSONValue,
   LanguageModelRequestMetadata,
   LanguageModelResponseMetadata,
+  LanguageModelUsage,
+  ModelMessage,
+  LanguageModel,
   RepairTextFunction,
   streamObject,
   StreamObjectResult,
@@ -17,23 +19,20 @@ import type {
   TelemetrySettings,
   ToolChoice,
   ToolSet,
-  Schema,
-  LanguageModelUsage,
 } from "ai";
 import type {
   Auth,
   Expand,
-  FunctionReference,
-  StorageActionWriter,
-  StorageReader,
-  WithoutSystemFields,
   FunctionArgs,
+  FunctionReference,
   FunctionReturnType,
   GenericActionCtx,
   GenericDataModel,
+  StorageActionWriter,
+  StorageReader,
+  WithoutSystemFields,
 } from "convex/server";
 import type { GenericId } from "convex/values";
-import type { z } from "zod/v3";
 import type { Mounts } from "../component/_generated/api.js";
 import type { ThreadDoc } from "../component/schema.js";
 import type {
@@ -170,7 +169,7 @@ export type TextArgs<
    * The model to use for the LLM calls. This will override the model specified
    * in the Agent constructor.
    */
-  model?: LanguageModelV2;
+  model?: LanguageModel;
   /**
    * The tools to use for the tool calls. This will override tools specified
    * in the Agent constructor or createThread / continueThread.
@@ -209,7 +208,7 @@ export type StreamingTextArgs<
    * The model to use for the tool calls. This will override the model specified
    * in the Agent constructor.
    */
-  model?: LanguageModelV2;
+  model?: LanguageModel;
   /**
    * The tools to use for the tool calls. This will override tools specified
    * in the Agent constructor or createThread / continueThread.
@@ -227,7 +226,7 @@ type BaseGenerateObjectOptions = CallSettings & {
    * The model to use for the object generation. This will override the model
    * specified in the Agent constructor.
    */
-  model?: LanguageModelV2;
+  model?: LanguageModel;
   /**
    * The system prompt to use for the object generation. This will override the
    * system prompt specified in the Agent constructor.
@@ -258,7 +257,7 @@ type BaseGenerateObjectOptions = CallSettings & {
 };
 
 type StandardGenerateObjectOptions<T> = {
-  schema: z.Schema<T>;
+  schema: FlexibleSchema<T>;
   schemaName?: string;
   schemaDescription?: string;
   output?: "object" | "array";
@@ -287,7 +286,7 @@ export type OurObjectArgs<T> = GenerateObjectArgs<T> &
     "experimental_repairText" | "abortSignal"
   >;
 
-export type OurStreamObjectArgs<T extends Schema | z.Schema> =
+export type OurStreamObjectArgs<T extends FlexibleSchema<T>> =
   StreamObjectArgs<T> &
     Pick<
       Parameters<typeof streamObject<T>>[0],
@@ -407,7 +406,7 @@ export interface Thread<DefaultTools extends ToolSet> {
    * for the {@link ContextOptions} and {@link StorageOptions}.
    * @returns The result of the streamObject function.
    */
-  streamObject<T extends z.Schema | Schema>(
+  streamObject<T extends FlexibleSchema<T>>(
     args: OurStreamObjectArgs<T>,
     options?: Options,
   ): Promise<

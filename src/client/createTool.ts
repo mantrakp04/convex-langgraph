@@ -1,6 +1,6 @@
-import type { Schema, Tool, ToolCallOptions, ToolSet } from "ai";
+import type { FlexibleSchema } from "@ai-sdk/provider-utils";
+import type { Tool, ToolCallOptions, ToolSet } from "ai";
 import { tool } from "ai";
-import { z } from "zod/v3";
 import type { Agent } from "./index.js";
 import type { GenericActionCtx, GenericDataModel } from "convex/server";
 import type { ProviderOptions } from "../validators.js";
@@ -139,4 +139,4 @@ export function wrapTools(
 }
 
 // Vendoring in from "ai" package since it wasn't exported
-type ToolParameters<T> = z.Schema<T> | Schema<T>;
+type ToolParameters<T> = FlexibleSchema<T>;
