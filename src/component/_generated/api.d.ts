@@ -276,6 +276,7 @@ export type Mounts = {
                 type: "source";
               }
           >;
+          status?: "pending" | "success" | "failed";
           text?: string;
           usage?: {
             cachedInputTokens?: number;
@@ -290,7 +291,6 @@ export type Mounts = {
             | { message: string; type: "other" }
           >;
         }>;
-        pending?: boolean;
         promptMessageId?: string;
         threadId: string;
         userId?: string;

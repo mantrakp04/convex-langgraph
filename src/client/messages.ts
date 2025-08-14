@@ -66,12 +66,6 @@ export type SaveMessagesArgs = {
    */
   metadata?: Omit<MessageWithMetadata, "message">[];
   /**
-   * If false, it will "commit" the messages immediately.
-   * If true, it will mark them as pending until the final step has finished.
-   * Defaults to false.
-   */
-  pending?: boolean;
-  /**
    * If true, it will fail any pending steps.
    * Defaults to false.
    */
@@ -124,7 +118,6 @@ export async function saveMessages(
       }),
     ),
     failPendingSteps: args.failPendingSteps ?? false,
-    pending: args.pending ?? false,
   });
   return { messages: result.messages };
 }

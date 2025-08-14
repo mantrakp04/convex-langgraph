@@ -1261,7 +1261,7 @@ export class Agent<
        */
       provider?: string;
     },
-  ): Promise<{ messages: MessageDoc[]; pending?: MessageDoc }> {
+  ): Promise<{ messages: MessageDoc[] }> {
     const messages = await serializeNewMessagesInStep(
       ctx,
       this.component,
@@ -1329,7 +1329,6 @@ export class Agent<
       messages,
       embeddings,
       agentName: this.options.name,
-      pending: false,
     });
   }
 
@@ -2016,7 +2015,6 @@ export class Agent<
         userId: v.optional(v.string()),
         promptMessageId: v.optional(v.string()),
         messages: v.array(vMessageWithMetadata),
-        pending: v.optional(v.boolean()),
         failPendingSteps: v.optional(v.boolean()),
         embeddings: v.optional(vMessageEmbeddings),
       },

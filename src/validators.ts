@@ -240,6 +240,7 @@ export const vMessageWithMetadataInternal = v.object({
   message: vMessage,
   text: v.optional(v.string()),
   fileIds: v.optional(v.array(v.id("files"))),
+  status: v.optional(vMessageStatus),
   // metadata
   finishReason: v.optional(vFinishReason),
   model: v.optional(v.string()),

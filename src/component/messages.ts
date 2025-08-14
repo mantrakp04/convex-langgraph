@@ -126,15 +126,12 @@ const addMessagesArgs = {
   agentName: v.optional(v.string()),
   messages: v.array(vMessageWithMetadataInternal),
   embeddings: v.optional(vMessageEmbeddingsWithDimension),
-  pending: v.optional(v.boolean()),
   failPendingSteps: v.optional(v.boolean()),
 };
 export const addMessages = mutation({
   args: addMessagesArgs,
   handler: addMessagesHandler,
-  returns: v.object({
-    messages: v.array(vMessageDoc),
-  }),
+  returns: v.object({ messages: v.array(vMessageDoc) }),
 });
 async function addMessagesHandler(
   ctx: MutationCtx,
@@ -147,14 +144,8 @@ async function addMessagesHandler(
     assert(thread, `Thread ${args.threadId} not found`);
     userId = thread.userId;
   }
-  const {
-    embeddings,
-    failPendingSteps,
-    pending,
-    messages,
-    promptMessageId,
-    ...rest
-  } = args;
+  const { embeddings, failPendingSteps, messages, promptMessageId, ...rest } =
+    args;
   const parentMessage = promptMessageId && (await ctx.db.get(promptMessageId));
   if (failPendingSteps) {
     assert(args.threadId, "threadId is required to fail pending steps");
@@ -228,8 +219,10 @@ async function addMessagesHandler(
       order,
       tool: isTool(message.message),
       text: extractText(message.message),
-      status: fail ? "failed" : pending ? "pending" : "success",
-      error: fail ? "Parent message failed" : undefined,
+      status: fail ? "failed" : (message.status ?? "success"),
+      error: fail
+        ? (parentMessage?.error ?? "Parent message failed")
+        : undefined,
       stepOrder,
     });
     if (message.fileIds) {
