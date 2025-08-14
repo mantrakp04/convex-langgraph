@@ -47,7 +47,7 @@ export default function Example() {
     api.rate_limiting.rateLimiting.submitQuestion,
   );
   const messages = useThreadMessages(
-    api.chat.basic.listMessages,
+    api.chat.basic.listThreadMessages,
     threadId ? { threadId } : "skip",
     { initialNumItems: 10 },
   );

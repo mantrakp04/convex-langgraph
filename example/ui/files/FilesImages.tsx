@@ -25,7 +25,7 @@ export default function Example() {
     api.files.addFile.submitFileQuestion,
   ).withOptimisticUpdate((store, args) => {
     if (!threadId) return;
-    optimisticallySendMessage(api.chat.basic.listMessages)(store, {
+    optimisticallySendMessage(api.chat.basic.listThreadMessages)(store, {
       prompt: args.question,
       threadId,
     });
@@ -34,7 +34,7 @@ export default function Example() {
     undefined,
   );
   const messages = useThreadMessages(
-    api.chat.basic.listMessages,
+    api.chat.basic.listThreadMessages,
     threadId ? { threadId } : "skip",
     { initialNumItems: 10 },
   );
