@@ -103,13 +103,13 @@ export async function fetchContextMessages(
       component.messages.searchMessages,
       {
         searchAllMessagesForUserId: opts?.searchOtherThreads
-          ? args.userId ??
+          ? (args.userId ??
             (args.threadId &&
               (
                 await ctx.runQuery(component.threads.getThread, {
                   threadId: args.threadId,
                 })
-              )?.userId)
+              )?.userId))
           : undefined,
         threadId: args.threadId,
         beforeMessageId: args.upToAndIncludingMessageId,

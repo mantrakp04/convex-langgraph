@@ -5,8 +5,6 @@ import type { ContextOptions, StorageOptions } from "./client/types.js";
 import type { TextStreamPart } from "./validators.js";
 import { vContextOptions, vStorageOptions } from "./validators.js";
 
-
-
 expectTypeOf<Infer<typeof vContextOptions>>().toExtend<ContextOptions>();
 expectTypeOf<ContextOptions>().toExtend<Infer<typeof vContextOptions>>();
 

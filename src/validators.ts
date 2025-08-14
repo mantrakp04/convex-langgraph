@@ -1,10 +1,4 @@
-import {
-  v,
-  type Infer,
-  type ObjectType,
-  type Validator,
-  type Value,
-} from "convex/values";
+import { v, type Infer, type Validator, type Value } from "convex/values";
 import { vVectorDimension } from "./component/vector/tables.js";
 
 // const deprecated = v.optional(v.any()) as unknown as VNull<unknown, "optional">;
@@ -209,29 +203,6 @@ export const vRequest = v.object({
   url: v.optional(v.string()),
 });
 
-const vMessageWithFileAndId = v.object({
-  id: v.optional(v.string()),
-  message: vMessage,
-  fileId: v.optional(v.id("files")),
-});
-
-export const vResponse = v.object({
-  id: v.string(),
-  timestamp: v.number(),
-  modelId: v.string(),
-  headers: v.optional(v.record(v.string(), v.string())), // clear these?
-  messages: v.array(vMessageWithFileAndId),
-  body: v.optional(v.any()),
-});
-
-export const vResponseWithoutMessages = v.object({
-  id: v.string(),
-  timestamp: v.number(),
-  modelId: v.string(),
-  headers: v.optional(v.record(v.string(), v.string())), // clear these?
-  body: v.optional(v.any()),
-});
-
 export const vFinishReason = v.union(
   v.literal("stop"),
   v.literal("length"),
@@ -262,17 +233,14 @@ export const vLanguageModelCallWarning = v.union(
     tool: v.any(),
     details: v.optional(v.string()),
   }),
-  v.object({
-    type: v.literal("other"),
-    message: v.string(),
-  }),
+  v.object({ type: v.literal("other"), message: v.string() }),
 );
 
 export const vMessageWithMetadataInternal = v.object({
-  id: v.optional(v.string()), // external id, e.g. from Vercel AI SDK
   message: vMessage,
   text: v.optional(v.string()),
   fileIds: v.optional(v.array(v.id("files"))),
+  status: v.optional(vMessageStatus),
   // metadata
   finishReason: v.optional(vFinishReason),
   model: v.optional(v.string()),
@@ -291,24 +259,20 @@ export const vMessageWithMetadata = v.object({
 });
 export type MessageWithMetadata = Infer<typeof vMessageWithMetadata>;
 
-export const vMessageEmbeddings = v.object({
+export const vMessageEmbeddingsWithDimension = v.object({
   model: v.string(),
   dimension: vVectorDimension,
   vectors: v.array(v.union(v.array(v.number()), v.null())),
 });
-export type MessageEmbeddings = Infer<typeof vMessageEmbeddings>;
+export type MessageEmbeddingsWithDimension = Infer<
+  typeof vMessageEmbeddingsWithDimension
+>;
 
-export const vObjectResult = v.object({
-  request: vRequest,
-  response: vResponseWithoutMessages,
-  finishReason: vFinishReason,
-  usage: v.optional(v.any()),
-  object: v.any(),
-  error: v.optional(v.string()),
-  warnings: v.optional(v.array(vLanguageModelCallWarning)),
-  providerMetadata,
+export const vMessageEmbeddings = v.object({
+  model: v.string(),
+  vectors: v.array(v.union(v.array(v.number()), v.null())),
 });
-export type ObjectResult = Infer<typeof vObjectResult>;
+export type MessageEmbeddings = Infer<typeof vMessageEmbeddings>;
 
 export const vContextOptionsSearchOptions = v.object({
   limit: v.number(),
@@ -338,18 +302,19 @@ const vPromptFields = {
   promptMessageId: v.optional(v.string()),
 };
 
-export const vCallSettingsFields = {
-  maxTokens: v.optional(v.number()),
+export const vCallSettings = v.object({
+  maxOutputTokens: v.optional(v.number()),
   temperature: v.optional(v.number()),
   topP: v.optional(v.number()),
   topK: v.optional(v.number()),
   presencePenalty: v.optional(v.number()),
   frequencyPenalty: v.optional(v.number()),
+  stopSequences: v.optional(v.array(v.string())),
   seed: v.optional(v.number()),
   maxRetries: v.optional(v.number()),
   headers: v.optional(v.record(v.string(), v.string())),
-};
-export type CallSettings = ObjectType<typeof vCallSettingsFields>;
+});
+export type CallSettings = Infer<typeof vCallSettings>;
 
 const vCommonArgs = {
   userId: v.optional(v.string()),
@@ -357,7 +322,7 @@ const vCommonArgs = {
   contextOptions: v.optional(vContextOptions),
   storageOptions: v.optional(vStorageOptions),
   providerOptions,
-  ...vCallSettingsFields,
+  callSettings: v.optional(vCallSettings),
   ...vPromptFields,
 };
 

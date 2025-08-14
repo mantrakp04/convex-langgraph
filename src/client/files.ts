@@ -22,8 +22,8 @@ type File = {
  * @param ctx A ctx object from an action.
  * @param component The agent component.
  * @param blob The blob to store.
- * @param filename The filename to store.
- * @param sha256 The sha256 hash of the file. If not provided, it will be
+ * @param args.filename The filename to store.
+ * @param args.sha256 The sha256 hash of the file. If not provided, it will be
  *   computed. However, to ensure no corruption during transfer, you can
  *   calculate this on the client to enforce integrity.
  * @returns The URL, fileId, and storageId of the stored file.
@@ -32,8 +32,7 @@ export async function storeFile(
   ctx: ActionCtx | RunMutationCtx,
   component: AgentComponent,
   blob: Blob,
-  filename?: string,
-  sha256?: string,
+  { filename, sha256 }: { filename?: string; sha256?: string } = {},
 ): Promise<{
   file: File;
   filePart: FilePart;
