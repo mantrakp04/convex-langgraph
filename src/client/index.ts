@@ -415,26 +415,6 @@ export class Agent<
   }
 
   /**
-   * Search for threads by title, paginated.
-   * @param ctx The context passed from the query/mutation/action.
-   * @returns The threads matching the search, paginated.
-   */
-  async searchThreadTitles(
-    ctx: RunQueryCtx,
-    {
-      userId,
-      query,
-      limit,
-    }: { userId?: string | undefined; query: string; limit?: number },
-  ): Promise<ThreadDoc[]> {
-    return ctx.runQuery(this.component.threads.searchThreadTitles, {
-      userId,
-      query,
-      limit: limit ?? 10,
-    });
-  }
-
-  /**
    * This behaves like {@link generateText} from the "ai" package except that
    * it add context based on the userId and threadId and saves the input and
    * resulting messages to the thread, if specified.

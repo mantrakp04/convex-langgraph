@@ -1,3 +1,4 @@
+import type { WithoutSystemFields } from "convex/server";
 import type { ThreadDoc } from "../component/schema.js";
 import type { AgentComponent, RunMutationCtx, RunQueryCtx } from "./types.js";
 
@@ -42,4 +43,36 @@ export async function getThreadMetadata(
     throw new Error("Thread not found");
   }
   return thread;
+}
+
+export async function updateThreadMetadata(
+  ctx: RunMutationCtx,
+  component: AgentComponent,
+  args: { threadId: string; patch: Partial<WithoutSystemFields<ThreadDoc>> },
+) {
+  return ctx.runMutation(component.threads.updateThread, {
+    threadId: args.threadId,
+    patch: args.patch,
+  });
+}
+
+/**
+ * Search for threads by title, paginated.
+ * @param ctx The context passed from the query/mutation/action.
+ * @returns The threads matching the search, paginated.
+ */
+export async function searchThreadTitles(
+  ctx: RunQueryCtx,
+  component: AgentComponent,
+  {
+    userId,
+    query,
+    limit,
+  }: { userId?: string | undefined; query: string; limit?: number },
+): Promise<ThreadDoc[]> {
+  return ctx.runQuery(component.threads.searchThreadTitles, {
+    userId,
+    query,
+    limit: limit ?? 10,
+  });
 }
