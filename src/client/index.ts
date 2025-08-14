@@ -52,7 +52,6 @@ import {
 import { extractText, isTool } from "../shared.js";
 import {
   type Message,
-  type MessageEmbeddings,
   type MessageStatus,
   type MessageWithMetadata,
   type ProviderMetadata,
@@ -63,7 +62,12 @@ import {
   vTextArgs,
 } from "../validators.js";
 import { createTool, wrapTools, type ToolCtx } from "./createTool.js";
-import { listMessages } from "./listMessages.js";
+import {
+  listMessages,
+  saveMessages,
+  type SaveMessageArgs,
+  type SaveMessagesArgs,
+} from "./messages.js";
 import {
   fetchContextMessages,
   getModelName,
@@ -126,7 +130,14 @@ export {
   fetchContextMessages,
 } from "./search.js";
 export { abortStream, listStreams, syncStreams } from "./streaming.js";
-export { createTool, extractText, isTool, listMessages };
+export {
+  listMessages,
+  saveMessage,
+  saveMessages,
+  type SaveMessageArgs,
+  type SaveMessagesArgs,
+} from "./messages.js";
+export { createTool, extractText, isTool };
 export {
   definePlaygroundAPI,
   type PlaygroundAPI,
@@ -2126,163 +2137,4 @@ export async function getThreadMetadata(
     throw new Error("Thread not found");
   }
   return thread;
-}
-
-type SaveMessagesArgs = {
-  threadId: string;
-  userId?: string | null;
-  /**
-   * The message that these messages are in response to. They will be
-   * the same "order" as this message, at increasing stepOrder(s).
-   */
-  promptMessageId?: string;
-  /**
-   * The messages to save.
-   */
-  messages: ((ModelMessage & { id?: string | undefined }) | Message)[];
-  /**
-   * Metadata to save with the messages. Each element corresponds to the
-   * message at the same index.
-   */
-  metadata?: Omit<MessageWithMetadata, "message">[];
-  /**
-   * If false, it will "commit" the messages immediately.
-   * If true, it will mark them as pending until the final step has finished.
-   * Defaults to false.
-   */
-  pending?: boolean;
-  /**
-   * If true, it will fail any pending steps.
-   * Defaults to false.
-   */
-  failPendingSteps?: boolean;
-  /**
-   * The embeddings to save with the messages.
-   */
-  embeddings?: Omit<MessageEmbeddings, "dimension">;
-};
-
-/**
- * Explicitly save messages associated with the thread (& user if provided)
- */
-export async function saveMessages(
-  ctx: RunMutationCtx,
-  component: AgentComponent,
-  args: SaveMessagesArgs & {
-    /**
-     * The agent name to associate with the messages.
-     */
-    agentName?: string;
-  },
-) {
-  let embeddings: MessageEmbeddings | undefined;
-  if (args.embeddings) {
-    const dimension = args.embeddings.vectors.find((v) => v !== null)?.length;
-    if (dimension) {
-      validateVectorDimension(dimension);
-      embeddings = {
-        model: args.embeddings.model,
-        dimension,
-        vectors: args.embeddings.vectors,
-      };
-    }
-  }
-  const result = await ctx.runMutation(component.messages.addMessages, {
-    threadId: args.threadId,
-    userId: args.userId ?? undefined,
-    agentName: args.agentName,
-    promptMessageId: args.promptMessageId,
-    embeddings,
-    messages: await Promise.all(
-      args.messages.map(async (m, i) => {
-        const { message, fileIds } = await serializeMessage(ctx, component, m);
-        return {
-          ...args.metadata?.[i],
-          message,
-          fileIds,
-        } as MessageWithMetadata;
-      }),
-    ),
-    failPendingSteps: args.failPendingSteps ?? false,
-    pending: args.pending ?? false,
-  });
-  return {
-    lastMessageId: result.messages.at(-1)!._id,
-    messages: result.messages,
-  };
-}
-
-type SaveMessageArgs = {
-  threadId: string;
-  userId?: string | null;
-  /**
-   * Metadata to save with the messages. Each element corresponds to the
-   * message at the same index.
-   */
-  metadata?: Omit<MessageWithMetadata, "message">;
-  /**
-   * The embedding to save with the message.
-   */
-  embedding?: {
-    vector: number[];
-    model: string;
-  };
-} & (
-  | {
-      prompt?: undefined;
-      /**
-       * The message to save.
-       */
-      message: ModelMessage | Message;
-    }
-  | {
-      /*
-       * The prompt to save with the message.
-       */
-      prompt: string;
-      message?: undefined;
-    }
-);
-
-/**
- * Save a message to the thread.
- * @param ctx A ctx object from a mutation or action.
- * @param args The message and what to associate it with (user / thread)
- * You can pass extra metadata alongside the message, e.g. associated fileIds.
- * @returns The messageId of the saved message.
- */
-export async function saveMessage(
-  ctx: RunMutationCtx,
-  component: AgentComponent,
-  args: SaveMessageArgs & {
-    /**
-     * The agent name to associate with the message.
-     */
-    agentName?: string;
-  },
-) {
-  let embeddings:
-    | {
-        vectors: number[][];
-        model: string;
-      }
-    | undefined;
-  if (args.embedding && args.embedding.vector) {
-    embeddings = {
-      model: args.embedding.model,
-      vectors: [args.embedding.vector],
-    };
-  }
-  const { lastMessageId, messages } = await saveMessages(ctx, component, {
-    threadId: args.threadId,
-    userId: args.userId ?? undefined,
-    agentName: args.agentName,
-    messages:
-      args.prompt !== undefined
-        ? [{ role: "user", content: args.prompt }]
-        : [args.message],
-    metadata: args.metadata ? [args.metadata] : undefined,
-    embeddings,
-  });
-  return { messageId: lastMessageId, message: messages.at(-1)! };
 }
