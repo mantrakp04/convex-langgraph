@@ -280,7 +280,7 @@ function MyComponent({ threadId }: { threadId: string }) {
   return (
     <div>
       {toUIMessages(messages.results ?? []).map((message) => (
-        <div key={message.key}>{message.content}</div>
+        <div key={message.key}>{message.text}</div>
       ))}
     </div>
   );
@@ -321,7 +321,7 @@ It can work with any text, but is especially handy for streaming text.
 import { useSmoothText } from "@convex-dev/agent/react";
 
 // in the component
-const [visibleText] = useSmoothText(message.content);
+const [visibleText] = useSmoothText(message.text);
 ```
 
 You can configure the initial characters per second. It will adapt over time to
@@ -335,7 +335,7 @@ streaming and non-streaming messages, do:
 import { useSmoothText, type UIMessage } from "@convex-dev/agent/react";
 
 function Message({ message }: { message: UIMessage }) {
-  const [visibleText] = useSmoothText(message.content, {
+  const [visibleText] = useSmoothText(message.text, {
     startStreaming: message.status === "streaming",
   });
   return <div>{visibleText}</div>;
