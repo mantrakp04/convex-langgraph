@@ -263,7 +263,7 @@ function orderedMessagesStream(
               .eq("threadId", threadId)
               .eq("status", status)
               .eq("tool", tool);
-            if (order) {
+            if (order !== undefined) {
               return qq.eq("order", order);
             }
             return qq;

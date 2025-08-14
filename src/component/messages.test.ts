@@ -30,6 +30,29 @@ describe("agent", () => {
       stepOrder: 1,
     });
   });
+  test("getMaxMessage works for a specific order", async () => {
+    const t = convexTest(schema, modules);
+    const thread = await t.mutation(api.threads.createThread, {
+      userId: "test",
+    });
+    const { messages } = await t.mutation(api.messages.addMessages, {
+      threadId: thread._id as Id<"threads">,
+      messages: [
+        { message: { role: "user", content: "hello" } },
+        { message: { role: "assistant", content: "step 1" } },
+        { message: { role: "user", content: "hello2" } },
+      ],
+    });
+    const maxMessage = await t.run(async (ctx) => {
+      return await getMaxMessage(ctx, thread._id as Id<"threads">, 0);
+    });
+    expect(maxMessage).toMatchObject({
+      _id: messages.at(1)!._id,
+      order: 0,
+      stepOrder: 1,
+    });
+  });
+
   test("getMaxMessages works when there are tools involved", async () => {
     const t = convexTest(schema, modules);
     const thread = await t.mutation(api.threads.createThread, {
@@ -78,7 +101,7 @@ describe("agent", () => {
     });
   });
 
-  test("ordering is incremented on subsequent calls to addMessages", async () => {
+  test("ordering is incremented on subsequent calls to addMessages for user messages", async () => {
     const t = convexTest(schema, modules);
     const thread = await t.mutation(api.threads.createThread, {
       userId: "test",
@@ -155,9 +178,7 @@ describe("agent", () => {
 
     const updatedMessage = await t.mutation(api.messages.updateMessage, {
       messageId,
-      patch: {
-        message: { role: "user", content: "updated content" },
-      },
+      patch: { message: { role: "user", content: "updated content" } },
     });
 
     expect(updatedMessage.message).toEqual({
@@ -184,9 +205,7 @@ describe("agent", () => {
     // Update to success
     const updatedMessage = await t.mutation(api.messages.updateMessage, {
       messageId,
-      patch: {
-        status: "success",
-      },
+      patch: { status: "success" },
     });
 
     expect(updatedMessage.status).toBe("success");
@@ -206,10 +225,7 @@ describe("agent", () => {
 
     const updatedMessage = await t.mutation(api.messages.updateMessage, {
       messageId,
-      patch: {
-        status: "failed",
-        error: "Something went wrong",
-      },
+      patch: { status: "failed", error: "Something went wrong" },
     });
 
     expect(updatedMessage.status).toBe("failed");
@@ -277,9 +293,7 @@ describe("agent", () => {
     await expect(
       t.mutation(api.messages.updateMessage, {
         messageId: "invalidId" as Id<"messages">,
-        patch: {
-          message: { role: "user", content: "test" },
-        },
+        patch: { message: { role: "user", content: "test" } },
       }),
     ).rejects.toThrow();
   });
@@ -308,10 +322,7 @@ describe("agent", () => {
     // Verify messages are actually deleted
     const remainingMessages = await t.query(
       api.messages.listMessagesByThreadId,
-      {
-        threadId: thread._id as Id<"threads">,
-        order: "asc",
-      },
+      { threadId: thread._id as Id<"threads">, order: "asc" },
     );
     expect(remainingMessages.page).toHaveLength(1);
     expect(remainingMessages.page[0]._id).toBe(messageIds[1]);
@@ -343,10 +354,7 @@ describe("agent", () => {
     // Verify the valid message was deleted
     const remainingMessages = await t.query(
       api.messages.listMessagesByThreadId,
-      {
-        threadId: thread._id as Id<"threads">,
-        order: "asc",
-      },
+      { threadId: thread._id as Id<"threads">, order: "asc" },
     );
     expect(remainingMessages.page).toHaveLength(0);
   });
@@ -395,10 +403,7 @@ describe("agent", () => {
     // Verify only messages from order 0 were deleted
     const remainingMessages = await t.query(
       api.messages.listMessagesByThreadId,
-      {
-        threadId: thread._id as Id<"threads">,
-        order: "asc",
-      },
+      { threadId: thread._id as Id<"threads">, order: "asc" },
     );
 
     expect(remainingMessages.page).toHaveLength(3); // Should have messages from order 1 and 2
@@ -438,10 +443,7 @@ describe("agent", () => {
     // Verify only step 1 and 2 were deleted (step 3 is excluded by upperBoundInclusive: false)
     const remainingMessages = await t.query(
       api.messages.listMessagesByThreadId,
-      {
-        threadId: thread._id as Id<"threads">,
-        order: "asc",
-      },
+      { threadId: thread._id as Id<"threads">, order: "asc" },
     );
 
     expect(remainingMessages.page).toHaveLength(2);
@@ -501,10 +503,7 @@ describe("agent", () => {
     // Verify original message is still there
     const remainingMessages = await t.query(
       api.messages.listMessagesByThreadId,
-      {
-        threadId: thread._id as Id<"threads">,
-        order: "asc",
-      },
+      { threadId: thread._id as Id<"threads">, order: "asc" },
     );
     expect(remainingMessages.page).toHaveLength(1);
   });
