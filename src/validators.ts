@@ -1,10 +1,4 @@
-import {
-  v,
-  type Infer,
-  type ObjectType,
-  type Validator,
-  type Value,
-} from "convex/values";
+import { v, type Infer, type Validator, type Value } from "convex/values";
 import { vVectorDimension } from "./component/vector/tables.js";
 
 // const deprecated = v.optional(v.any()) as unknown as VNull<unknown, "optional">;
@@ -307,18 +301,19 @@ const vPromptFields = {
   promptMessageId: v.optional(v.string()),
 };
 
-export const vCallSettingsFields = {
-  maxTokens: v.optional(v.number()),
+export const vCallSettings = v.object({
+  maxOutputTokens: v.optional(v.number()),
   temperature: v.optional(v.number()),
   topP: v.optional(v.number()),
   topK: v.optional(v.number()),
   presencePenalty: v.optional(v.number()),
   frequencyPenalty: v.optional(v.number()),
+  stopSequences: v.optional(v.array(v.string())),
   seed: v.optional(v.number()),
   maxRetries: v.optional(v.number()),
   headers: v.optional(v.record(v.string(), v.string())),
-};
-export type CallSettings = ObjectType<typeof vCallSettingsFields>;
+});
+export type CallSettings = Infer<typeof vCallSettings>;
 
 const vCommonArgs = {
   userId: v.optional(v.string()),
@@ -326,7 +321,7 @@ const vCommonArgs = {
   contextOptions: v.optional(vContextOptions),
   storageOptions: v.optional(vStorageOptions),
   providerOptions,
-  ...vCallSettingsFields,
+  callSettings: v.optional(vCallSettings),
   ...vPromptFields,
 };
 

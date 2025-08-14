@@ -107,7 +107,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
         instructions: agent.options.instructions,
         contextOptions: agent.options.contextOptions,
         storageOptions: agent.options.storageOptions,
-        maxRetries: agent.options.maxRetries,
+        maxRetries: agent.options.callSettings?.maxRetries,
         tools: agent.options.tools ? Object.keys(agent.options.tools) : [],
       }));
     },

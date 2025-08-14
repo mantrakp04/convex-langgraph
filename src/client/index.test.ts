@@ -303,7 +303,7 @@ describe("Agent option variations and normal behavior", () => {
       contextOptions: { recentMessages: 5 },
       storageOptions: { saveMessages: "all" },
       stopWhen: stepCountIs(2),
-      maxRetries: 1,
+      callSettings: { maxRetries: 1 },
       usageHandler: async () => {},
       rawRequestResponseHandler: async () => {},
     });

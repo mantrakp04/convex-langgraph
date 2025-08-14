@@ -17,6 +17,7 @@ import type {
   ToolChoice,
   LanguageModel,
   EmbeddingModel,
+  CallSettings,
 } from "ai";
 import {
   embedMany,
@@ -241,10 +242,11 @@ export class Agent<
        */
       stopWhen?: StopCondition<AgentTools> | Array<StopCondition<AgentTools>>;
       /**
-       * The maximum number of calls to make to an LLM in case it fails.
-       * This can be overridden at each generate/stream callsite.
+       * The default settings to use for the LLM calls.
+       * This can be overridden at each generate/stream callsite on a per-field
+       * basis. To clear a default setting, you'll need to pass `undefined`.
        */
-      maxRetries?: number;
+      callSettings?: CallSettings;
       /**
        * The usage handler to use for this agent.
        */
@@ -1535,7 +1537,6 @@ export class Agent<
       system?: string;
       promptMessageId?: string;
       model?: LanguageModelV2;
-      maxRetries?: number;
     },
   >(
     ctx: RunActionCtx,
@@ -1656,8 +1657,8 @@ export class Agent<
     const { prompt: _, model, ...rest } = args;
     return {
       args: {
+        ...this.options.callSettings,
         ...rest,
-        maxRetries: args.maxRetries ?? this.options.maxRetries,
         model: model ?? this.options.chat,
         system: args.system ?? this.options.instructions,
         messages: processedMessages,
@@ -1686,11 +1687,11 @@ export class Agent<
       "a textEmbedding model is required to be set on the Agent that you're doing vector search with",
     );
     const result = await embedMany({
+      ...this.options.callSettings,
       model: embeddingModel,
       values: options.values,
       abortSignal: options.abortSignal,
       headers: options.headers,
-      maxRetries: this.options.maxRetries,
     });
     if (this.options.usageHandler && result.usage) {
       await this.options.usageHandler(ctx, {
