@@ -435,7 +435,9 @@ export const getMessagesByIds = query({
     messageIds: v.array(v.id("messages")),
   },
   handler: async (ctx, args) => {
-    return await Promise.all(args.messageIds.map((id) => ctx.db.get(id)));
+    return (await Promise.all(args.messageIds.map((id) => ctx.db.get(id)))).map(
+      (m) => (m ? publicMessage(m) : null),
+    );
   },
   returns: v.array(v.union(v.null(), vMessageDoc)),
 });
