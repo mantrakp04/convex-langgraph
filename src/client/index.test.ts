@@ -348,7 +348,7 @@ describe("Agent message operations", () => {
     );
     expect(messageId).toBeTypeOf("string");
 
-    const { lastMessageId, messages } = await t.run(async (ctx) =>
+    const { messages } = await t.run(async (ctx) =>
       agent.saveMessages(ctx, {
         threadId,
         userId: "4",
@@ -359,7 +359,7 @@ describe("Agent message operations", () => {
       }),
     );
     expect(messages.length).toBe(2);
-    expect(lastMessageId).toBe(messages[1]._id);
+    expect(messages[1]._id).toBeDefined();
   });
 });
 
@@ -435,8 +435,8 @@ describe("Agent-generated mutations/actions/queries", () => {
         },
       ],
     });
-    expect(result.lastMessageId).toBeDefined();
-    expect(result.messageIds.length).toBe(1);
+    expect(result.messages.length).toBe(1);
+    expect(result.messages[0]._id).toBeDefined();
   });
 });
 

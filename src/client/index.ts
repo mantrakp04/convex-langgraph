@@ -908,7 +908,7 @@ export class Agent<
       skipEmbeddings?: boolean;
     },
   ) {
-    const { lastMessageId, messages } = await this.saveMessages(ctx, {
+    const { messages } = await this.saveMessages(ctx, {
       threadId: args.threadId,
       userId: args.userId,
       embeddings: args.embedding
@@ -921,7 +921,8 @@ export class Agent<
       metadata: args.metadata ? [args.metadata] : undefined,
       skipEmbeddings: args.skipEmbeddings,
     });
-    return { messageId: lastMessageId, message: messages.at(-1)! };
+    const message = messages.at(-1)!;
+    return { messageId: message._id, message };
   }
 
   /**
@@ -943,7 +944,7 @@ export class Agent<
        */
       skipEmbeddings?: boolean;
     },
-  ): Promise<{ lastMessageId: string; messages: MessageDoc[] }> {
+  ): Promise<{ messages: MessageDoc[] }> {
     let embeddings: { vectors: (number[] | null)[]; model: string } | undefined;
     const { skipEmbeddings, ...rest } = args;
     if (args.embeddings) {
@@ -1612,9 +1613,9 @@ export class Agent<
         metadata,
         failPendingSteps: true,
       });
-      messageId = saved.lastMessageId;
-      order = saved.messages.at(-1)?.order;
-      stepOrder = saved.messages.at(-1)?.stepOrder;
+      messageId = saved.messages.at(-1)!._id;
+      order = saved.messages.at(-1)!.order;
+      stepOrder = saved.messages.at(-1)!.stepOrder;
     }
 
     if (promptMessage?.message) {
@@ -2023,12 +2024,15 @@ export class Agent<
         failPendingSteps: v.optional(v.boolean()),
       },
       handler: async (ctx, args) => {
-        const { lastMessageId, messages } = await this.saveMessages(ctx, {
+        const { messages } = await this.saveMessages(ctx, {
           ...args,
           messages: args.messages.map((m) => deserializeMessage(m.message)),
           metadata: args.messages.map(({ message: _, ...m }) => m),
         });
-        return { lastMessageId, messageIds: messages.map((m) => m._id) };
+        return {
+          lastMessageId: messages.at(-1)!._id,
+          messages: messages.map((m) => pick(m, ["_id", "order", "stepOrder"])),
+        };
       },
     });
   }

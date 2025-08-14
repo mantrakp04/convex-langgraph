@@ -123,10 +123,7 @@ export async function saveMessages(
     failPendingSteps: args.failPendingSteps ?? false,
     pending: args.pending ?? false,
   });
-  return {
-    lastMessageId: result.messages.at(-1)!._id,
-    messages: result.messages,
-  };
+  return { messages: result.messages };
 }
 
 export type SaveMessageArgs = {
@@ -182,7 +179,7 @@ export async function saveMessage(
       vectors: [args.embedding.vector],
     };
   }
-  const { lastMessageId, messages } = await saveMessages(ctx, component, {
+  const { messages } = await saveMessages(ctx, component, {
     threadId: args.threadId,
     userId: args.userId ?? undefined,
     agentName: args.agentName,
@@ -193,5 +190,6 @@ export async function saveMessage(
     metadata: args.metadata ? [args.metadata] : undefined,
     embeddings,
   });
-  return { messageId: lastMessageId, message: messages.at(-1)! };
+  const message = messages.at(-1)!;
+  return { messageId: message._id, message };
 }
