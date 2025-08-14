@@ -1,10 +1,15 @@
 # Changelog
 
-## 0.1.18 alpha
+## 0.1.18
 
+- definePlaygroundAPI uses the new interface functions
+- Add generic types on UIMessages (credit: ethan-huo)
+- Deleting returns the order range (credit: ethan-huo)
 - Allow specifying a custom `ctx` type for use in tools created with `createTool`
 - Fix resolution of `definePlaygroundApi`
-- Check for `crypto.randomUUID` in `optimisticallySendMessage`.
+- Fix: ReactNative can do optimistic updates even if it has crypto defined
+- Fix: getMessageByIds correctly serializes non-user messages
+- Fix: usage handler won't be overwritten with undefined.
 
 ## 0.1.17
 

@@ -61,9 +61,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
   }
 
   const isApiKeyValid = queryGeneric({
-    args: {
-      apiKey: v.string(),
-    },
+    args: { apiKey: v.string() },
     handler: async (ctx, args) => {
       try {
         await validateApiKey(ctx, args.apiKey);
@@ -114,10 +112,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
   });
 
   const listUsers = queryGeneric({
-    args: {
-      apiKey: v.string(),
-      paginationOpts: paginationOptsValidator,
-    },
+    args: { apiKey: v.string(), paginationOpts: paginationOptsValidator },
     handler: async (ctx, args) => {
       await validateApiKey(ctx, args.apiKey);
       const users = await ctx.runQuery(component.users.listUsersWithThreads, {
@@ -133,12 +128,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
         ),
       };
     },
-    returns: vPaginationResult(
-      v.object({
-        _id: v.string(),
-        name: v.string(),
-      }),
-    ),
+    returns: vPaginationResult(v.object({ _id: v.string(), name: v.string() })),
   });
 
   // List threads for a user (query)
@@ -167,10 +157,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
             } = await ctx.runQuery(component.messages.listMessagesByThreadId, {
               threadId: thread._id,
               order: "desc",
-              paginationOpts: {
-                numItems: 1,
-                cursor: null,
-              },
+              paginationOpts: { numItems: 1, cursor: null },
             });
             return {
               ...thread,
