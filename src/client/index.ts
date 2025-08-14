@@ -331,9 +331,7 @@ export class Agent<
        */
       tools?: ThreadTools;
     },
-  ): Promise<{
-    threadId: string;
-  }>;
+  ): Promise<{ threadId: string }>;
   async createThread<ThreadTools extends ToolSet | undefined = undefined>(
     ctx: (ActionCtx & CustomCtx) | RunMutationCtx,
     args?: {
@@ -357,10 +355,7 @@ export class Agent<
       usageHandler: args?.usageHandler,
       tools: args?.tools,
     });
-    return {
-      threadId,
-      thread,
-    };
+    return { threadId, thread };
   }
 
   /**
@@ -427,11 +422,7 @@ export class Agent<
       userId,
       query,
       limit,
-    }: {
-      userId?: string | undefined;
-      query: string;
-      limit?: number;
-    },
+    }: { userId?: string | undefined; query: string; limit?: number },
   ): Promise<ThreadDoc[]> {
     return ctx.runQuery(this.component.threads.searchThreadTitles, {
       userId,
@@ -919,10 +910,7 @@ export class Agent<
       threadId: args.threadId,
       userId: args.userId,
       embeddings: args.embedding
-        ? {
-            model: args.embedding.model,
-            vectors: [args.embedding.vector],
-          }
+        ? { model: args.embedding.model, vectors: [args.embedding.vector] }
         : undefined,
       messages:
         args.prompt !== undefined
@@ -953,16 +941,8 @@ export class Agent<
        */
       skipEmbeddings?: boolean;
     },
-  ): Promise<{
-    lastMessageId: string;
-    messages: MessageDoc[];
-  }> {
-    let embeddings:
-      | {
-          vectors: (number[] | null)[];
-          model: string;
-        }
-      | undefined;
+  ): Promise<{ lastMessageId: string; messages: MessageDoc[] }> {
+    let embeddings: { vectors: (number[] | null)[]; model: string } | undefined;
     const { skipEmbeddings, ...rest } = args;
     if (args.embeddings) {
       embeddings = args.embeddings;
@@ -984,10 +964,7 @@ export class Agent<
       } else {
         embeddings = await this.generateEmbeddings(
           ctx,
-          {
-            userId: args.userId ?? undefined,
-            threadId: args.threadId,
-          },
+          { userId: args.userId ?? undefined, threadId: args.threadId },
           args.messages,
         );
       }
@@ -1138,10 +1115,7 @@ export class Agent<
     {
       userId,
       threadId,
-    }: {
-      userId: string | undefined;
-      threadId: string | undefined;
-    },
+    }: { userId: string | undefined; threadId: string | undefined },
     messages: (ModelMessage | Message)[],
   ) {
     if (!this.options.textEmbedding) {
@@ -1177,11 +1151,7 @@ export class Agent<
       const dimension = textEmbeddings.embeddings[0].length;
       validateVectorDimension(dimension);
       const model = getModelName(this.options.textEmbedding);
-      embeddings = {
-        vectors: embeddingsOrNull,
-        dimension,
-        model,
-      };
+      embeddings = { vectors: embeddingsOrNull, dimension, model };
     }
     return embeddings;
   }
@@ -1195,9 +1165,7 @@ export class Agent<
    */
   async generateAndSaveEmbeddings(
     ctx: RunActionCtx,
-    args: {
-      messageIds: string[];
-    },
+    args: { messageIds: string[] },
   ) {
     const messages = (
       await ctx.runQuery(this.component.messages.getMessagesByIds, {
@@ -1454,9 +1422,7 @@ export class Agent<
    */
   async deleteMessages(
     ctx: RunMutationCtx,
-    args: {
-      messageIds: string[];
-    },
+    args: { messageIds: string[] },
   ): Promise<void> {
     await ctx.runMutation(this.component.messages.deleteByIds, args);
   }
@@ -1469,9 +1435,7 @@ export class Agent<
    */
   async deleteMessage(
     ctx: RunMutationCtx,
-    args: {
-      messageId: string;
-    },
+    args: { messageId: string },
   ): Promise<void> {
     await ctx.runMutation(this.component.messages.deleteByIds, {
       messageIds: [args.messageId],
@@ -1543,10 +1507,7 @@ export class Agent<
    */
   async deleteThreadAsync(
     ctx: RunMutationCtx,
-    args: {
-      threadId: string;
-      pageSize?: number;
-    },
+    args: { threadId: string; pageSize?: number },
   ): Promise<void> {
     await ctx.runMutation(this.component.threads.deleteAllForThreadIdAsync, {
       threadId: args.threadId,
@@ -1563,10 +1524,7 @@ export class Agent<
    */
   async deleteThreadSync(
     ctx: RunActionCtx,
-    args: {
-      threadId: string;
-      pageSize?: number;
-    },
+    args: { threadId: string; pageSize?: number },
   ): Promise<void> {
     await ctx.runAction(this.component.threads.deleteAllForThreadIdSync, {
       threadId: args.threadId,
@@ -1592,10 +1550,7 @@ export class Agent<
       threadId,
       contextOptions,
       storageOptions,
-    }: {
-      userId: string | undefined;
-      threadId: string | undefined;
-    } & Options,
+    }: { userId: string | undefined; threadId: string | undefined } & Options,
   ): Promise<{
     args: T & { model: LanguageModelV2 };
     userId: string | undefined;
@@ -1785,10 +1740,7 @@ export class Agent<
               );
               if (this._isLocalhostUrl(part.image)) {
                 const imageData = await this._downloadFile(part.image);
-                return {
-                  ...part,
-                  image: imageData,
-                } as ImagePart;
+                return { ...part, image: imageData } as ImagePart;
               }
             }
 
@@ -1796,10 +1748,7 @@ export class Agent<
             if (part.type === "file" && part.data instanceof URL) {
               if (this._isLocalhostUrl(part.data)) {
                 const fileData = await this._downloadFile(part.data);
-                return {
-                  ...part,
-                  data: fileData,
-                } as FilePart;
+                return { ...part, data: fileData } as FilePart;
               }
             }
 
@@ -1807,15 +1756,9 @@ export class Agent<
           }),
         );
         if (message.role === "user") {
-          return {
-            ...message,
-            content: processedContent as UserContent,
-          };
+          return { ...message, content: processedContent as UserContent };
         } else {
-          return {
-            ...message,
-            content: processedContent as AssistantContent,
-          };
+          return { ...message, content: processedContent as AssistantContent };
         }
       }),
     );
@@ -1948,7 +1891,7 @@ export class Agent<
       args: vTextArgs,
       handler: async (ctx_, args) => {
         const stream =
-          args.stream === true ? spec?.stream || true : spec?.stream ?? false;
+          args.stream === true ? spec?.stream || true : (spec?.stream ?? false);
         const targetArgs = { userId: args.userId, threadId: args.threadId };
         const llmArgs = {
           stopWhen,
@@ -2083,10 +2026,7 @@ export class Agent<
           messages: args.messages.map((m) => deserializeMessage(m.message)),
           metadata: args.messages.map(({ message: _, ...m }) => m),
         });
-        return {
-          lastMessageId,
-          messageIds: messages.map((m) => m._id),
-        };
+        return { lastMessageId, messageIds: messages.map((m) => m._id) };
       },
     });
   }
@@ -2102,11 +2042,7 @@ export class Agent<
 export async function createThread(
   ctx: RunMutationCtx,
   component: AgentComponent,
-  args?: {
-    userId?: string | null;
-    title?: string;
-    summary?: string;
-  },
+  args?: { userId?: string | null; title?: string; summary?: string },
 ) {
   const { _id: threadId } = await ctx.runMutation(
     component.threads.createThread,

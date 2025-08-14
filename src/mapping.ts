@@ -67,13 +67,7 @@ export async function serializeMessage(
     component,
     message.content,
   );
-  return {
-    message: {
-      ...message,
-      content,
-    } as SerializedMessage,
-    fileIds,
-  };
+  return { message: { ...message, content } as SerializedMessage, fileIds };
 }
 
 export function deserializeMessage(message: SerializedMessage): ModelMessage {
@@ -112,10 +106,7 @@ export function serializeWarnings(
     if (warning.type !== "unsupported-setting") {
       return warning;
     }
-    return {
-      ...warning,
-      setting: warning.setting.toString(),
-    };
+    return { ...warning, setting: warning.setting.toString() };
   });
 }
 
@@ -146,9 +137,7 @@ export async function serializeNewMessagesInStep<TOOLS extends ToolSet>(
     // Only store the sources on one message
     sources: step.toolResults.length === 0 ? step.sources : undefined,
   } satisfies Omit<MessageWithMetadata, "message" | "text" | "fileIds">;
-  const toolFields = {
-    sources: step.sources,
-  };
+  const toolFields = { sources: step.sources };
   const messages: MessageWithMetadata[] = await Promise.all(
     (step.toolResults.length > 0
       ? step.response.messages.slice(-2)
