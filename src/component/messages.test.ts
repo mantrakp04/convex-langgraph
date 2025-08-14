@@ -132,7 +132,38 @@ describe("agent", () => {
     });
   });
 
-  test("sub order is incremented on subsequent calls to addMessages for the same promptMessageId", async () => {
+  test("ordering is incremented on subsequent calls to addMessages for assistant messages", async () => {
+    const t = convexTest(schema, modules);
+    const thread = await t.mutation(api.threads.createThread, {
+      userId: "test",
+    });
+    const { messages } = await t.mutation(api.messages.addMessages, {
+      threadId: thread._id as Id<"threads">,
+      messages: [{ message: { role: "user", content: "hello" } }],
+    });
+    const maxMessage = await t.run(async (ctx) => {
+      return await getMaxMessage(ctx, thread._id as Id<"threads">);
+    });
+    expect(maxMessage).toMatchObject({
+      _id: messages.at(-1)!._id,
+      order: 0,
+      stepOrder: 0,
+    });
+    const { messages: messages2 } = await t.mutation(api.messages.addMessages, {
+      threadId: thread._id as Id<"threads">,
+      messages: [{ message: { role: "assistant", content: "hello" } }],
+    });
+    const maxMessage2 = await t.run(async (ctx) => {
+      return await getMaxMessage(ctx, thread._id as Id<"threads">);
+    });
+    expect(maxMessage2).toMatchObject({
+      _id: messages2.at(-1)!._id,
+      order: 0,
+      stepOrder: 1,
+    });
+  });
+
+  test("order is incremented for user messages on to addMessages for the same promptMessageId", async () => {
     const t = convexTest(schema, modules);
     const thread = await t.mutation(api.threads.createThread, {
       userId: "test",
@@ -160,9 +191,119 @@ describe("agent", () => {
     });
     expect(maxMessage2).toMatchObject({
       _id: messages2.at(-1)!._id,
+      order: 1,
+      stepOrder: 0,
+    });
+  });
+
+  test("sub order is incremented on subsequent calls to addMessages for the same promptMessageId", async () => {
+    const t = convexTest(schema, modules);
+    const thread = await t.mutation(api.threads.createThread, {
+      userId: "test",
+    });
+    const { messages } = await t.mutation(api.messages.addMessages, {
+      threadId: thread._id as Id<"threads">,
+      messages: [{ message: { role: "user", content: "hello" } }],
+    });
+    const maxMessage = await t.run(async (ctx) => {
+      return await getMaxMessage(ctx, thread._id as Id<"threads">);
+    });
+    expect(maxMessage).toMatchObject({
+      _id: messages.at(-1)!._id,
+      order: 0,
+      stepOrder: 0,
+    });
+    const { messages: messages2 } = await t.mutation(api.messages.addMessages, {
+      threadId: thread._id as Id<"threads">,
+      messages: [{ message: { role: "assistant", content: "hello" } }],
+      agentName: "test",
+      promptMessageId: messages.at(-1)!._id as Id<"messages">,
+    });
+    const maxMessage2 = await t.run(async (ctx) => {
+      return await getMaxMessage(ctx, thread._id as Id<"threads">);
+    });
+    expect(maxMessage2).toMatchObject({
+      _id: messages2.at(-1)!._id,
       order: 0,
       stepOrder: 1,
     });
+  });
+
+  test("adding multiple messages at a promptMessageId skips later messages", async () => {
+    const t = convexTest(schema, modules);
+    const thread = await t.mutation(api.threads.createThread, {
+      userId: "test",
+    });
+    const { messages } = await t.mutation(api.messages.addMessages, {
+      threadId: thread._id as Id<"threads">,
+      messages: [{ message: { role: "user", content: "hello" } }],
+    });
+
+    const { messages: messages2 } = await t.mutation(api.messages.addMessages, {
+      threadId: thread._id as Id<"threads">,
+      messages: [
+        { message: { role: "user", content: "hello2" } },
+        { message: { role: "assistant", content: "hello" } },
+      ],
+      agentName: "test",
+    });
+    expect(messages2.length).toBe(2);
+
+    const { messages: messages3 } = await t.mutation(api.messages.addMessages, {
+      threadId: thread._id as Id<"threads">,
+      messages: [
+        {
+          message: {
+            role: "assistant",
+            content: [
+              {
+                type: "tool-call",
+                args: { a: 1 },
+                toolCallId: "1",
+                toolName: "tool",
+              },
+            ],
+          },
+        },
+        {
+          message: {
+            role: "tool",
+            content: [
+              {
+                type: "tool-result",
+                toolName: "tool",
+                result: "foo",
+                toolCallId: "1",
+              },
+            ],
+          },
+        },
+        { message: { role: "user", content: "bye" } },
+      ],
+      agentName: "test",
+      promptMessageId: messages.at(-1)!._id as Id<"messages">,
+    });
+
+    expect(messages3.length).toBe(3);
+
+    const allMessages = await t.query(api.messages.listMessagesByThreadId, {
+      threadId: thread._id as Id<"threads">,
+      order: "asc",
+    });
+    expect(allMessages.page).toHaveLength(6);
+    expect(allMessages.page.map((m) => m.order)).toEqual([0, 0, 0, 1, 1, 2]);
+    expect(allMessages.page.map((m) => m.stepOrder)).toEqual([
+      0, 1, 2, 0, 1, 0,
+    ]);
+    expect(allMessages.page[0]!.message!.role).toBe("user");
+    expect(allMessages.page[0]!.message!.content).toBe("hello");
+    expect(allMessages.page[1]!.message!.role).toBe("assistant");
+    expect(allMessages.page[2]!.message!.role).toBe("tool");
+    expect(allMessages.page[3]!.message!.role).toBe("user");
+    expect(allMessages.page[3]!.message!.content).toBe("hello2");
+    expect(allMessages.page[4]!.message!.role).toBe("assistant");
+    expect(allMessages.page[5]!.message!.role).toBe("user");
+    expect(allMessages.page[5]!.message!.content).toBe("bye");
   });
 
   test("updateMessage updates message content", async () => {
@@ -422,7 +563,7 @@ describe("agent", () => {
       messages: [
         { message: { role: "user", content: "step 0" } },
         { message: { role: "assistant", content: "step 1" } },
-        { message: { role: "user", content: "step 2" } },
+        { message: { role: "assistant", content: "step 2" } },
         { message: { role: "assistant", content: "step 3" } },
       ],
     });

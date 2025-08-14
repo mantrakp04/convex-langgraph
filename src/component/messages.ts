@@ -187,8 +187,8 @@ async function addMessagesHandler(
     stepOrder = maxMessage?.stepOrder ?? parentMessage.stepOrder;
   } else {
     const maxMessage = await getMaxMessage(ctx, threadId);
-    order = maxMessage ? maxMessage.order + 1 : 0;
-    stepOrder = -1;
+    order = maxMessage?.order ?? -1;
+    stepOrder = maxMessage?.stepOrder ?? -1;
   }
   const toReturn: Doc<"messages">[] = [];
   if (embeddings) {
@@ -209,7 +209,18 @@ async function addMessagesHandler(
         threadId,
       });
     }
-    stepOrder++;
+    if (message.message.role === "user") {
+      if (parentMessage && parentMessage.order === order) {
+        // see if there's a later message than the parent message order
+        const maxMessage = await getMaxMessage(ctx, threadId);
+        order = (maxMessage?.order ?? order) + 1;
+      } else {
+        order++;
+      }
+      stepOrder = 0;
+    } else {
+      stepOrder++;
+    }
     const messageId = await ctx.db.insert("messages", {
       ...rest,
       ...message,
