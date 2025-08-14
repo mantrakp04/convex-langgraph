@@ -5,6 +5,7 @@ import { validateVectorDimension } from "../component/vector/tables.js";
 import type {
   Message,
   MessageEmbeddings,
+  MessageEmbeddingsWithDimension,
   MessageStatus,
   MessageWithMetadata,
 } from "../validators.js";
@@ -76,7 +77,7 @@ export type SaveMessagesArgs = {
   /**
    * The embeddings to save with the messages.
    */
-  embeddings?: Omit<MessageEmbeddings, "dimension">;
+  embeddings?: MessageEmbeddings;
 };
 
 /**
@@ -92,7 +93,7 @@ export async function saveMessages(
     agentName?: string;
   },
 ) {
-  let embeddings: MessageEmbeddings | undefined;
+  let embeddings: MessageEmbeddingsWithDimension | undefined;
   if (args.embeddings) {
     const dimension = args.embeddings.vectors.find((v) => v !== null)?.length;
     if (dimension) {

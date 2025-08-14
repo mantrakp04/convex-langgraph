@@ -291,9 +291,17 @@ export const vMessageWithMetadata = v.object({
 });
 export type MessageWithMetadata = Infer<typeof vMessageWithMetadata>;
 
-export const vMessageEmbeddings = v.object({
+export const vMessageEmbeddingsWithDimension = v.object({
   model: v.string(),
   dimension: vVectorDimension,
+  vectors: v.array(v.union(v.array(v.number()), v.null())),
+});
+export type MessageEmbeddingsWithDimension = Infer<
+  typeof vMessageEmbeddingsWithDimension
+>;
+
+export const vMessageEmbeddings = v.object({
+  model: v.string(),
   vectors: v.array(v.union(v.array(v.number()), v.null())),
 });
 export type MessageEmbeddings = Infer<typeof vMessageEmbeddings>;

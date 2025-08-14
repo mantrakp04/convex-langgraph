@@ -9,7 +9,7 @@ import {
   isTool,
 } from "../shared.js";
 import {
-  vMessageEmbeddings,
+  vMessageEmbeddingsWithDimension,
   vMessageStatus,
   vMessageWithMetadataInternal,
   vPaginationResult,
@@ -58,9 +58,7 @@ export async function deleteMessage(
 }
 
 export const deleteByIds = mutation({
-  args: {
-    messageIds: v.array(v.id("messages")),
-  },
+  args: { messageIds: v.array(v.id("messages")) },
   returns: v.array(v.id("messages")),
   handler: async (ctx, args) => {
     const deletedMessageIds = await Promise.all(
@@ -127,7 +125,7 @@ const addMessagesArgs = {
   promptMessageId: v.optional(v.id("messages")),
   agentName: v.optional(v.string()),
   messages: v.array(vMessageWithMetadataInternal),
-  embeddings: v.optional(vMessageEmbeddings),
+  embeddings: v.optional(vMessageEmbeddingsWithDimension),
   pending: v.optional(v.boolean()),
   failPendingSteps: v.optional(v.boolean()),
 };

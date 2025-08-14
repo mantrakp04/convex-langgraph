@@ -57,6 +57,7 @@ import {
   type ProviderMetadata,
   type StreamArgs,
   type Usage,
+  vMessageEmbeddings,
   vMessageWithMetadata,
   vSafeObjectArgs,
   vTextArgs,
@@ -2022,12 +2023,14 @@ export class Agent<
         messages: v.array(vMessageWithMetadata),
         pending: v.optional(v.boolean()),
         failPendingSteps: v.optional(v.boolean()),
+        embeddings: v.optional(vMessageEmbeddings),
       },
       handler: async (ctx, args) => {
         const { messages } = await this.saveMessages(ctx, {
           ...args,
           messages: args.messages.map((m) => deserializeMessage(m.message)),
           metadata: args.messages.map(({ message: _, ...m }) => m),
+          skipEmbeddings: true,
         });
         return {
           lastMessageId: messages.at(-1)!._id,
