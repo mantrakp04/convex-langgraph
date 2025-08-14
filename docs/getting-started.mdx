@@ -116,7 +116,7 @@ const supportAgent = new Agent(components.agent, {
   // you need to set this to something greater than 1 (the default).
   stopWhen: stepCountIs(5),
   // Used for limiting the number of retries when a tool call fails. Default: 3.
-  maxRetries: 3,
+  callSettings: { maxRetries: 3, temperature: 1.0 },
   // Used for tracking token usage. See https://docs.convex.dev/agents/usage-tracking
   usageHandler: async (ctx, { model, usage }) => {
     // ... log, save usage to your database, etc.
