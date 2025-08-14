@@ -1278,7 +1278,7 @@ export class Agent<
     const embeddings = await this.generateEmbeddings(
       ctx,
       { userId: args.userId, threadId: args.threadId },
-      messages.map((m) => deserializeMessage(m.message)),
+      messages.map((m) => m.message),
     );
     const saved = await ctx.runMutation(this.component.messages.addMessages, {
       userId: args.userId,
