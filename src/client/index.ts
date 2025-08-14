@@ -437,8 +437,8 @@ export class Agent<
     {
       userId: argsUserId,
       threadId,
-      usageHandler,
       tools: threadTools,
+      ...usageHandler
     }: {
       userId?: string | null;
       threadId?: string;
@@ -456,7 +456,7 @@ export class Agent<
     GenerateTextResult<TOOLS extends undefined ? AgentTools : TOOLS, OUTPUT> &
       GenerationOutputMetadata
   > {
-    const opts = { ...this.options, ...options, usageHandler };
+    const opts = { ...this.options, ...options, ...usageHandler };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
@@ -550,9 +550,9 @@ export class Agent<
     {
       userId: argsUserId,
       threadId,
-      usageHandler,
       /** Note: to get better type inference, pass tools in the next arg */
       tools: threadTools,
+      ...usageHandler
     }: {
       userId?: string | null;
       threadId?: string;
@@ -587,7 +587,7 @@ export class Agent<
     > &
       GenerationOutputMetadata
   > {
-    const opts = { ...this.options, ...options, usageHandler };
+    const opts = { ...this.options, ...options, ...usageHandler };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
@@ -707,7 +707,7 @@ export class Agent<
     {
       userId: argsUserId,
       threadId,
-      usageHandler,
+      ...usageHandler
     }: {
       userId?: string | null;
       threadId?: string;
@@ -723,7 +723,7 @@ export class Agent<
      */
     options?: Options,
   ): Promise<GenerateObjectResult<T> & GenerationOutputMetadata> {
-    const opts = { ...this.options, ...options, usageHandler };
+    const opts = { ...this.options, ...options, ...usageHandler };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
@@ -796,7 +796,7 @@ export class Agent<
     {
       userId: argsUserId,
       threadId,
-      usageHandler,
+      ...usageHandler
     }: {
       userId?: string | null;
       threadId?: string;
@@ -815,7 +815,7 @@ export class Agent<
     StreamObjectResult<DeepPartial<T>, T, never> & GenerationOutputMetadata
   > {
     // TODO: unify all this shared code between all the generate* and stream* functions
-    const opts = { ...this.options, ...options, usageHandler };
+    const opts = { ...this.options, ...options, ...usageHandler };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
