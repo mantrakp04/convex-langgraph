@@ -335,8 +335,9 @@ describe("agent", () => {
     });
     const { messages } = await t.mutation(api.messages.addMessages, {
       threadId: thread._id as Id<"threads">,
-      messages: [{ message: { role: "assistant", content: "hello" } }],
-      pending: true,
+      messages: [
+        { message: { role: "assistant", content: "hello" }, status: "pending" },
+      ],
     });
     const messageId = messages[0]._id as Id<"messages">;
 
@@ -359,8 +360,9 @@ describe("agent", () => {
     });
     const { messages } = await t.mutation(api.messages.addMessages, {
       threadId: thread._id as Id<"threads">,
-      messages: [{ message: { role: "assistant", content: "hello" } }],
-      pending: true,
+      messages: [
+        { message: { role: "assistant", content: "hello" }, status: "pending" },
+      ],
     });
     const messageId = messages[0]._id as Id<"messages">;
 
