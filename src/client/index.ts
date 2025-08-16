@@ -160,6 +160,54 @@ export type {
   UsageHandler,
 };
 
+export type Config = {
+  /**
+   * The LLM model to use for generating / streaming text and objects.
+   * e.g.
+   * import { openai } from "@ai-sdk/openai"
+   * const myAgent = new Agent(components.agent, {
+   *   chat: openai.chat("gpt-4o-mini"),
+   */
+  chat?: LanguageModel;
+  /**
+   * The model to use for text embeddings. Optional.
+   * If specified, it will use this for generating vector embeddings
+   * of chats, and can opt-in to doing vector search for automatic context
+   * on generateText, etc.
+   * e.g.
+   * import { openai } from "@ai-sdk/openai"
+   * const myAgent = new Agent(components.agent, {
+   *   textEmbedding: openai.embedding("text-embedding-3-small")
+   */
+  textEmbedding?: EmbeddingModel<string>;
+  /**
+   * Options to determine what messages are included as context in message
+   * generation. To disable any messages automatically being added, pass:
+   * { recentMessages: 0 }
+   */
+  contextOptions?: ContextOptions;
+  /**
+   * Determines whether messages are automatically stored when passed as
+   * arguments or generated.
+   */
+  storageOptions?: StorageOptions;
+  /**
+   * The default settings to use for the LLM calls.
+   * This can be overridden at each generate/stream callsite on a per-field
+   * basis. To clear a default setting, you'll need to pass `undefined`.
+   */
+  callSettings?: CallSettings;
+  /**
+   * The usage handler to use for this agent.
+   */
+  usageHandler?: UsageHandler;
+  /**
+   * Called for each LLM request/response, so you can do things like
+   * log the raw request body or response headers to a table, or logs.
+   */
+  rawRequestResponseHandler?: RawRequestResponseHandler;
+};
+
 export class Agent<
   /**
    * You can require that all `ctx` args to generateText & streamText
@@ -186,7 +234,7 @@ export class Agent<
 > {
   constructor(
     public component: AgentComponent,
-    public options: {
+    public options: Config & {
       /**
        * The name for the agent. This will be attributed on each message
        * created by this agent.
@@ -201,17 +249,6 @@ export class Agent<
        */
       chat: LanguageModel;
       /**
-       * The model to use for text embeddings. Optional.
-       * If specified, it will use this for generating vector embeddings
-       * of chats, and can opt-in to doing vector search for automatic context
-       * on generateText, etc.
-       * e.g.
-       * import { openai } from "@ai-sdk/openai"
-       * const myAgent = new Agent(components.agent, {
-       *   textEmbedding: openai.embedding("text-embedding-3-small")
-       */
-      textEmbedding?: EmbeddingModel<string>;
-      /**
        * The default system prompt to put in each request.
        * Override per-prompt by passing the "system" parameter.
        */
@@ -224,36 +261,10 @@ export class Agent<
        */
       tools?: AgentTools;
       /**
-       * Options to determine what messages are included as context in message
-       * generation. To disable any messages automatically being added, pass:
-       * { recentMessages: 0 }
-       */
-      contextOptions?: ContextOptions;
-      /**
-       * Determines whether messages are automatically stored when passed as
-       * arguments or generated.
-       */
-      storageOptions?: StorageOptions;
-      /**
        * When generating or streaming text with tools available, this
        * determines when to stop. Defaults to stepCountIs(1).
        */
       stopWhen?: StopCondition<AgentTools> | Array<StopCondition<AgentTools>>;
-      /**
-       * The default settings to use for the LLM calls.
-       * This can be overridden at each generate/stream callsite on a per-field
-       * basis. To clear a default setting, you'll need to pass `undefined`.
-       */
-      callSettings?: CallSettings;
-      /**
-       * The usage handler to use for this agent.
-       */
-      usageHandler?: UsageHandler;
-      /**
-       * Called for each LLM request/response, so you can do things like
-       * log the raw request body or response headers to a table, or logs.
-       */
-      rawRequestResponseHandler?: RawRequestResponseHandler;
     },
   ) {}
 
