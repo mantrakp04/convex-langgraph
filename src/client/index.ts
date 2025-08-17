@@ -1,13 +1,10 @@
 import type { FlexibleSchema } from "@ai-sdk/provider-utils";
 import type {
-  AssistantContent,
   CallSettings,
   DeepPartial,
   EmbeddingModel,
-  FilePart,
   GenerateObjectResult,
   GenerateTextResult,
-  ImagePart,
   LanguageModel,
   ModelMessage,
   StepResult,
@@ -16,7 +13,6 @@ import type {
   StreamTextResult,
   ToolChoice,
   ToolSet,
-  UserContent,
 } from "ai";
 import {
   embedMany,
@@ -101,6 +97,7 @@ import type {
   UsageHandler,
   UserActionCtx,
 } from "./types.js";
+import { inlineMessagesFiles } from "./files.js";
 
 export { stepCountIs } from "ai";
 export { vMessageDoc, vThreadDoc } from "../component/schema.js";
@@ -1583,7 +1580,7 @@ export class Agent<
 
     // Process messages to inline localhost files (if not, file urls pointing to localhost will be sent to LLM providers)
     if (process.env.CONVEX_CLOUD_URL?.startsWith("http://127.0.0.1")) {
-      processedMessages = await this._inlineMessagesFiles(processedMessages);
+      processedMessages = await inlineMessagesFiles(processedMessages);
     }
 
     const { prompt: _, model, ...rest } = args;
@@ -1641,83 +1638,6 @@ export class Agent<
       });
     }
     return { embeddings: result.embeddings };
-  }
-
-  /**
-   * Process messages to inline file and image URLs that point to localhost
-   * by converting them to base64. This solves the problem of LLMs not being
-   * able to access localhost URLs.
-   */
-  private async _inlineMessagesFiles(
-    messages: (ModelMessage | Message)[],
-  ): Promise<(ModelMessage | Message)[]> {
-    // Process each message to convert localhost URLs to base64
-    return Promise.all(
-      messages.map(async (message): Promise<ModelMessage | Message> => {
-        if (
-          (message.role !== "user" && message.role !== "assistant") ||
-          typeof message.content === "string" ||
-          !Array.isArray(message.content)
-        ) {
-          return message;
-        }
-
-        const processedContent = await Promise.all(
-          message.content.map(async (part) => {
-            if (part.type === "image" && part.image instanceof URL) {
-              assert(
-                message.role === "user",
-                "Images can only be in user messages",
-              );
-              if (this._isLocalhostUrl(part.image)) {
-                const imageData = await this._downloadFile(part.image);
-                return { ...part, image: imageData } as ImagePart;
-              }
-            }
-
-            // Handle file parts
-            if (part.type === "file" && part.data instanceof URL) {
-              if (this._isLocalhostUrl(part.data)) {
-                const fileData = await this._downloadFile(part.data);
-                return { ...part, data: fileData } as FilePart;
-              }
-            }
-
-            return part;
-          }),
-        );
-        if (message.role === "user") {
-          return { ...message, content: processedContent as UserContent };
-        } else {
-          return { ...message, content: processedContent as AssistantContent };
-        }
-      }),
-    );
-  }
-
-  /**
-   * Check if a URL points to localhost
-   */
-  private _isLocalhostUrl(url: URL): boolean {
-    return (
-      url.hostname === "localhost" ||
-      url.hostname === "127.0.0.1" ||
-      url.hostname === "::1" ||
-      url.hostname === "0.0.0.0"
-    );
-  }
-
-  /**
-   * Download a file from a URL
-   */
-  private async _downloadFile(url: URL): Promise<ArrayBuffer> {
-    // Fetch the file
-    const response = await fetch(url);
-    if (!response.ok) {
-      throw new Error(`Failed to fetch ${url}: ${response.statusText}`);
-    }
-
-    return await response.arrayBuffer();
   }
 
   /**
