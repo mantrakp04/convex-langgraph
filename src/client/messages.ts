@@ -110,10 +110,14 @@ export async function saveMessages(
     messages: await Promise.all(
       args.messages.map(async (m, i) => {
         const { message, fileIds } = await serializeMessage(ctx, component, m);
+        const allFileIds = args.metadata?.[i]?.fileIds ?? [];
+        if (fileIds) {
+          allFileIds.push(...fileIds);
+        }
         return parse(vMessageWithMetadata, {
           ...args.metadata?.[i],
           message,
-          fileIds,
+          fileIds: allFileIds.length > 0 ? allFileIds : undefined,
         });
       }),
     ),
