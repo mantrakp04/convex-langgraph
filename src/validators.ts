@@ -175,7 +175,16 @@ export const vMessage = v.union(
 );
 export type Message = Infer<typeof vMessage>;
 
+export const vSourceV5 = v.object({
+  type: v.literal("source"),
+  sourceType: v.literal("url"),
+  id: v.string(),
+  url: v.string(),
+  title: v.optional(v.string()),
+  providerMetadata,
+});
 export const vSource = v.union(
+  vSourceV5,
   v.object({
     type: v.optional(v.literal("source")),
     sourceType: v.literal("url"),
@@ -410,14 +419,23 @@ export const vTextStreamPartV5 = v.union(
     text: v.string(),
     providerMetadata,
   }),
-  vSource,
+  vSourceV5,
   v.object({
     type: v.literal("tool-call"),
     toolCallId: v.string(),
     toolName: v.string(),
     input: v.any(),
     providerExecuted: v.optional(v.boolean()),
-    dynamic: v.optional(v.boolean()),
+    dynamic: v.optional(v.literal(false)),
+    providerMetadata,
+  }),
+  v.object({
+    type: v.literal("tool-call"),
+    toolCallId: v.string(),
+    toolName: v.string(),
+    input: v.any(),
+    providerExecuted: v.optional(v.boolean()),
+    dynamic: v.literal(true),
     providerMetadata,
     // For dynamic tool calls - if tool doesn't exist e.g.
     invalid: v.optional(v.boolean()),
@@ -446,8 +464,39 @@ export const vTextStreamPartV5 = v.union(
     providerExecuted: v.optional(v.boolean()),
     dynamic: v.optional(v.boolean()),
   }),
+  v.object({
+    type: v.literal("tool-error"),
+    toolCallId: v.string(),
+    toolName: v.string(),
+    input: v.optional(v.any()),
+    error: v.any(),
+    providerExecuted: v.optional(v.boolean()),
+    dynamic: v.optional(v.boolean()),
+  }),
+  ...(
+    [
+      "text-start",
+      "text-end",
+      "tool-input-end",
+      "reasoning-start",
+      "reasoning-end",
+    ] as const
+  ).map((type) =>
+    v.object({ type: v.literal(type), id: v.string(), providerMetadata }),
+  ),
+  v.object({
+    type: v.literal("file"),
+    file: v.object({ base64: v.string(), mediaType: v.string() }),
+    providerMetadata,
+  }),
+  v.object({ type: v.literal("abort") }),
+  v.object({ type: v.literal("error"), error: v.any() }),
   v.object({ type: v.literal("raw"), rawValue: v.any() }),
 );
+export const TextStreamPartSupportedTypes = vTextStreamPartV5.members.map(
+  (o) => o.fields.type.value,
+);
+export type TextStreamPartV5 = Infer<typeof vTextStreamPartV5>;
 export const vTextStreamPart = v.union(vTextStreamPartV4, vTextStreamPartV5);
 export type TextStreamPart = Infer<typeof vTextStreamPart>;
 

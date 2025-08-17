@@ -2,6 +2,7 @@ import {
   type ChunkDetector,
   smoothStream,
   type StreamTextTransform,
+  type TextStreamPart,
   type ToolSet,
 } from "ai";
 import type {
@@ -9,6 +10,7 @@ import type {
   StreamArgs,
   StreamDelta,
   StreamMessage,
+  TextStreamPartV5,
 } from "../validators.js";
 import { vTextStreamPartV5 } from "../validators.js";
 import type {
@@ -19,8 +21,9 @@ import type {
   SyncStreamsReturnValue,
 } from "./types.js";
 import { omit } from "convex-helpers";
-import type { Infer } from "convex/values";
-import { parse } from "convex-helpers/validators";
+import { v } from "convex/values";
+import { parse, validate, ValidationError } from "convex-helpers/validators";
+import { serializeTextStreamingPartsV5 } from "../parts.js";
 
 /**
  * A function that handles fetching stream deltas, used with the React hooks
@@ -160,7 +163,7 @@ export function mergeTransforms<TOOLS extends ToolSet>(
 export class DeltaStreamer {
   public streamId: string | undefined;
   public readonly options: Required<StreamingOptions>;
-  #nextParts: Infer<typeof vTextStreamPartV5>[] = [];
+  #nextParts: TextStreamPartV5[] = [];
   #latestWrite: number = 0;
   #ongoingWrite: Promise<void> | undefined;
   #cursor: number = 0;
@@ -219,7 +222,7 @@ export class DeltaStreamer {
     });
   }
 
-  public async addParts(parts: Infer<typeof vTextStreamPartV5>[]) {
+  public async addParts(parts: TextStreamPart<ToolSet>[]) {
     if (this.abortController.signal.aborted) {
       return;
     }
@@ -233,7 +236,19 @@ export class DeltaStreamer {
         },
       );
     }
-    this.#nextParts.push(...parts.map((p) => parse(vTextStreamPartV5, p)));
+    try {
+      validate(v.array(vTextStreamPartV5), parts, { throw: true });
+    } catch (e) {
+      if (e instanceof ValidationError) {
+        console.warn("Invalid parts at path", e.path, e.name, e.got, parts);
+      } else {
+        throw e;
+      }
+    }
+    this.#nextParts = serializeTextStreamingPartsV5([
+      ...this.#nextParts,
+      ...parts,
+    ]);
     if (
       !this.#ongoingWrite &&
       Date.now() - this.#latestWrite >= this.options.throttleMs

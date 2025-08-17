@@ -260,6 +260,14 @@ export type Mounts = {
           sources?: Array<
             | {
                 id: string;
+                providerMetadata?: Record<string, Record<string, any>>;
+                sourceType: "url";
+                title?: string;
+                type: "source";
+                url: string;
+              }
+            | {
+                id: string;
                 providerOptions?: Record<string, Record<string, any>>;
                 sourceType: "url";
                 title?: string;
@@ -420,6 +428,14 @@ export type Mounts = {
             | { data: string; type: "redacted" }
           >;
           sources?: Array<
+            | {
+                id: string;
+                providerMetadata?: Record<string, Record<string, any>>;
+                sourceType: "url";
+                title?: string;
+                type: "source";
+                url: string;
+              }
             | {
                 id: string;
                 providerOptions?: Record<string, Record<string, any>>;
@@ -613,6 +629,14 @@ export type Mounts = {
         sources?: Array<
           | {
               id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
+              sourceType: "url";
+              title?: string;
+              type: "source";
+              url: string;
+            }
+          | {
+              id: string;
               providerOptions?: Record<string, Record<string, any>>;
               sourceType: "url";
               title?: string;
@@ -794,6 +818,14 @@ export type Mounts = {
             | { data: string; type: "redacted" }
           >;
           sources?: Array<
+            | {
+                id: string;
+                providerMetadata?: Record<string, Record<string, any>>;
+                sourceType: "url";
+                title?: string;
+                type: "source";
+                url: string;
+              }
             | {
                 id: string;
                 providerOptions?: Record<string, Record<string, any>>;
@@ -981,6 +1013,14 @@ export type Mounts = {
         sources?: Array<
           | {
               id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
+              sourceType: "url";
+              title?: string;
+              type: "source";
+              url: string;
+            }
+          | {
+              id: string;
               providerOptions?: Record<string, Record<string, any>>;
               sourceType: "url";
               title?: string;
@@ -1151,6 +1191,14 @@ export type Mounts = {
           | { data: string; type: "redacted" }
         >;
         sources?: Array<
+          | {
+              id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
+              sourceType: "url";
+              title?: string;
+              type: "source";
+              url: string;
+            }
           | {
               id: string;
               providerOptions?: Record<string, Record<string, any>>;
@@ -1416,6 +1464,14 @@ export type Mounts = {
         sources?: Array<
           | {
               id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
+              sourceType: "url";
+              title?: string;
+              type: "source";
+              url: string;
+            }
+          | {
+              id: string;
               providerOptions?: Record<string, Record<string, any>>;
               sourceType: "url";
               title?: string;
@@ -1531,23 +1587,23 @@ export type Mounts = {
             }
           | {
               id: string;
-              providerOptions?: Record<string, Record<string, any>>;
+              providerMetadata?: Record<string, Record<string, any>>;
               sourceType: "url";
               title?: string;
-              type?: "source";
+              type: "source";
               url: string;
             }
           | {
-              filename?: string;
-              id: string;
-              mediaType: string;
+              dynamic?: false;
+              input: any;
+              providerExecuted?: boolean;
               providerMetadata?: Record<string, Record<string, any>>;
-              sourceType: "document";
-              title: string;
-              type: "source";
+              toolCallId: string;
+              toolName: string;
+              type: "tool-call";
             }
           | {
-              dynamic?: boolean;
+              dynamic: true;
               error?: any;
               input: any;
               invalid?: boolean;
@@ -1580,6 +1636,47 @@ export type Mounts = {
               toolName: string;
               type: "tool-result";
             }
+          | {
+              dynamic?: boolean;
+              error: any;
+              input?: any;
+              providerExecuted?: boolean;
+              toolCallId: string;
+              toolName: string;
+              type: "tool-error";
+            }
+          | {
+              id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
+              type: "text-start";
+            }
+          | {
+              id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
+              type: "text-end";
+            }
+          | {
+              id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
+              type: "tool-input-end";
+            }
+          | {
+              id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
+              type: "reasoning-start";
+            }
+          | {
+              id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
+              type: "reasoning-end";
+            }
+          | {
+              file: { base64: string; mediaType: string };
+              providerMetadata?: Record<string, Record<string, any>>;
+              type: "file";
+            }
+          | { type: "abort" }
+          | { error: any; type: "error" }
           | { rawValue: any; type: "raw" }
         >;
         start: number;
@@ -1692,23 +1789,23 @@ export type Mounts = {
               }
             | {
                 id: string;
-                providerOptions?: Record<string, Record<string, any>>;
+                providerMetadata?: Record<string, Record<string, any>>;
                 sourceType: "url";
                 title?: string;
-                type?: "source";
+                type: "source";
                 url: string;
               }
             | {
-                filename?: string;
-                id: string;
-                mediaType: string;
+                dynamic?: false;
+                input: any;
+                providerExecuted?: boolean;
                 providerMetadata?: Record<string, Record<string, any>>;
-                sourceType: "document";
-                title: string;
-                type: "source";
+                toolCallId: string;
+                toolName: string;
+                type: "tool-call";
               }
             | {
-                dynamic?: boolean;
+                dynamic: true;
                 error?: any;
                 input: any;
                 invalid?: boolean;
@@ -1741,6 +1838,47 @@ export type Mounts = {
                 toolName: string;
                 type: "tool-result";
               }
+            | {
+                dynamic?: boolean;
+                error: any;
+                input?: any;
+                providerExecuted?: boolean;
+                toolCallId: string;
+                toolName: string;
+                type: "tool-error";
+              }
+            | {
+                id: string;
+                providerMetadata?: Record<string, Record<string, any>>;
+                type: "text-start";
+              }
+            | {
+                id: string;
+                providerMetadata?: Record<string, Record<string, any>>;
+                type: "text-end";
+              }
+            | {
+                id: string;
+                providerMetadata?: Record<string, Record<string, any>>;
+                type: "tool-input-end";
+              }
+            | {
+                id: string;
+                providerMetadata?: Record<string, Record<string, any>>;
+                type: "reasoning-start";
+              }
+            | {
+                id: string;
+                providerMetadata?: Record<string, Record<string, any>>;
+                type: "reasoning-end";
+              }
+            | {
+                file: { base64: string; mediaType: string };
+                providerMetadata?: Record<string, Record<string, any>>;
+                type: "file";
+              }
+            | { type: "abort" }
+            | { error: any; type: "error" }
             | { rawValue: any; type: "raw" }
           >;
           start: number;
@@ -1839,23 +1977,23 @@ export type Mounts = {
             }
           | {
               id: string;
-              providerOptions?: Record<string, Record<string, any>>;
+              providerMetadata?: Record<string, Record<string, any>>;
               sourceType: "url";
               title?: string;
-              type?: "source";
+              type: "source";
               url: string;
             }
           | {
-              filename?: string;
-              id: string;
-              mediaType: string;
+              dynamic?: false;
+              input: any;
+              providerExecuted?: boolean;
               providerMetadata?: Record<string, Record<string, any>>;
-              sourceType: "document";
-              title: string;
-              type: "source";
+              toolCallId: string;
+              toolName: string;
+              type: "tool-call";
             }
           | {
-              dynamic?: boolean;
+              dynamic: true;
               error?: any;
               input: any;
               invalid?: boolean;
@@ -1888,6 +2026,47 @@ export type Mounts = {
               toolName: string;
               type: "tool-result";
             }
+          | {
+              dynamic?: boolean;
+              error: any;
+              input?: any;
+              providerExecuted?: boolean;
+              toolCallId: string;
+              toolName: string;
+              type: "tool-error";
+            }
+          | {
+              id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
+              type: "text-start";
+            }
+          | {
+              id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
+              type: "text-end";
+            }
+          | {
+              id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
+              type: "tool-input-end";
+            }
+          | {
+              id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
+              type: "reasoning-start";
+            }
+          | {
+              id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
+              type: "reasoning-end";
+            }
+          | {
+              file: { base64: string; mediaType: string };
+              providerMetadata?: Record<string, Record<string, any>>;
+              type: "file";
+            }
+          | { type: "abort" }
+          | { error: any; type: "error" }
           | { rawValue: any; type: "raw" }
         >;
         start: number;
