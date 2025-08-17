@@ -278,7 +278,7 @@ export class Agent<
    * @param args The thread metadata.
    * @returns The threadId of the new thread and the thread object.
    */
-  async createThread<ThreadTools extends ToolSet | undefined = undefined>(
+  async createThread(
     ctx: RunActionCtx & CustomCtx,
     args?: {
       /**
@@ -294,21 +294,8 @@ export class Agent<
        * The summary of the thread. Not currently used for anything.
        */
       summary?: string;
-      /**
-       * The usage handler to use for this thread. Overrides any handler
-       * set in the agent constructor.
-       */
-      usageHandler?: UsageHandler;
-      /**
-       * The tools to use for this thread.
-       * Overrides any tools passed in the agent constructor.
-       */
-      tools?: ThreadTools;
     },
-  ): Promise<{
-    threadId: string;
-    thread: Thread<ThreadTools extends undefined ? AgentTools : ThreadTools>;
-  }>;
+  ): Promise<{ threadId: string; thread: Thread<AgentTools> }>;
   /**
    * Start a new thread with the agent. This will have a fresh history, though if
    * you pass in a userId you can have it search across other threads for relevant
@@ -318,7 +305,7 @@ export class Agent<
    * @param args The thread metadata.
    * @returns The threadId of the new thread.
    */
-  async createThread<ThreadTools extends ToolSet | undefined = undefined>(
+  async createThread(
     ctx: RunMutationCtx,
     args?: {
       /**
@@ -334,31 +321,12 @@ export class Agent<
        * The summary of the thread. Not currently used for anything.
        */
       summary?: string;
-      /**
-       * The usage handler to use for this thread. Overrides any handler
-       * set in the agent constructor.
-       */
-      usageHandler?: UsageHandler;
-      /**
-       * The tools to use for this thread.
-       * Overrides any tools passed in the agent constructor.
-       */
-      tools?: ThreadTools;
     },
   ): Promise<{ threadId: string }>;
-  async createThread<ThreadTools extends ToolSet | undefined = undefined>(
+  async createThread(
     ctx: (ActionCtx & CustomCtx) | RunMutationCtx,
-    args?: {
-      userId: string | null;
-      title?: string;
-      summary?: string;
-      usageHandler?: UsageHandler;
-      tools?: ThreadTools;
-    },
-  ): Promise<{
-    threadId: string;
-    thread?: Thread<ThreadTools extends undefined ? AgentTools : ThreadTools>;
-  }> {
+    args?: { userId: string | null; title?: string; summary?: string },
+  ): Promise<{ threadId: string; thread?: Thread<AgentTools> }> {
     const threadId = await createThread(ctx, this.component, args);
     if (!("runAction" in ctx) || "workflowId" in ctx) {
       return { threadId };
@@ -366,8 +334,6 @@ export class Agent<
     const { thread } = await this.continueThread(ctx, {
       threadId,
       userId: args?.userId,
-      usageHandler: args?.usageHandler,
-      tools: args?.tools,
     });
     return { threadId, thread };
   }
@@ -380,7 +346,7 @@ export class Agent<
    * @param { threadId, userId }: the thread and user to associate the messages with.
    * @returns Functions bound to the userId and threadId on a `{thread}` object.
    */
-  async continueThread<ThreadTools extends ToolSet | undefined = undefined>(
+  async continueThread(
     ctx: ActionCtx & CustomCtx,
     args: {
       /**
@@ -392,20 +358,8 @@ export class Agent<
        * relevant messages from the same user as context for the LLM calls.
        */
       userId?: string | null;
-      /**
-       * The usage handler to use for this thread. Overrides any handler
-       * set in the agent constructor.
-       */
-      usageHandler?: UsageHandler;
-      /**
-       * The tools to use for this thread.
-       * Overrides any tools passed in the agent constructor.
-       */
-      tools?: ThreadTools;
     },
-  ): Promise<{
-    thread: Thread<ThreadTools extends undefined ? AgentTools : ThreadTools>;
-  }> {
+  ): Promise<{ thread: Thread<AgentTools> }> {
     return {
       thread: {
         threadId: args.threadId,
@@ -443,21 +397,9 @@ export class Agent<
     OUTPUT_PARTIAL = never,
   >(
     ctx: ActionCtx & CustomCtx,
-    {
-      userId: argsUserId,
-      threadId,
-      tools: threadTools,
-      ...usageHandler
-    }: {
+    threadOpts: {
       userId?: string | null;
       threadId?: string;
-      /**
-       * The usage handler to use for this thread. Overrides any handler
-       * set in the agent constructor.
-       */
-      usageHandler?: UsageHandler;
-      /** Note: to get better type inference, pass tools in the next arg */
-      tools?: ToolSet;
     },
     args: TextArgs<AgentTools, TOOLS, OUTPUT, OUTPUT_PARTIAL>,
     options?: Options,
@@ -559,15 +501,7 @@ export class Agent<
     {
       userId: argsUserId,
       threadId,
-      /** Note: to get better type inference, pass tools in the next arg */
-      tools: threadTools,
-      ...usageHandler
-    }: {
-      userId?: string | null;
-      threadId?: string;
-      usageHandler?: UsageHandler;
-      tools?: ToolSet;
-    },
+    }: { userId?: string | null; threadId?: string },
     /**
      * The arguments to the streamText function, similar to the ai `streamText` function.
      */
@@ -596,7 +530,7 @@ export class Agent<
     > &
       GenerationOutputMetadata
   > {
-    const opts = { ...this.options, ...options, ...usageHandler };
+    const opts = { ...this.options, ...options };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
@@ -613,7 +547,7 @@ export class Agent<
     };
     const tools = wrapTools(
       toolCtx,
-      args.tools ?? threadTools ?? this.options.tools,
+      args.tools ?? this.options.tools,
     ) as TOOLS extends undefined ? AgentTools : TOOLS;
     const saveOutput = opts.storageOptions?.saveMessages !== "none";
     const streamer =
@@ -716,12 +650,7 @@ export class Agent<
     {
       userId: argsUserId,
       threadId,
-      ...usageHandler
-    }: {
-      userId?: string | null;
-      threadId?: string;
-      usageHandler?: UsageHandler;
-    },
+    }: { userId?: string | null; threadId?: string },
     /**
      * The arguments to the generateObject function, similar to the ai.generateObject function.
      */
@@ -732,7 +661,7 @@ export class Agent<
      */
     options?: Options,
   ): Promise<GenerateObjectResult<T> & GenerationOutputMetadata> {
-    const opts = { ...this.options, ...options, ...usageHandler };
+    const opts = { ...this.options, ...options };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,
@@ -805,12 +734,7 @@ export class Agent<
     {
       userId: argsUserId,
       threadId,
-      ...usageHandler
-    }: {
-      userId?: string | null;
-      threadId?: string;
-      usageHandler?: UsageHandler;
-    },
+    }: { userId?: string | null; threadId?: string },
     /**
      * The arguments to the streamObject function, similar to the ai `streamObject` function.
      */
@@ -824,7 +748,7 @@ export class Agent<
     StreamObjectResult<DeepPartial<T>, T, never> & GenerationOutputMetadata
   > {
     // TODO: unify all this shared code between all the generate* and stream* functions
-    const opts = { ...this.options, ...options, ...usageHandler };
+    const opts = { ...this.options, ...options };
     const context = await this._saveMessagesAndFetchContext(ctx, args, {
       userId: argsUserId ?? undefined,
       threadId,

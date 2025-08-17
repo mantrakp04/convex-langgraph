@@ -437,6 +437,11 @@ export type Options = {
    * The storage options to use for saving the input and output messages to the thread.
    */
   storageOptions?: StorageOptions;
+  /**
+   * The usage handler to use for this thread. Overrides any handler
+   * set in the agent constructor.
+   */
+  usageHandler?: UsageHandler;
 };
 
 export type SyncStreamsReturnValue =
