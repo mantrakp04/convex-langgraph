@@ -8,7 +8,7 @@
     "example": "npm run dev",
     "dev": "run-p dev:frontend dev:backend",
     "dev:backend": "convex dev --live-component-sources --typecheck-components",
-    "dev:frontend": "vite",
+    "dev:frontend": "vite --clearScreen false",
     "predev": "npx convex dev --until-success",
     "logs": "convex logs",
     "lint": "tsc -p convex && eslint convex"

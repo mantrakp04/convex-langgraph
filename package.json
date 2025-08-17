@@ -31,7 +31,7 @@
     "alpha": "npm run clean && npm run build && run-p test lint typecheck && npm version prerelease --preid alpha && npm publish --tag alpha && git push --tags",
     "release": "npm run clean && npm run build && run-p test lint typecheck && npm version patch && npm publish && git push --tags && git push",
     "test": "vitest run --typecheck --config ./src/vitest.config.ts",
-    "test:watch": "vitest --typecheck --config ./src/vitest.config.ts",
+    "test:watch": "vitest --typecheck --config ./src/vitest.config.ts --clearScreen false",
     "test:debug": "vitest --inspect-brk --no-file-parallelism --config ./src/vitest.config.ts",
     "test:coverage": "vitest run --coverage --coverage.reporter=text",
     "lint": "eslint src",
