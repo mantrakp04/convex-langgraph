@@ -1,36 +1,24 @@
 import { describe, it, expect } from "vitest";
 import { mergeDeltas, applyDeltasToStreamMessage } from "./deltas.js";
-import type {
-  StreamMessage,
-  StreamDelta,
-  TextStreamPart,
-} from "../validators.js";
+import type { StreamMessage, StreamDelta } from "../validators.js";
 import { omit } from "convex-helpers";
+import type { TextStreamPart, ToolSet } from "ai";
 
 function makeStreamMessage(
   streamId: string,
   order: number,
   stepOrder: number,
 ): StreamMessage {
-  return {
-    streamId,
-    order,
-    stepOrder,
-  } as StreamMessage;
+  return { streamId, order, stepOrder } as StreamMessage;
 }
 
 function makeDelta(
   streamId: string,
   start: number,
   end: number,
-  parts: TextStreamPart[],
+  parts: TextStreamPart<ToolSet>[],
 ): StreamDelta {
-  return {
-    streamId,
-    start,
-    end,
-    parts,
-  };
+  return { streamId, start, end, parts };
 }
 
 describe("mergeDeltas", () => {
@@ -38,7 +26,9 @@ describe("mergeDeltas", () => {
     const streamId = "s1";
     const streamMessages = [makeStreamMessage(streamId, 1, 0)];
     const deltas = [
-      makeDelta(streamId, 0, 5, [{ type: "text-delta", textDelta: "Hello" }]),
+      makeDelta(streamId, 0, 5, [
+        { type: "text-delta", id: "1", text: "Hello" },
+      ]),
     ];
     const [messages, newStreams, changed] = mergeDeltas(
       "thread1",
@@ -57,9 +47,11 @@ describe("mergeDeltas", () => {
     const streamId = "s1";
     const streamMessages = [makeStreamMessage(streamId, 1, 0)];
     const deltas = [
-      makeDelta(streamId, 0, 5, [{ type: "text-delta", textDelta: "Hello" }]),
+      makeDelta(streamId, 0, 5, [
+        { type: "text-delta", id: "1", text: "Hello" },
+      ]),
       makeDelta(streamId, 5, 11, [
-        { type: "text-delta", textDelta: " World!" },
+        { type: "text-delta", id: "2", text: " World!" },
       ]),
     ];
     const [messages, newStreams, changed] = mergeDeltas(
@@ -83,7 +75,7 @@ describe("mergeDeltas", () => {
           type: "tool-call",
           toolCallId: "call1",
           toolName: "myTool",
-          args: "",
+          input: "",
         },
       ]),
       makeDelta(streamId, 1, 2, [
@@ -91,7 +83,8 @@ describe("mergeDeltas", () => {
           type: "tool-result",
           toolCallId: "call1",
           toolName: "myTool",
-          result: "42",
+          input: undefined,
+          output: "42",
         },
       ]),
     ];
@@ -106,12 +99,7 @@ describe("mergeDeltas", () => {
     expect(messages[0].tool).toBe(true);
     const content = messages[0].message?.content;
     expect(content).toEqual([
-      {
-        type: "tool-call",
-        toolCallId: "call1",
-        toolName: "myTool",
-        args: "",
-      },
+      { type: "tool-call", toolCallId: "call1", toolName: "myTool", args: "" },
     ]);
     expect(messages[1].message?.role).toBe("tool");
     expect(messages[1].tool).toBe(true);
@@ -145,8 +133,8 @@ describe("mergeDeltas", () => {
     const s1 = makeStreamMessage("s1", 1, 0);
     const s2 = makeStreamMessage("s2", 2, 0);
     const deltas = [
-      makeDelta("s2", 0, 3, [{ type: "text-delta", textDelta: "B" }]),
-      makeDelta("s1", 0, 3, [{ type: "text-delta", textDelta: "A" }]),
+      makeDelta("s2", 0, 3, [{ type: "text-delta", id: "1", text: "B" }]),
+      makeDelta("s1", 0, 3, [{ type: "text-delta", id: "2", text: "A" }]),
     ];
     const [messages, _, changed] = mergeDeltas("thread1", [s2, s1], [], deltas);
     expect(messages).toHaveLength(2);
@@ -162,11 +150,13 @@ describe("mergeDeltas", () => {
     const streamId = "s4";
     const streamMessages = [makeStreamMessage(streamId, 4, 0)];
     const deltas = [
-      makeDelta(streamId, 0, 5, [{ type: "text-delta", textDelta: "Hello" }]),
-      makeDelta(streamId, 5, 11, [
-        { type: "text-delta", textDelta: " World!" },
+      makeDelta(streamId, 0, 5, [
+        { type: "text-delta", id: "1", text: "Hello" },
       ]),
-      makeDelta(streamId, 11, 12, [{ type: "text-delta", textDelta: "!" }]),
+      makeDelta(streamId, 5, 11, [
+        { type: "text-delta", id: "2", text: " World!" },
+      ]),
+      makeDelta(streamId, 11, 12, [{ type: "text-delta", id: "3", text: "!" }]),
     ];
     const [messages] = mergeDeltas("thread1", streamMessages, [], deltas);
     expect(messages).toHaveLength(1);
@@ -185,10 +175,10 @@ describe("mergeDeltas", () => {
     const streamMessages = [makeStreamMessage(streamId, 6, 0)];
     const deltas = [
       makeDelta(streamId, 0, 1, [
-        { type: "reasoning", textDelta: "I'm thinking..." },
+        { type: "reasoning-delta", id: "1", text: "I'm thinking..." },
       ]),
       makeDelta(streamId, 1, 2, [
-        { type: "reasoning", textDelta: " Still thinking..." },
+        { type: "reasoning-delta", id: "2", text: " Still thinking..." },
       ]),
     ];
     const [messages] = mergeDeltas("thread1", streamMessages, [], deltas);
@@ -206,9 +196,11 @@ describe("mergeDeltas", () => {
     const streamId = "s7";
     const streamMessage = makeStreamMessage(streamId, 7, 0);
     const deltas = [
-      makeDelta(streamId, 0, 5, [{ type: "text-delta", textDelta: "Hello" }]),
+      makeDelta(streamId, 0, 5, [
+        { type: "text-delta", id: "1", text: "Hello" },
+      ]),
       makeDelta(streamId, 5, 11, [
-        { type: "text-delta", textDelta: " World!" },
+        { type: "text-delta", id: "2", text: " World!" },
       ]),
     ];
     // First call: apply both deltas
@@ -232,7 +224,7 @@ describe("mergeDeltas", () => {
     // Third call: add a new delta
     const moreDeltas = [
       ...deltas,
-      makeDelta(streamId, 11, 12, [{ type: "text-delta", textDelta: "!" }]),
+      makeDelta(streamId, 11, 12, [{ type: "text-delta", id: "3", text: "!" }]),
     ];
     [result, changed] = applyDeltasToStreamMessage(
       "thread1",
@@ -259,9 +251,11 @@ describe("mergeDeltas", () => {
     const streamId = "s8";
     const streamMessages = [makeStreamMessage(streamId, 8, 0)];
     const deltas = [
-      makeDelta(streamId, 0, 5, [{ type: "text-delta", textDelta: "Hello" }]),
+      makeDelta(streamId, 0, 5, [
+        { type: "text-delta", id: "1", text: "Hello" },
+      ]),
       makeDelta(streamId, 5, 11, [
-        { type: "text-delta", textDelta: " World!" },
+        { type: "text-delta", id: "2", text: " World!" },
       ]),
     ];
     // Deep freeze inputs to catch mutation
@@ -306,9 +300,11 @@ describe("mergeDeltas", () => {
     // Inputs should remain unchanged
     expect(streamMessages).toEqual([makeStreamMessage(streamId, 8, 0)]);
     expect(deltas).toEqual([
-      makeDelta(streamId, 0, 5, [{ type: "text-delta", textDelta: "Hello" }]),
+      makeDelta(streamId, 0, 5, [
+        { type: "text-delta", id: "1", text: "Hello" },
+      ]),
       makeDelta(streamId, 5, 11, [
-        { type: "text-delta", textDelta: " World!" },
+        { type: "text-delta", id: "2", text: " World!" },
       ]),
     ]);
   });
