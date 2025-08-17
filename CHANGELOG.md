@@ -3,23 +3,33 @@
 ## 0.2.0 AI SDK v5 support (alpha)
 
 - Supports LanguageModel: a string for gateway or LanguageModelV2.
-- Add a `.text` field to the toUIMessages return value (this is the
-  UIMessage exported by the Agent library.
-  Note: this is somewhat different, so your UIs will have to adjust.
-- No longer returns lastMessageId when saving message, instead it
-  returns all the messages it saved with all metadata.
-- All messages are returned when generating / streaming text / objects.
+- No longer returns lastMessageId when saving message, instead it returns all
+  the messages it saved with all metadata.
+- All saved messages are returned when generating / streaming text / objects.
   Not just the prompt message ID / order.
+- Generating / streaming will return a `promptMessageId` field, which is the
+  message ID of the last message that was used as the prompt. This replaces the
+  `messageId` field, which was confusing.
+- There's a `.start` function you can use to call the AI SDK directly and still
+  get all the message management benefits.
 - More functions are supported without using an Agent class.
 - The UIMessage is now based on the v5 UIMessage, and the MessageDoc is
   based on the ModelMessage. The data at rest has not changed - backwards
   compatible.
+- Add a `.text` field to the toUIMessages return value (this is the
+  UIMessage exported by the Agent library) to replace the `content` field.
 - The `id` is no longer used / configurable when saving messages.
   Reach out if you were using it - the normal message ID should suffice.
-- `maxRetries` option has been moved into a general `callSettings` config on Agent
-- The `maxSteps` option has been changed to the v5 `stopWhen` alternative.
-- saving pending messages now requires passing status: "pending" instead of
+- `maxRetries` option has been moved into a general `callSettings` config on
+  Agent, and in general has been renamed to `stopWhen` in v5.
+- Saving pending messages now requires passing status: "pending" instead of
   a top-level pending: true. Most people don't use this feature currently.
+- A pending message is now created by default when generating / streaming text /
+  objects, representing the message that is being generated. It will attempt to
+  only create pending messages when it anticipates generating a response.
+- Breaking: the `thread` return value from `continueThread` no longer allows
+  overriding the tools at the thread level. You can still override the agent
+  defaults at the call-site.
 
 ## 0.1.18
 
