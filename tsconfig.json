@@ -16,10 +16,9 @@
     // See these docs to get this working:
     //https://github.com/xixixao/convex-typescript-plugin/
     // "plugins": [{ "name": "@xixixao/convex-typescript-plugin" }],
-    "paths": {
-      "@convex-dev/agent": ["./src/client/index.ts"]
-    },
+    "paths": { "@convex-dev/agent": ["./src/client/index.ts"] },
 
+    "assumeChangesOnlyAffectDirectDependencies": false,
     "composite": true,
     "rootDir": "./src",
     "isolatedModules": true,

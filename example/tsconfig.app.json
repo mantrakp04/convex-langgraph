@@ -25,7 +25,11 @@
      * to compile TypeScript because differences between tsconfig.json files can
      * cause the code to be compiled differently.
      */
-    // "customConditions": ["@convex-dev/component-source"],
+    "customConditions": ["@convex-dev/component-source"],
+
+    /* Force fresh resolution for custom conditions */
+    "incremental": false,
+    "assumeChangesOnlyAffectDirectDependencies": false,
 
     /* Import paths */
     "paths": {

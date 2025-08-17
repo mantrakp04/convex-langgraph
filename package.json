@@ -27,7 +27,7 @@
     "build": "tsc --project ./tsconfig.build.json && npm run copy:dts && echo '{\\n  \"type\": \"module\"\\n}' > dist/package.json",
     "copy:dts": "rsync -a --include='*/' --include='*.d.ts' --exclude='*' src/ dist/ || cpy 'src/**/*.d.ts' 'dist/' --parents",
     "typecheck": "tsc --noEmit",
-    "clean": "rm -rf dist tsconfig.build.tsbuildinfo",
+    "clean": "rm -rf dist tsconfig.build.tsbuildinfo && rm -rf example/node_modules/.tmp && rm -rf node_modules/.cache",
     "alpha": "npm run clean && npm run build && run-p test lint typecheck && npm version prerelease --preid alpha && npm publish --tag alpha && git push --tags",
     "release": "npm run clean && npm run build && run-p test lint typecheck && npm version patch && npm publish && git push --tags && git push",
     "test": "vitest run --typecheck --config ./src/vitest.config.ts",
