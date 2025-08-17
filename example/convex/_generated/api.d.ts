@@ -1367,6 +1367,14 @@ export declare const components: {
           patch: {
             error?: string;
             fileIds?: Array<string>;
+            finishReason?:
+              | "stop"
+              | "length"
+              | "content-filter"
+              | "tool-calls"
+              | "error"
+              | "other"
+              | "unknown";
             message?:
               | {
                   content:
@@ -1481,7 +1489,10 @@ export declare const components: {
                   providerOptions?: Record<string, Record<string, any>>;
                   role: "system";
                 };
-            status?: "pending" | "success" | "failed";
+            model?: string;
+            provider?: string;
+            providerOptions?: Record<string, Record<string, any>>;
+            status: "pending" | "success" | "failed";
           };
         },
         {

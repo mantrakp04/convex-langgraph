@@ -1,4 +1,4 @@
-import { assert, omit } from "convex-helpers";
+import { assert, omit, pick } from "convex-helpers";
 import { mergedStream, stream } from "convex-helpers/server/stream";
 import { paginationOptsValidator } from "convex/server";
 import type { ObjectType } from "convex/values";
@@ -26,11 +26,6 @@ import {
 } from "./_generated/server.js";
 import type { MessageDoc } from "./schema.js";
 import { schema, v, vMessageDoc } from "./schema.js";
-import {
-  getThread as _getThread,
-  listThreadsByUserId as _listThreadsByUserId,
-  updateThread as _updateThread,
-} from "./threads.js";
 import { insertVector, searchVectors } from "./vector/index.js";
 import {
   type VectorDimension,
@@ -272,10 +267,7 @@ function orderedMessagesStream(
 }
 
 export const rollbackMessage = mutation({
-  args: {
-    messageId: v.id("messages"),
-    error: v.optional(v.string()),
-  },
+  args: { messageId: v.id("messages"), error: v.optional(v.string()) },
   returns: v.null(),
   handler: async (ctx, { messageId, error }) => {
     const message = await ctx.db.get(messageId);
@@ -292,17 +284,12 @@ export const rollbackMessage = mutation({
       }
     }
 
-    await ctx.db.patch(messageId, {
-      status: "failed",
-      error: error,
-    });
+    await ctx.db.patch(messageId, { status: "failed", error: error });
   },
 });
 
 export const commitMessage = mutation({
-  args: {
-    messageId: v.id("messages"),
-  },
+  args: { messageId: v.id("messages") },
   returns: v.null(),
   handler: commitMessageHandler,
 });
@@ -310,12 +297,18 @@ export const commitMessage = mutation({
 export const updateMessage = mutation({
   args: {
     messageId: v.id("messages"),
-    patch: v.object({
-      message: v.optional(vMessageDoc.fields.message),
-      fileIds: v.optional(v.array(v.id("files"))),
-      status: v.optional(vMessageStatus),
-      error: v.optional(v.string()),
-    }),
+    patch: v.object(
+      pick(schema.tables.messages.validator.fields, [
+        "message",
+        "fileIds",
+        "status",
+        "error",
+        "model",
+        "provider",
+        "providerOptions",
+        "finishReason",
+      ]),
+    ),
   },
   returns: vMessageDoc,
   handler: async (ctx, args) => {
@@ -326,9 +319,7 @@ export const updateMessage = mutation({
       await changeRefcount(ctx, message.fileIds ?? [], args.patch.fileIds);
     }
 
-    const patch: Partial<Doc<"messages">> = {
-      ...args.patch,
-    };
+    const patch: Partial<Doc<"messages">> = { ...args.patch };
 
     if (args.patch.message !== undefined) {
       patch.message = args.patch.message;
@@ -427,9 +418,7 @@ export const listMessagesByThreadId = query({
 });
 
 export const getMessagesByIds = query({
-  args: {
-    messageIds: v.array(v.id("messages")),
-  },
+  args: { messageIds: v.array(v.id("messages")) },
   handler: async (ctx, args) => {
     return (await Promise.all(args.messageIds.map((id) => ctx.db.get(id)))).map(
       (m) => (m ? publicMessage(m) : null),

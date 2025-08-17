@@ -1197,6 +1197,14 @@ export type Mounts = {
         patch: {
           error?: string;
           fileIds?: Array<string>;
+          finishReason?:
+            | "stop"
+            | "length"
+            | "content-filter"
+            | "tool-calls"
+            | "error"
+            | "other"
+            | "unknown";
           message?:
             | {
                 content:
@@ -1287,7 +1295,10 @@ export type Mounts = {
                 providerOptions?: Record<string, Record<string, any>>;
                 role: "system";
               };
-          status?: "pending" | "success" | "failed";
+          model?: string;
+          provider?: string;
+          providerOptions?: Record<string, Record<string, any>>;
+          status: "pending" | "success" | "failed";
         };
       },
       {
