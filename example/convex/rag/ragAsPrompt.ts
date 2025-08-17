@@ -69,7 +69,7 @@ export const answerQuestionViaRAG = internalAction({
     );
     // To show the context in the demo UI, we record the context used
     await ctx.runMutation(internal.rag.utils.recordContextUsed, {
-      messageId: result.messageId,
+      messageId: result.promptMessageId,
       entries: context.entries,
       results: context.results,
     });

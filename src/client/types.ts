@@ -122,6 +122,11 @@ export type GenerationOutputMetadata = {
    * If you passed promptMessageId, it will not include that message.
    */
   savedMessages?: MessageDoc[];
+  /**
+   * @deprecated Use promptMessageId instead.
+   * The ID of the prompt message for the generation.
+   */
+  messageId?: string;
 };
 
 export type UsageHandler = (

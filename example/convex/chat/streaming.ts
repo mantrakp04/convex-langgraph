@@ -172,7 +172,7 @@ export const streamOverHttp = httpAction(async (ctx, request) => {
   const response = result.toTextStreamResponse();
   // Set this so the client can try to de-dupe showing the streamed message and
   // the final result.
-  response.headers.set("X-Message-Id", result.messageId);
+  response.headers.set("X-Message-Id", result.promptMessageId);
   return response;
 });
 

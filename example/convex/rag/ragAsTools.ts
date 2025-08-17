@@ -19,7 +19,7 @@ export const sendMessage = action({
   handler: async (ctx, { threadId, prompt }) => {
     const userId = await getAuthUserId(ctx);
     const { thread } = await agent.continueThread(ctx, { threadId });
-    const { messageId } = await thread.generateText({
+    const { promptMessageId } = await thread.generateText({
       prompt,
       tools: {
         addContext: createTool({
@@ -51,7 +51,7 @@ export const sendMessage = action({
             });
             // To show the context in the demo UI, we record the context used
             await ctx.runMutation(internal.rag.utils.recordContextUsed, {
-              messageId,
+              messageId: promptMessageId,
               entries: context.entries,
               results: context.results,
             });

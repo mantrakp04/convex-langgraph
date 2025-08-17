@@ -626,6 +626,7 @@ export class Agent<
         promptMessageId,
         order,
         savedMessages: call.getSavedMessages(),
+        messageId: promptMessageId,
       };
       return Object.assign(result, metadata);
     } catch (error) {
@@ -762,6 +763,7 @@ export class Agent<
       promptMessageId,
       order,
       savedMessages: call.getSavedMessages(),
+      messageId: promptMessageId,
     };
     return Object.assign(result, metadata);
   }
@@ -817,6 +819,7 @@ export class Agent<
         promptMessageId,
         order,
         savedMessages: getSavedMessages(),
+        messageId: promptMessageId,
       };
       return Object.assign(result, metadata);
     } catch (error) {
@@ -904,6 +907,7 @@ export class Agent<
       promptMessageId,
       order,
       savedMessages: getSavedMessages(),
+      messageId: promptMessageId,
     };
     return Object.assign(stream, metadata);
   }
@@ -1795,14 +1799,13 @@ export class Agent<
        * defaults if you pass true.
        */
       stream?: boolean | StreamingOptions;
-    } & Options,
-    overrides?: {
       /**
        * When to stop generating text.
        * Defaults to the {@link Agent["options"].stopWhen} option.
        */
       stopWhen?: StopCondition<AgentTools> | Array<StopCondition<AgentTools>>;
-    } & CallSettings,
+    } & Options,
+    overrides?: CallSettings,
   ) {
     return internalActionGeneric({
       args: vTextArgs,
@@ -1811,7 +1814,7 @@ export class Agent<
           args.stream === true ? spec?.stream || true : (spec?.stream ?? false);
         const targetArgs = { userId: args.userId, threadId: args.threadId };
         const llmArgs = {
-          stopWhen: this.options.stopWhen,
+          stopWhen: spec?.stopWhen ?? this.options.stopWhen,
           ...overrides,
           ...omit(args, ["storageOptions", "contextOptions"]),
           messages: args.messages?.map(deserializeMessage),

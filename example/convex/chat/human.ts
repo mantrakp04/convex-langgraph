@@ -105,7 +105,7 @@ export const ask = action({
     return {
       response: result.text,
       supportRequests,
-      messageId: result.messageId,
+      promptMessageId: result.promptMessageId,
     };
   },
 });
@@ -116,7 +116,7 @@ export const humanResponseAsToolCall = internalAction({
     response: v.string(),
     toolCallId: v.string(),
     threadId: v.string(),
-    messageId: v.string(),
+    promptMessageId: v.string(),
   },
   handler: async (ctx, args) => {
     await agent.saveMessage(ctx, {
@@ -143,7 +143,7 @@ export const humanResponseAsToolCall = internalAction({
     await agent.generateText(
       ctx,
       { threadId: args.threadId },
-      { promptMessageId: args.messageId },
+      { promptMessageId: args.promptMessageId },
     );
   },
 });
