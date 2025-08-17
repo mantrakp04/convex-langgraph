@@ -11,7 +11,6 @@ import {
   vProviderOptions,
   vProviderMetadata,
   vReasoningDetails,
-  vTextStreamPart,
 } from "../validators.js";
 import { typedV } from "convex-helpers/validators";
 import vectorTables, { vVectorId } from "./vector/tables.js";
@@ -56,11 +55,11 @@ export const schema = defineSchema({
     usage: v.optional(vUsage),
     providerMetadata: v.optional(vProviderMetadata), // Received from model
     sources: v.optional(v.array(vSource)),
-    reasoning: v.optional(v.string()),
-    reasoningDetails: v.optional(vReasoningDetails),
     warnings: v.optional(v.array(vLanguageModelCallWarning)),
     finishReason: v.optional(vFinishReason),
     // DEPRECATED
+    reasoning: v.optional(v.string()),
+    reasoningDetails: v.optional(vReasoningDetails),
     id: v.optional(v.string()), // external id, e.g. from Vercel AI SDK
     parentMessageId: v.optional(v.id("messages")),
     stepId: v.optional(v.string()),
@@ -129,7 +128,7 @@ export const schema = defineSchema({
     // the indexes work like: 0 <first> 1 <second> 2 <third> 3 ...
     start: v.number(), // inclusive
     end: v.number(), // exclusive
-    parts: v.array(vTextStreamPart),
+    parts: v.array(v.any()),
   }).index("streamId_start_end", ["streamId", "start", "end"]),
 
   memories: defineTable({

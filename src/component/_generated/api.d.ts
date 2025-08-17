@@ -260,14 +260,6 @@ export type Mounts = {
           sources?: Array<
             | {
                 id: string;
-                providerMetadata?: Record<string, Record<string, any>>;
-                sourceType: "url";
-                title?: string;
-                type: "source";
-                url: string;
-              }
-            | {
-                id: string;
                 providerOptions?: Record<string, Record<string, any>>;
                 sourceType: "url";
                 title?: string;
@@ -428,14 +420,6 @@ export type Mounts = {
             | { data: string; type: "redacted" }
           >;
           sources?: Array<
-            | {
-                id: string;
-                providerMetadata?: Record<string, Record<string, any>>;
-                sourceType: "url";
-                title?: string;
-                type: "source";
-                url: string;
-              }
             | {
                 id: string;
                 providerOptions?: Record<string, Record<string, any>>;
@@ -629,14 +613,6 @@ export type Mounts = {
         sources?: Array<
           | {
               id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              sourceType: "url";
-              title?: string;
-              type: "source";
-              url: string;
-            }
-          | {
-              id: string;
               providerOptions?: Record<string, Record<string, any>>;
               sourceType: "url";
               title?: string;
@@ -818,14 +794,6 @@ export type Mounts = {
             | { data: string; type: "redacted" }
           >;
           sources?: Array<
-            | {
-                id: string;
-                providerMetadata?: Record<string, Record<string, any>>;
-                sourceType: "url";
-                title?: string;
-                type: "source";
-                url: string;
-              }
             | {
                 id: string;
                 providerOptions?: Record<string, Record<string, any>>;
@@ -1013,14 +981,6 @@ export type Mounts = {
         sources?: Array<
           | {
               id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              sourceType: "url";
-              title?: string;
-              type: "source";
-              url: string;
-            }
-          | {
-              id: string;
               providerOptions?: Record<string, Record<string, any>>;
               sourceType: "url";
               title?: string;
@@ -1191,14 +1151,6 @@ export type Mounts = {
           | { data: string; type: "redacted" }
         >;
         sources?: Array<
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              sourceType: "url";
-              title?: string;
-              type: "source";
-              url: string;
-            }
           | {
               id: string;
               providerOptions?: Record<string, Record<string, any>>;
@@ -1464,14 +1416,6 @@ export type Mounts = {
         sources?: Array<
           | {
               id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              sourceType: "url";
-              title?: string;
-              type: "source";
-              url: string;
-            }
-          | {
-              id: string;
               providerOptions?: Record<string, Record<string, any>>;
               sourceType: "url";
               title?: string;
@@ -1525,163 +1469,7 @@ export type Mounts = {
     addDelta: FunctionReference<
       "mutation",
       "public",
-      {
-        end: number;
-        parts: Array<
-          | { textDelta: string; type: "text-delta" }
-          | { textDelta: string; type: "reasoning" }
-          | {
-              source: {
-                id: string;
-                providerOptions?: Record<string, Record<string, any>>;
-                sourceType: "url";
-                title?: string;
-                url: string;
-              };
-              type: "source";
-            }
-          | {
-              args: any;
-              providerExecuted?: boolean;
-              providerOptions?: Record<string, Record<string, any>>;
-              toolCallId: string;
-              toolName: string;
-              type: "tool-call";
-            }
-          | {
-              args?: any;
-              experimental_content?: Array<
-                | { text: string; type: "text" }
-                | { data: string; mimeType?: string; type: "image" }
-              >;
-              isError?: boolean;
-              providerExecuted?: boolean;
-              providerOptions?: Record<string, Record<string, any>>;
-              result: any;
-              toolCallId: string;
-              toolName: string;
-              type: "tool-result";
-            }
-          | {
-              toolCallId: string;
-              toolName: string;
-              type: "tool-call-streaming-start";
-            }
-          | {
-              argsTextDelta: string;
-              toolCallId: string;
-              toolName: string;
-              type: "tool-call-delta";
-            }
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              text: string;
-              type: "text-delta";
-            }
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              text: string;
-              type: "reasoning-delta";
-            }
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              sourceType: "url";
-              title?: string;
-              type: "source";
-              url: string;
-            }
-          | {
-              dynamic?: false;
-              input: any;
-              providerExecuted?: boolean;
-              providerMetadata?: Record<string, Record<string, any>>;
-              toolCallId: string;
-              toolName: string;
-              type: "tool-call";
-            }
-          | {
-              dynamic: true;
-              error?: any;
-              input: any;
-              invalid?: boolean;
-              providerExecuted?: boolean;
-              providerMetadata?: Record<string, Record<string, any>>;
-              toolCallId: string;
-              toolName: string;
-              type: "tool-call";
-            }
-          | {
-              dynamic?: boolean;
-              id: string;
-              providerExecuted?: boolean;
-              providerMetadata?: Record<string, Record<string, any>>;
-              toolName: string;
-              type: "tool-input-start";
-            }
-          | {
-              delta: string;
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              type: "tool-input-delta";
-            }
-          | {
-              dynamic?: boolean;
-              input?: any;
-              output?: any;
-              providerExecuted?: boolean;
-              toolCallId: string;
-              toolName: string;
-              type: "tool-result";
-            }
-          | {
-              dynamic?: boolean;
-              error: any;
-              input?: any;
-              providerExecuted?: boolean;
-              toolCallId: string;
-              toolName: string;
-              type: "tool-error";
-            }
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              type: "text-start";
-            }
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              type: "text-end";
-            }
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              type: "tool-input-end";
-            }
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              type: "reasoning-start";
-            }
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              type: "reasoning-end";
-            }
-          | {
-              file: { base64: string; mediaType: string };
-              providerMetadata?: Record<string, Record<string, any>>;
-              type: "file";
-            }
-          | { type: "abort" }
-          | { error: any; type: "error" }
-          | { rawValue: any; type: "raw" }
-        >;
-        start: number;
-        streamId: string;
-      },
+      { end: number; parts: Array<any>; start: number; streamId: string },
       boolean
     >;
     create: FunctionReference<
@@ -1729,158 +1517,7 @@ export type Mounts = {
       {
         finalDelta?: {
           end: number;
-          parts: Array<
-            | { textDelta: string; type: "text-delta" }
-            | { textDelta: string; type: "reasoning" }
-            | {
-                source: {
-                  id: string;
-                  providerOptions?: Record<string, Record<string, any>>;
-                  sourceType: "url";
-                  title?: string;
-                  url: string;
-                };
-                type: "source";
-              }
-            | {
-                args: any;
-                providerExecuted?: boolean;
-                providerOptions?: Record<string, Record<string, any>>;
-                toolCallId: string;
-                toolName: string;
-                type: "tool-call";
-              }
-            | {
-                args?: any;
-                experimental_content?: Array<
-                  | { text: string; type: "text" }
-                  | { data: string; mimeType?: string; type: "image" }
-                >;
-                isError?: boolean;
-                providerExecuted?: boolean;
-                providerOptions?: Record<string, Record<string, any>>;
-                result: any;
-                toolCallId: string;
-                toolName: string;
-                type: "tool-result";
-              }
-            | {
-                toolCallId: string;
-                toolName: string;
-                type: "tool-call-streaming-start";
-              }
-            | {
-                argsTextDelta: string;
-                toolCallId: string;
-                toolName: string;
-                type: "tool-call-delta";
-              }
-            | {
-                id: string;
-                providerMetadata?: Record<string, Record<string, any>>;
-                text: string;
-                type: "text-delta";
-              }
-            | {
-                id: string;
-                providerMetadata?: Record<string, Record<string, any>>;
-                text: string;
-                type: "reasoning-delta";
-              }
-            | {
-                id: string;
-                providerMetadata?: Record<string, Record<string, any>>;
-                sourceType: "url";
-                title?: string;
-                type: "source";
-                url: string;
-              }
-            | {
-                dynamic?: false;
-                input: any;
-                providerExecuted?: boolean;
-                providerMetadata?: Record<string, Record<string, any>>;
-                toolCallId: string;
-                toolName: string;
-                type: "tool-call";
-              }
-            | {
-                dynamic: true;
-                error?: any;
-                input: any;
-                invalid?: boolean;
-                providerExecuted?: boolean;
-                providerMetadata?: Record<string, Record<string, any>>;
-                toolCallId: string;
-                toolName: string;
-                type: "tool-call";
-              }
-            | {
-                dynamic?: boolean;
-                id: string;
-                providerExecuted?: boolean;
-                providerMetadata?: Record<string, Record<string, any>>;
-                toolName: string;
-                type: "tool-input-start";
-              }
-            | {
-                delta: string;
-                id: string;
-                providerMetadata?: Record<string, Record<string, any>>;
-                type: "tool-input-delta";
-              }
-            | {
-                dynamic?: boolean;
-                input?: any;
-                output?: any;
-                providerExecuted?: boolean;
-                toolCallId: string;
-                toolName: string;
-                type: "tool-result";
-              }
-            | {
-                dynamic?: boolean;
-                error: any;
-                input?: any;
-                providerExecuted?: boolean;
-                toolCallId: string;
-                toolName: string;
-                type: "tool-error";
-              }
-            | {
-                id: string;
-                providerMetadata?: Record<string, Record<string, any>>;
-                type: "text-start";
-              }
-            | {
-                id: string;
-                providerMetadata?: Record<string, Record<string, any>>;
-                type: "text-end";
-              }
-            | {
-                id: string;
-                providerMetadata?: Record<string, Record<string, any>>;
-                type: "tool-input-end";
-              }
-            | {
-                id: string;
-                providerMetadata?: Record<string, Record<string, any>>;
-                type: "reasoning-start";
-              }
-            | {
-                id: string;
-                providerMetadata?: Record<string, Record<string, any>>;
-                type: "reasoning-end";
-              }
-            | {
-                file: { base64: string; mediaType: string };
-                providerMetadata?: Record<string, Record<string, any>>;
-                type: "file";
-              }
-            | { type: "abort" }
-            | { error: any; type: "error" }
-            | { rawValue: any; type: "raw" }
-          >;
+          parts: Array<any>;
           start: number;
           streamId: string;
         };
@@ -1915,163 +1552,7 @@ export type Mounts = {
         cursors: Array<{ cursor: number; streamId: string }>;
         threadId: string;
       },
-      Array<{
-        end: number;
-        parts: Array<
-          | { textDelta: string; type: "text-delta" }
-          | { textDelta: string; type: "reasoning" }
-          | {
-              source: {
-                id: string;
-                providerOptions?: Record<string, Record<string, any>>;
-                sourceType: "url";
-                title?: string;
-                url: string;
-              };
-              type: "source";
-            }
-          | {
-              args: any;
-              providerExecuted?: boolean;
-              providerOptions?: Record<string, Record<string, any>>;
-              toolCallId: string;
-              toolName: string;
-              type: "tool-call";
-            }
-          | {
-              args?: any;
-              experimental_content?: Array<
-                | { text: string; type: "text" }
-                | { data: string; mimeType?: string; type: "image" }
-              >;
-              isError?: boolean;
-              providerExecuted?: boolean;
-              providerOptions?: Record<string, Record<string, any>>;
-              result: any;
-              toolCallId: string;
-              toolName: string;
-              type: "tool-result";
-            }
-          | {
-              toolCallId: string;
-              toolName: string;
-              type: "tool-call-streaming-start";
-            }
-          | {
-              argsTextDelta: string;
-              toolCallId: string;
-              toolName: string;
-              type: "tool-call-delta";
-            }
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              text: string;
-              type: "text-delta";
-            }
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              text: string;
-              type: "reasoning-delta";
-            }
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              sourceType: "url";
-              title?: string;
-              type: "source";
-              url: string;
-            }
-          | {
-              dynamic?: false;
-              input: any;
-              providerExecuted?: boolean;
-              providerMetadata?: Record<string, Record<string, any>>;
-              toolCallId: string;
-              toolName: string;
-              type: "tool-call";
-            }
-          | {
-              dynamic: true;
-              error?: any;
-              input: any;
-              invalid?: boolean;
-              providerExecuted?: boolean;
-              providerMetadata?: Record<string, Record<string, any>>;
-              toolCallId: string;
-              toolName: string;
-              type: "tool-call";
-            }
-          | {
-              dynamic?: boolean;
-              id: string;
-              providerExecuted?: boolean;
-              providerMetadata?: Record<string, Record<string, any>>;
-              toolName: string;
-              type: "tool-input-start";
-            }
-          | {
-              delta: string;
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              type: "tool-input-delta";
-            }
-          | {
-              dynamic?: boolean;
-              input?: any;
-              output?: any;
-              providerExecuted?: boolean;
-              toolCallId: string;
-              toolName: string;
-              type: "tool-result";
-            }
-          | {
-              dynamic?: boolean;
-              error: any;
-              input?: any;
-              providerExecuted?: boolean;
-              toolCallId: string;
-              toolName: string;
-              type: "tool-error";
-            }
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              type: "text-start";
-            }
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              type: "text-end";
-            }
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              type: "tool-input-end";
-            }
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              type: "reasoning-start";
-            }
-          | {
-              id: string;
-              providerMetadata?: Record<string, Record<string, any>>;
-              type: "reasoning-end";
-            }
-          | {
-              file: { base64: string; mediaType: string };
-              providerMetadata?: Record<string, Record<string, any>>;
-              type: "file";
-            }
-          | { type: "abort" }
-          | { error: any; type: "error" }
-          | { rawValue: any; type: "raw" }
-        >;
-        start: number;
-        streamId: string;
-      }>
+      Array<{ end: number; parts: Array<any>; start: number; streamId: string }>
     >;
   };
   threads: {

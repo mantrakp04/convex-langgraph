@@ -175,16 +175,7 @@ export const vMessage = v.union(
 );
 export type Message = Infer<typeof vMessage>;
 
-export const vSourceV5 = v.object({
-  type: v.literal("source"),
-  sourceType: v.literal("url"),
-  id: v.string(),
-  url: v.string(),
-  title: v.optional(v.string()),
-  providerMetadata,
-});
 export const vSource = v.union(
-  vSourceV5,
   v.object({
     type: v.optional(v.literal("source")),
     sourceType: v.literal("url"),
@@ -379,127 +370,6 @@ export function vPaginationResult<
   });
 }
 
-export const vTextStreamPartV4 = v.union(
-  v.object({ type: v.literal("text-delta"), textDelta: v.string() }),
-  v.object({ type: v.literal("reasoning"), textDelta: v.string() }),
-  v.object({
-    type: v.literal("source"),
-    source: v.object({
-      sourceType: v.literal("url"),
-      id: v.string(),
-      url: v.string(),
-      title: v.optional(v.string()),
-      providerOptions,
-    }),
-  }),
-  vToolCallPart,
-  vToolResultPart,
-  v.object({
-    type: v.literal("tool-call-streaming-start"),
-    toolCallId: v.string(),
-    toolName: v.string(),
-  }),
-  v.object({
-    type: v.literal("tool-call-delta"),
-    toolCallId: v.string(),
-    toolName: v.string(),
-    argsTextDelta: v.string(),
-  }),
-);
-export const vTextStreamPartV5 = v.union(
-  v.object({
-    type: v.literal("text-delta"),
-    id: v.string(),
-    text: v.string(),
-    providerMetadata,
-  }),
-  v.object({
-    type: v.literal("reasoning-delta"),
-    id: v.string(),
-    text: v.string(),
-    providerMetadata,
-  }),
-  vSourceV5,
-  v.object({
-    type: v.literal("tool-call"),
-    toolCallId: v.string(),
-    toolName: v.string(),
-    input: v.any(),
-    providerExecuted: v.optional(v.boolean()),
-    dynamic: v.optional(v.literal(false)),
-    providerMetadata,
-  }),
-  v.object({
-    type: v.literal("tool-call"),
-    toolCallId: v.string(),
-    toolName: v.string(),
-    input: v.any(),
-    providerExecuted: v.optional(v.boolean()),
-    dynamic: v.literal(true),
-    providerMetadata,
-    // For dynamic tool calls - if tool doesn't exist e.g.
-    invalid: v.optional(v.boolean()),
-    error: v.optional(v.any()),
-  }),
-  v.object({
-    type: v.literal("tool-input-start"),
-    id: v.string(),
-    toolName: v.string(),
-    providerMetadata,
-    providerExecuted: v.optional(v.boolean()),
-    dynamic: v.optional(v.boolean()),
-  }),
-  v.object({
-    type: v.literal("tool-input-delta"),
-    id: v.string(),
-    delta: v.string(),
-    providerMetadata,
-  }),
-  v.object({
-    type: v.literal("tool-result"),
-    toolCallId: v.string(),
-    toolName: v.string(),
-    input: v.optional(v.any()),
-    output: v.optional(v.any()),
-    providerExecuted: v.optional(v.boolean()),
-    dynamic: v.optional(v.boolean()),
-  }),
-  v.object({
-    type: v.literal("tool-error"),
-    toolCallId: v.string(),
-    toolName: v.string(),
-    input: v.optional(v.any()),
-    error: v.any(),
-    providerExecuted: v.optional(v.boolean()),
-    dynamic: v.optional(v.boolean()),
-  }),
-  ...(
-    [
-      "text-start",
-      "text-end",
-      "tool-input-end",
-      "reasoning-start",
-      "reasoning-end",
-    ] as const
-  ).map((type) =>
-    v.object({ type: v.literal(type), id: v.string(), providerMetadata }),
-  ),
-  v.object({
-    type: v.literal("file"),
-    file: v.object({ base64: v.string(), mediaType: v.string() }),
-    providerMetadata,
-  }),
-  v.object({ type: v.literal("abort") }),
-  v.object({ type: v.literal("error"), error: v.any() }),
-  v.object({ type: v.literal("raw"), rawValue: v.any() }),
-);
-export const TextStreamPartSupportedTypes = vTextStreamPartV5.members.map(
-  (o) => o.fields.type.value,
-);
-export type TextStreamPartV5 = Infer<typeof vTextStreamPartV5>;
-export const vTextStreamPart = v.union(vTextStreamPartV4, vTextStreamPartV5);
-export type TextStreamPart = Infer<typeof vTextStreamPart>;
-
 export const vStreamCursor = v.object({
   streamId: v.string(),
   cursor: v.number(),
@@ -508,14 +378,8 @@ export type StreamCursor = Infer<typeof vStreamCursor>;
 
 export const vStreamArgs = v.optional(
   v.union(
-    v.object({
-      kind: v.literal("list"),
-      startOrder: v.optional(v.number()),
-    }),
-    v.object({
-      kind: v.literal("deltas"),
-      cursors: v.array(vStreamCursor),
-    }),
+    v.object({ kind: v.literal("list"), startOrder: v.optional(v.number()) }),
+    v.object({ kind: v.literal("deltas"), cursors: v.array(vStreamCursor) }),
   ),
 );
 export type StreamArgs = Infer<typeof vStreamArgs>;
@@ -542,6 +406,6 @@ export const vStreamDelta = v.object({
   streamId: v.string(),
   start: v.number(), // inclusive
   end: v.number(), // exclusive
-  parts: v.array(vTextStreamPart),
+  parts: v.array(v.any()),
 });
 export type StreamDelta = Infer<typeof vStreamDelta>;

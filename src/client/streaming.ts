@@ -11,7 +11,6 @@ import type {
   StreamDelta,
   StreamMessage,
 } from "../validators.js";
-import { vTextStreamPartV5 } from "../validators.js";
 import type {
   AgentComponent,
   RunActionCtx,
@@ -20,8 +19,6 @@ import type {
   SyncStreamsReturnValue,
 } from "./types.js";
 import { omit } from "convex-helpers";
-import { v } from "convex/values";
-import { validate, ValidationError } from "convex-helpers/validators";
 import { serializeTextStreamingPartsV5 } from "../parts.js";
 
 /**
@@ -234,15 +231,6 @@ export class DeltaStreamer {
           stepOrder: this.metadata.stepOrder,
         },
       );
-    }
-    try {
-      validate(v.array(vTextStreamPartV5), parts, { throw: true });
-    } catch (e) {
-      if (e instanceof ValidationError) {
-        console.warn("Invalid parts at path", e.path, e.name, e.got, parts);
-      } else {
-        throw e;
-      }
     }
     this.#nextParts.push(...parts);
     if (

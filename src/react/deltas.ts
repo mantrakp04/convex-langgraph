@@ -1,12 +1,11 @@
+import type { TextStreamPart, ToolSet, UIMessageChunk } from "ai";
 import type { MessageDoc } from "../client/index.js";
 import type {
   Message,
   MessageStatus,
   StreamDelta,
   StreamMessage,
-  TextStreamPart,
   vReasoningPart,
-  vSource,
   vTextPart,
   vToolCallPart,
   vToolResultPart,
@@ -74,7 +73,7 @@ export function applyDeltasToStreamMessage(
 ): [{ streamId: string; cursor: number; messages: MessageDoc[] }, boolean] {
   let changed = false;
   let cursor = existing?.cursor ?? 0;
-  let parts: TextStreamPart[] = [];
+  let parts: TextStreamPart<ToolSet>[] = [];
   for (const delta of deltas.sort((a, b) => a.start - b.start)) {
     if (delta.parts.length === 0) {
       console.warn(`Got delta with no parts: ${JSON.stringify(delta)}`);
@@ -162,7 +161,7 @@ export function applyDeltasToStreamMessage(
     }
     switch (part.type) {
       case "text-delta": {
-        const text = "text" in part ? part.text : part.textDelta;
+        const text = part.text;
         currentMessage.text = (currentMessage.text ?? "") + text;
         if (lastContent?.type === "text") {
           lastContent.text = (lastContent.text ?? "") + text;
@@ -173,9 +172,8 @@ export function applyDeltasToStreamMessage(
         }
         break;
       }
-      case "tool-input-start":
-      case "tool-call-streaming-start": {
-        const toolCallId = "toolCallId" in part ? part.toolCallId : part.id;
+      case "tool-input-start": {
+        const toolCallId = part.id;
         currentMessage.tool = true;
         contentToAdd = {
           type: "tool-call",
@@ -189,7 +187,6 @@ export function applyDeltasToStreamMessage(
         } satisfies Infer<typeof vToolCallPart>;
         break;
       }
-      case "tool-call-delta":
       case "tool-input-delta":
         {
           currentMessage.tool = true;
@@ -213,18 +210,6 @@ export function applyDeltasToStreamMessage(
         contentToAdd = toolResultContent(part);
         break;
       }
-      case "reasoning":
-        currentMessage.reasoning =
-          (currentMessage.reasoning ?? "") + part.textDelta;
-        if (lastContent?.type === "reasoning") {
-          lastContent.text = (lastContent.text ?? "") + part.textDelta;
-        } else {
-          contentToAdd = {
-            type: "reasoning",
-            text: part.textDelta,
-          };
-        }
-        break;
       case "reasoning-delta": {
         currentMessage.reasoning = (currentMessage.reasoning ?? "") + part.text;
         if (lastContent?.type === "reasoning") {
@@ -244,17 +229,10 @@ export function applyDeltasToStreamMessage(
         if (!currentMessage.sources) {
           currentMessage.sources = [];
         }
-        if ("source" in part) {
-          currentMessage.sources.push({
-            type: "source",
-            ...part.source,
-          } satisfies Infer<typeof vSource>);
-        } else {
-          currentMessage.sources.push(part);
-        }
+        currentMessage.sources.push(part);
         break;
       case "raw":
-        contentToAdd = part.rawValue;
+        // ignore
         break;
       default:
         console.warn(`Received unexpected part: ${JSON.stringify(part)}`);
@@ -276,7 +254,7 @@ export function applyDeltasToStreamMessage(
 }
 
 function toolCallContent(
-  part: Extract<TextStreamPart, { type: "tool-call" }>,
+  part: Extract<TextStreamPart<ToolSet>, { type: "tool-call" }>,
 ): Infer<typeof vToolCallPart> {
   const args = "args" in part ? part.args : part.input;
   return {
@@ -289,18 +267,14 @@ function toolCallContent(
 }
 
 function toolResultContent(
-  part: Extract<TextStreamPart, { type: "tool-result" }>,
+  part: Extract<TextStreamPart<ToolSet>, { type: "tool-result" }>,
 ): Infer<typeof vToolResultPart> {
-  const result =
-    "output" in part ? part.output : "result" in part ? part.result : undefined;
-  const args =
-    "input" in part ? part.input : "args" in part ? part.args : undefined;
   return {
     type: "tool-result",
     toolCallId: part.toolCallId,
     toolName: part.toolName,
-    result,
-    args,
+    result: part.output,
+    args: part.input,
     providerExecuted: part.providerExecuted,
   } satisfies Infer<typeof vToolResultPart>;
 }
@@ -344,7 +318,7 @@ function statusFromStreamStatus(
 export function createStreamingMessage(
   threadId: string,
   message: StreamMessage,
-  part: TextStreamPart,
+  part: TextStreamPart<ToolSet>,
   index: number,
 ): MessageDoc {
   const { streamId, ...rest } = message;
@@ -358,19 +332,14 @@ export function createStreamingMessage(
   };
   switch (part.type) {
     case "text-delta": {
-      const text = "text" in part ? part.text : part.textDelta;
+      const text = part.text || "";
       return {
         ...metadata,
-        message: {
-          role: "assistant",
-          content: [{ type: "text", text }],
-        },
+        message: { role: "assistant", content: [{ type: "text", text }] },
         text,
       };
     }
-    case "tool-input-start":
-    case "tool-call-streaming-start": {
-      const toolCallId = "toolCallId" in part ? part.toolCallId : part.id;
+    case "tool-input-start": {
       return {
         ...metadata,
         tool: true,
@@ -380,7 +349,7 @@ export function createStreamingMessage(
             {
               type: "tool-call",
               toolName: part.toolName,
-              toolCallId,
+              toolCallId: part.id,
               args: "", // when it's a string, it's a partial call
               providerExecuted:
                 "providerExecuted" in part ? part.providerExecuted : undefined,
@@ -391,26 +360,17 @@ export function createStreamingMessage(
         },
       };
     }
-    case "tool-input-delta":
-    case "tool-call-delta": {
+    case "tool-input-delta": {
       console.warn("Received tool call delta part first??");
-      const delta = "argsTextDelta" in part ? part.argsTextDelta : part.delta;
-      const toolCallId = "toolCallId" in part ? part.toolCallId : part.id;
-      const toolName =
-        "toolName" in part ? part.toolName : part.type.slice("tool-".length);
+      const delta = part.delta;
+      const toolCallId = part.id;
+      const toolName = part.type.slice("tool-".length);
       return {
         ...metadata,
         tool: true,
         message: {
           role: "assistant",
-          content: [
-            {
-              type: "tool-call",
-              toolCallId,
-              toolName,
-              args: delta,
-            },
-          ],
+          content: [{ type: "tool-call", toolCallId, toolName, args: delta }],
         },
       };
     }
@@ -418,29 +378,14 @@ export function createStreamingMessage(
       return {
         ...metadata,
         tool: true,
-        message: {
-          role: "assistant",
-          content: [toolCallContent(part)],
-        },
+        message: { role: "assistant", content: [toolCallContent(part)] },
       };
     }
     case "tool-result":
       return {
         ...metadata,
         tool: true,
-        message: {
-          role: "tool",
-          content: [toolResultContent(part)],
-        },
-      };
-    case "reasoning":
-      return {
-        ...metadata,
-        message: {
-          role: "assistant",
-          content: [{ type: "reasoning", text: part.textDelta }],
-        },
-        reasoning: part.textDelta,
+        message: { role: "tool", content: [toolResultContent(part)] },
       };
     case "reasoning-delta": {
       return {
@@ -458,14 +403,7 @@ export function createStreamingMessage(
         ...metadata,
         tool: true,
         message: { role: "tool", content: [] },
-        sources: [
-          "source" in part
-            ? {
-                ...part.source,
-                type: "source",
-              }
-            : part,
-        ],
+        sources: [part],
       };
     // case "raw":
     //   return {
