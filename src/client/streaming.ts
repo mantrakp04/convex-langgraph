@@ -10,7 +10,6 @@ import type {
   StreamArgs,
   StreamDelta,
   StreamMessage,
-  TextStreamPartV5,
 } from "../validators.js";
 import { vTextStreamPartV5 } from "../validators.js";
 import type {
@@ -22,7 +21,7 @@ import type {
 } from "./types.js";
 import { omit } from "convex-helpers";
 import { v } from "convex/values";
-import { parse, validate, ValidationError } from "convex-helpers/validators";
+import { validate, ValidationError } from "convex-helpers/validators";
 import { serializeTextStreamingPartsV5 } from "../parts.js";
 
 /**
@@ -163,7 +162,7 @@ export function mergeTransforms<TOOLS extends ToolSet>(
 export class DeltaStreamer {
   public streamId: string | undefined;
   public readonly options: Required<StreamingOptions>;
-  #nextParts: TextStreamPartV5[] = [];
+  #nextParts: TextStreamPart<ToolSet>[] = [];
   #latestWrite: number = 0;
   #ongoingWrite: Promise<void> | undefined;
   #cursor: number = 0;
@@ -245,10 +244,7 @@ export class DeltaStreamer {
         throw e;
       }
     }
-    this.#nextParts = serializeTextStreamingPartsV5([
-      ...this.#nextParts,
-      ...parts,
-    ]);
+    this.#nextParts.push(...parts);
     if (
       !this.#ongoingWrite &&
       Date.now() - this.#latestWrite >= this.options.throttleMs
@@ -291,7 +287,7 @@ export class DeltaStreamer {
     const start = this.#cursor;
     const end = start + this.#nextParts.length;
     this.#cursor = end;
-    const parts = this.#nextParts;
+    const parts = serializeTextStreamingPartsV5(this.#nextParts);
     this.#nextParts = [];
     if (!this.streamId) {
       throw new Error("Creating a delta before the stream is created");
