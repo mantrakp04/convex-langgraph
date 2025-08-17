@@ -1,7 +1,7 @@
 // See the docs at https://docs.convex.dev/agents/rate-limiting
 import { Agent, saveMessage, UsageHandler } from "@convex-dev/agent";
 import { components, internal } from "../_generated/api";
-import { chat, textEmbedding } from "../modelsForDemo";
+import { languageModel, textEmbeddingModel } from "../modelsForDemo";
 import { internalAction, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { MINUTE, RateLimiter, SECOND } from "@convex-dev/rate-limiter";
@@ -9,6 +9,7 @@ import { usageHandler as normalUsageHandler } from "../usage_tracking/usageHandl
 import { getAuthUserId } from "../utils";
 import { authorizeThreadAccess } from "../threads";
 import { estimateTokens } from "./utils";
+import { defaultConfig } from "../agents/config";
 
 export const rateLimiter = new RateLimiter(components.rateLimiter, {
   sendMessage: {
@@ -56,10 +57,7 @@ export const rateLimitedUsageHandler: UsageHandler = async (ctx, args) => {
 
 export const rateLimitedAgent = new Agent(components.agent, {
   name: "Rate Limited Agent",
-  chat: chat,
-  usageHandler: rateLimitedUsageHandler,
-  // Optional:
-  textEmbedding,
+  ...defaultConfig,
 });
 
 // Step 1: Submit a question. It checks to see if you are exceeding rate limits.

@@ -165,9 +165,9 @@ export type Config = {
    * e.g.
    * import { openai } from "@ai-sdk/openai"
    * const myAgent = new Agent(components.agent, {
-   *   chat: openai.chat("gpt-4o-mini"),
+   *   languageModel: openai.chat("gpt-4o-mini"),
    */
-  chat?: LanguageModel;
+  languageModel?: LanguageModel;
   /**
    * The model to use for text embeddings. Optional.
    * If specified, it will use this for generating vector embeddings
@@ -176,9 +176,10 @@ export type Config = {
    * e.g.
    * import { openai } from "@ai-sdk/openai"
    * const myAgent = new Agent(components.agent, {
+   *   ...
    *   textEmbedding: openai.embedding("text-embedding-3-small")
    */
-  textEmbedding?: EmbeddingModel<string>;
+  textEmbeddingModel?: EmbeddingModel<string>;
   /**
    * Options to determine what messages are included as context in message
    * generation. To disable any messages automatically being added, pass:
@@ -244,9 +245,9 @@ export class Agent<
        * e.g.
        * import { openai } from "@ai-sdk/openai"
        * const myAgent = new Agent(components.agent, {
-       *   chat: openai.chat("gpt-4o-mini"),
+       *   languageModel: openai.chat("gpt-4o-mini"),
        */
-      chat: LanguageModel;
+      languageModel: LanguageModel;
       /**
        * The default system prompt to put in each request.
        * Override per-prompt by passing the "system" parameter.
@@ -264,6 +265,10 @@ export class Agent<
        * determines when to stop. Defaults to stepCountIs(1).
        */
       stopWhen?: StopCondition<AgentTools> | Array<StopCondition<AgentTools>>;
+      /**
+       * @deprecated Use `languageEmbeddingModel` instead.
+       */
+      chat?: LanguageModel;
     },
   ) {}
 
@@ -968,7 +973,7 @@ export class Agent<
     const { skipEmbeddings, ...rest } = args;
     if (args.embeddings) {
       embeddings = args.embeddings;
-    } else if (!skipEmbeddings && this.options.textEmbedding) {
+    } else if (!skipEmbeddings && this.options.textEmbeddingModel) {
       if (!("runAction" in ctx)) {
         console.warn(
           "You're trying to save messages and generate embeddings, but you're in a mutation. " +
@@ -1074,7 +1079,7 @@ export class Agent<
       getEmbedding: async (text) => {
         assert("runAction" in ctx);
         assert(
-          this.options.textEmbedding,
+          this.options.textEmbeddingModel,
           "A textEmbedding model is required to be set on the Agent that you're doing vector search with",
         );
         return {
@@ -1085,7 +1090,7 @@ export class Agent<
               values: [text],
             })
           ).embeddings[0],
-          embeddingModel: this.options.textEmbedding,
+          textEmbeddingModel: this.options.textEmbeddingModel,
         };
       },
     });
@@ -1140,7 +1145,7 @@ export class Agent<
     }: { userId: string | undefined; threadId: string | undefined },
     messages: (ModelMessage | Message)[],
   ) {
-    if (!this.options.textEmbedding) {
+    if (!this.options.textEmbeddingModel) {
       return undefined;
     }
     let embeddings:
@@ -1172,7 +1177,7 @@ export class Agent<
     if (textEmbeddings.embeddings.length > 0) {
       const dimension = textEmbeddings.embeddings[0].length;
       validateVectorDimension(dimension);
-      const model = getModelName(this.options.textEmbedding);
+      const model = getModelName(this.options.textEmbeddingModel);
       embeddings = { vectors: embeddingsOrNull, dimension, model };
     }
     return embeddings;
@@ -1228,7 +1233,7 @@ export class Agent<
       messagesMissingEmbeddings.map((m) => deserializeMessage(m!.message!)),
     );
     if (!embeddings) {
-      if (!this.options.textEmbedding) {
+      if (!this.options.textEmbeddingModel) {
         throw new Error(
           "No embeddings were generated for the messages. You must pass a textEmbedding model to the agent constructor.",
         );
@@ -1291,8 +1296,8 @@ export class Agent<
       this.component,
       args.step,
       {
-        provider: args.provider ?? getProviderName(this.options.chat),
-        model: args.model ?? getModelName(this.options.chat),
+        provider: args.provider ?? getProviderName(this.options.languageModel),
+        model: args.model ?? getModelName(this.options.languageModel),
       },
     );
     const embeddings = await this.generateEmbeddings(
@@ -1336,11 +1341,13 @@ export class Agent<
       args.result,
       {
         model:
-          args.model ?? args.metadata?.model ?? getModelName(this.options.chat),
+          args.model ??
+          args.metadata?.model ??
+          getModelName(this.options.languageModel),
         provider:
           args.provider ??
           args.metadata?.provider ??
-          getProviderName(this.options.chat),
+          getProviderName(this.options.languageModel),
       },
     );
     const embeddings = await this.generateEmbeddings(
@@ -1652,7 +1659,7 @@ export class Agent<
       // Lazily generate embeddings for the prompt message, if it doesn't have
       // embeddings yet. This can happen if the message was saved in a mutation
       // where the LLM is not available.
-      if (!promptMessage.embeddingId && this.options.textEmbedding) {
+      if (!promptMessage.embeddingId && this.options.textEmbeddingModel) {
         await this._generateAndSaveEmbeddings(ctx, [promptMessage]);
       }
     }
@@ -1690,7 +1697,7 @@ export class Agent<
       args: {
         ...this.options.callSettings,
         ...rest,
-        model: model ?? this.options.chat,
+        model: model ?? this.options.languageModel,
         system: args.system ?? this.options.instructions,
         messages: processedMessages,
       } as Extract<T, { model: LanguageModel; messages: ModelMessage[] }> &
@@ -1713,7 +1720,7 @@ export class Agent<
       headers?: Record<string, string>;
     },
   ): Promise<{ embeddings: number[][] }> {
-    const embeddingModel = this.options.textEmbedding;
+    const embeddingModel = this.options.textEmbeddingModel;
     assert(
       embeddingModel,
       "a textEmbedding model is required to be set on the Agent that you're doing vector search with",

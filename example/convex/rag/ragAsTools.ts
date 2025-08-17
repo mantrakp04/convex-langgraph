@@ -7,10 +7,10 @@ import { components, internal } from "../_generated/api";
 import { action } from "../_generated/server";
 import { agent } from "../agents/simple";
 import { getAuthUserId } from "../utils";
-import { textEmbedding } from "../modelsForDemo";
+import { textEmbeddingModel } from "../modelsForDemo";
 
 const rag = new RAG(components.rag, {
-  textEmbeddingModel: textEmbedding,
+  textEmbeddingModel,
   embeddingDimension: 1536,
 });
 

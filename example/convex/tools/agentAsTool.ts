@@ -1,17 +1,15 @@
 // See the docs at https://docs.convex.dev/agents/tools
 import { components } from "../_generated/api";
 import { Agent, createTool, stepCountIs } from "@convex-dev/agent";
-import { openai } from "@ai-sdk/openai";
 import z from "zod/v3";
 import { action } from "../_generated/server";
 import { tool } from "ai";
+import { defaultConfig } from "../agents/config";
 
 export const runAgentAsTool = action({
   args: {},
   handler: async (ctx) => {
     const agentWithTools = new Agent(components.agent, {
-      chat: openai.chat("gpt-4o-mini"),
-      textEmbedding: openai.embedding("text-embedding-3-small"),
       instructions: "You are a helpful assistant.",
       tools: {
         doSomething: tool({
@@ -32,6 +30,7 @@ export const runAgentAsTool = action({
         }),
       },
       stopWhen: stepCountIs(20),
+      ...defaultConfig,
     });
     const agentWithToolsAsTool = createTool({
       description:
@@ -59,12 +58,11 @@ export const runAgentAsTool = action({
       },
     });
     const dispatchAgent = new Agent(components.agent, {
-      chat: openai.chat("gpt-4o-mini"),
-      textEmbedding: openai.embedding("text-embedding-3-small"),
       instructions:
         "You can call agentWithToolsAsTool as many times as told with the argument whatToDo.",
       tools: { agentWithToolsAsTool },
       stopWhen: stepCountIs(5),
+      ...defaultConfig,
     });
 
     const { thread } = await dispatchAgent.createThread(ctx);

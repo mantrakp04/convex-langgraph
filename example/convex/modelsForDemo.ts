@@ -4,14 +4,16 @@ import type { LanguageModelV2 } from "@ai-sdk/provider";
 import { openai } from "@ai-sdk/openai";
 import { groq } from "@ai-sdk/groq";
 
-let chat: LanguageModelV2;
-let textEmbedding: EmbeddingModel<string>;
+let languageModel: LanguageModelV2;
+let textEmbeddingModel: EmbeddingModel<string>;
 
 if (process.env.OPENAI_API_KEY) {
-  chat = openai.chat("gpt-4o-mini");
-  textEmbedding = openai.textEmbeddingModel("text-embedding-3-small");
+  languageModel = openai.chat("gpt-4o-mini");
+  textEmbeddingModel = openai.textEmbeddingModel("text-embedding-3-small");
 } else if (process.env.GROQ_API_KEY) {
-  chat = groq.languageModel("meta-llama/llama-4-scout-17b-16e-instruct");
+  languageModel = groq.languageModel(
+    "meta-llama/llama-4-scout-17b-16e-instruct",
+  );
   // } else if (process.env.OPENROUTER_API_KEY) {
   //   chat = openrouter.chat("openai/gpt-4o-mini") as LanguageModelV2;
 } else {
@@ -21,4 +23,4 @@ if (process.env.OPENAI_API_KEY) {
 }
 
 // If you want to use different models for examples, you can change them here.
-export { chat, textEmbedding };
+export { languageModel, textEmbeddingModel };

@@ -39,7 +39,7 @@ const agent = new Agent(components.agent, {
   name: "test",
   instructions: "You are a test agent",
   // TODO: get mock model that works in v8
-  chat: mockModel(),
+  languageModel: mockModel(),
 });
 
 export const testQuery = query({
@@ -47,10 +47,7 @@ export const testQuery = query({
   handler: async (ctx, args) => {
     return await agent.listMessages(ctx, {
       threadId: args.threadId,
-      paginationOpts: {
-        cursor: null,
-        numItems: 10,
-      },
+      paginationOpts: { cursor: null, numItems: 10 },
       excludeToolMessages: true,
       statuses: ["success"],
     });
@@ -60,18 +57,14 @@ export const testQuery = query({
 export const createThread = mutation({
   args: {},
   handler: async (ctx) => {
-    const { threadId } = await agent.createThread(ctx, {
-      userId: "1",
-    });
+    const { threadId } = await agent.createThread(ctx, { userId: "1" });
     return { threadId };
   },
 });
 
 export const createThreadMutation = agent.createThreadMutation();
 export const generateObjectAction = agent.asObjectAction({
-  schema: z.object({
-    prompt: z.any().describe("The prompt passed in"),
-  }),
+  schema: z.object({ prompt: z.any().describe("The prompt passed in") }),
 });
 export const generateTextAction = agent.asTextAction({});
 export const streamTextAction = agent.asTextAction({ stream: true });
@@ -80,9 +73,7 @@ export const saveMessageMutation = agent.asSaveMessagesMutation();
 export const createAndGenerate = action({
   args: {},
   handler: async (ctx) => {
-    const { thread } = await agent.createThread(ctx, {
-      userId: "1",
-    });
+    const { thread } = await agent.createThread(ctx, { userId: "1" });
     const result = await thread.generateText({
       messages: [{ role: "user", content: "Hello" }],
     });
@@ -236,10 +227,7 @@ describe("filterOutOrphanedToolMessages", () => {
     order: 1,
     stepOrder: 2,
     tool: true,
-    message: {
-      role: "assistant",
-      content: [{ type: "text", text: "Hello" }],
-    },
+    message: { role: "assistant", content: [{ type: "text", text: "Hello" }] },
     status: "success",
     threadId: "1",
   };
@@ -291,14 +279,14 @@ function mockModel(): LanguageModelV2 {
 
 describe("Agent option variations and normal behavior", () => {
   test("Agent can be constructed with minimal options", () => {
-    const a = new Agent(components.agent, { chat: mockModel() });
+    const a = new Agent(components.agent, { languageModel: mockModel() });
     expect(a).toBeInstanceOf(Agent);
   });
 
   test("Agent can be constructed with all options", () => {
     const a = new Agent(components.agent, {
       name: "full",
-      chat: mockModel(),
+      languageModel: mockModel(),
       instructions: "Test instructions",
       contextOptions: { recentMessages: 5 },
       storageOptions: { saveMessages: "all" },

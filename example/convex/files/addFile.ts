@@ -1,21 +1,17 @@
 // See the docs at https://docs.convex.dev/agents/files
 import { Agent, createThread, saveMessage, storeFile } from "@convex-dev/agent";
 import { components, internal } from "../_generated/api";
-import { chat, textEmbedding } from "../modelsForDemo";
 import { action, internalAction, mutation } from "../_generated/server";
 import { v } from "convex/values";
 import { getFile } from "@convex-dev/agent";
 import { getAuthUserId } from "../utils";
-import { usageHandler } from "../usage_tracking/usageHandler";
+import { defaultConfig } from "../agents/config";
 
 // Define an agent similarly to the AI SDK
 export const fileAgent = new Agent(components.agent, {
   name: "File Reviewer Agent",
-  chat: chat,
   instructions: "You are an expert in reviewing and analyzing files & images.",
-  // Optional:
-  textEmbedding,
-  usageHandler,
+  ...defaultConfig,
 });
 
 /**

@@ -1,12 +1,10 @@
 import type {
-  FlexibleSchema,
   InferSchema,
   ProviderOptions,
   Schema,
 } from "@ai-sdk/provider-utils";
 import type { JSONValue } from "@ai-sdk/provider";
 import type {
-  generateObject,
   GenerateObjectResult,
   generateText,
   GenerateTextResult,

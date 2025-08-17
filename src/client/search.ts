@@ -16,9 +16,11 @@ import type { Message } from "../validators.js";
 
 const DEFAULT_VECTOR_SCORE_THRESHOLD = 0.0;
 
-export type GetEmbedding = (text: string) => Promise<{
+export type GetEmbedding = (
+  text: string,
+) => Promise<{
   embedding: number[];
-  embeddingModel: string | EmbeddingModel<string>;
+  textEmbeddingModel: string | EmbeddingModel<string>;
 }>;
 
 /**
@@ -123,8 +125,8 @@ export async function fetchContextMessages(
           opts.searchOptions?.vectorScoreThreshold ??
           DEFAULT_VECTOR_SCORE_THRESHOLD,
         embedding: embeddingFields?.embedding,
-        embeddingModel: embeddingFields?.embeddingModel
-          ? getModelName(embeddingFields.embeddingModel)
+        embeddingModel: embeddingFields?.textEmbeddingModel
+          ? getModelName(embeddingFields.textEmbeddingModel)
           : undefined,
       },
     );

@@ -8,6 +8,7 @@
  * @module
  */
 
+import type * as agents_config from "../agents/config.js";
 import type * as agents_fashion from "../agents/fashion.js";
 import type * as agents_simple from "../agents/simple.js";
 import type * as agents_story from "../agents/story.js";
@@ -58,6 +59,7 @@ import type {
  * ```
  */
 declare const fullApi: ApiFromModules<{
+  "agents/config": typeof agents_config;
   "agents/fashion": typeof agents_fashion;
   "agents/simple": typeof agents_simple;
   "agents/story": typeof agents_story;

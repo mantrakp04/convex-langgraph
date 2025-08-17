@@ -2,12 +2,10 @@
 import { Agent, createTool, stepCountIs } from "@convex-dev/agent";
 import { components } from "../_generated/api";
 import { z } from "zod/v3";
-import { usageHandler } from "../usage_tracking/usageHandler";
-import { chat, textEmbedding } from "../modelsForDemo";
+import { defaultConfig } from "./config";
 
 export const fashionAgent = new Agent(components.agent, {
   name: "Fashion Agent",
-  chat,
   instructions:
     "You give fashion advice for a place a user is visiting, based on the weather.",
   tools: {
@@ -28,7 +26,5 @@ export const fashionAgent = new Agent(components.agent, {
     }),
   },
   stopWhen: stepCountIs(5),
-  // optional:
-  textEmbedding,
-  usageHandler,
+  ...defaultConfig,
 });

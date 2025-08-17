@@ -3,7 +3,7 @@ import { components } from "../_generated/api";
 import { createTool, fetchContextMessages } from "@convex-dev/agent";
 import z from "zod/v3";
 import { embed } from "ai";
-import { textEmbedding } from "../modelsForDemo";
+import { textEmbeddingModel } from "../modelsForDemo";
 
 /**
  * Manual search
@@ -30,10 +30,10 @@ export const searchMessages = createTool({
         },
       },
       getEmbedding: async (text) => {
-        const e = await embed({ model: textEmbedding, value: text });
+        const e = await embed({ model: textEmbeddingModel, value: text });
         return {
           embedding: e.embedding,
-          embeddingModel: textEmbedding,
+          textEmbeddingModel,
         };
       },
     });
