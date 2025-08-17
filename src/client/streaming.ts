@@ -11,7 +11,6 @@ import type {
   StreamMessage,
   vTextStreamPartV5,
 } from "../validators.js";
-import type { MessageDoc } from "../component/schema.js";
 import type {
   AgentComponent,
   RunActionCtx,
@@ -65,9 +64,10 @@ export async function syncStreams(
 export async function abortStream(
   ctx: RunMutationCtx,
   component: AgentComponent,
-  args: {
-    reason: string;
-  } & ({ streamId: string } | { threadId: string; order: number }),
+  args: { reason: string } & (
+    | { streamId: string }
+    | { threadId: string; order: number }
+  ),
 ): Promise<boolean> {
   if ("streamId" in args) {
     return await ctx.runMutation(component.streams.abort, {
@@ -160,8 +160,6 @@ export class DeltaStreamer {
   public streamId: string | undefined;
   public readonly options: Required<StreamingOptions>;
   #nextParts: Infer<typeof vTextStreamPartV5>[] = [];
-  #nextOrder: number;
-  #nextStepOrder: number;
   #latestWrite: number = 0;
   #ongoingWrite: Promise<void> | undefined;
   #cursor: number = 0;
@@ -173,26 +171,21 @@ export class DeltaStreamer {
     options: true | StreamingOptions,
     public readonly metadata: {
       threadId: string;
-      agentName: string | undefined;
-      model: string | undefined;
-      provider: string | undefined;
-      providerOptions: ProviderOptions | undefined;
-      userId: string | undefined;
-      order: number | undefined;
-      stepOrder: number | undefined;
-      abortSignal: AbortSignal | undefined;
+      userId?: string;
+      order: number;
+      stepOrder: number;
+      agentName?: string;
+      model?: string;
+      provider?: string;
+      providerOptions?: ProviderOptions;
+      abortSignal?: AbortSignal;
     },
   ) {
     this.options =
       typeof options === "boolean"
         ? DEFAULT_STREAMING_OPTIONS
-        : {
-            ...DEFAULT_STREAMING_OPTIONS,
-            ...options,
-          };
+        : { ...DEFAULT_STREAMING_OPTIONS, ...options };
     this.#nextParts = [];
-    this.#nextOrder = metadata.order ?? 0;
-    this.#nextStepOrder = (metadata.stepOrder ?? 0) + 1;
     this.abortController = new AbortController();
     if (metadata.abortSignal) {
       metadata.abortSignal.addEventListener("abort", async () => {
@@ -206,6 +199,25 @@ export class DeltaStreamer {
       });
     }
   }
+
+  public reset(updates: {
+    order?: number;
+    stepOrder?: number;
+    agentName?: string;
+    model?: string;
+    provider?: string;
+    providerOptions?: ProviderOptions;
+  }) {
+    this.streamId = undefined;
+    this.#nextParts = [];
+    this.#cursor = 0;
+    Object.assign(this.metadata, {
+      ...updates,
+      order: updates.order ?? this.metadata.order,
+      stepOrder: updates.stepOrder ?? this.metadata.stepOrder,
+    });
+  }
+
   public async addParts(parts: Infer<typeof vTextStreamPartV5>[]) {
     if (this.abortController.signal.aborted) {
       return;
@@ -215,8 +227,8 @@ export class DeltaStreamer {
         this.component.streams.create,
         {
           ...omit(this.metadata, ["abortSignal"]),
-          order: this.#nextOrder,
-          stepOrder: this.#nextStepOrder,
+          order: this.metadata.order,
+          stepOrder: this.metadata.stepOrder,
         },
       );
     }
@@ -268,38 +280,16 @@ export class DeltaStreamer {
     if (!this.streamId) {
       throw new Error("Creating a delta before the stream is created");
     }
-    return {
-      streamId: this.streamId,
-      start,
-      end,
-      parts,
-    };
+    return { streamId: this.streamId, start, end, parts };
   }
 
-  public async finish(messages: MessageDoc[]) {
+  public async flush() {
     if (this.#ongoingWrite) {
       await this.#ongoingWrite;
       this.#ongoingWrite = undefined;
     }
-    if (!this.streamId) {
-      throw new Error("Finish called before stream is created");
+    if (this.streamId && this.#nextParts.length > 0) {
+      await this.#sendDelta();
     }
-    const lastMessage = messages.at(-1);
-    if (lastMessage) {
-      this.#nextOrder = lastMessage.order;
-      this.#nextStepOrder = lastMessage.stepOrder + 1;
-    } else {
-      console.warn("Step finished without generating a message");
-    }
-    const finalDelta =
-      this.#nextParts.length > 0 ? this.#createDelta() : undefined;
-    this.#nextParts = [];
-    const streamId = this.streamId;
-    this.streamId = undefined;
-    this.#cursor = 0;
-    await this.ctx.runMutation(this.component.streams.finish, {
-      streamId,
-      finalDelta,
-    });
   }
 }

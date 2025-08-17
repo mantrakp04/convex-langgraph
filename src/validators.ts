@@ -334,10 +334,7 @@ export const vTextArgs = v.object({
       v.literal("auto"),
       v.literal("none"),
       v.literal("required"),
-      v.object({
-        type: v.literal("tool"),
-        toolName: v.string(),
-      }),
+      v.object({ type: v.literal("tool"), toolName: v.string() }),
     ),
   ),
   maxSteps: v.optional(v.number()),
@@ -374,14 +371,8 @@ export function vPaginationResult<
 }
 
 export const vTextStreamPartV4 = v.union(
-  v.object({
-    type: v.literal("text-delta"),
-    textDelta: v.string(),
-  }),
-  v.object({
-    type: v.literal("reasoning"),
-    textDelta: v.string(),
-  }),
+  v.object({ type: v.literal("text-delta"), textDelta: v.string() }),
+  v.object({ type: v.literal("reasoning"), textDelta: v.string() }),
   v.object({
     type: v.literal("source"),
     source: v.object({
@@ -452,10 +443,7 @@ export const vTextStreamPartV5 = v.union(
     providerExecuted: v.optional(v.boolean()),
     dynamic: v.optional(v.boolean()),
   }),
-  v.object({
-    type: v.literal("raw"),
-    rawValue: v.any(),
-  }),
+  v.object({ type: v.literal("raw"), rawValue: v.any() }),
 );
 export const vTextStreamPart = v.union(vTextStreamPartV4, vTextStreamPartV5);
 export type TextStreamPart = Infer<typeof vTextStreamPart>;

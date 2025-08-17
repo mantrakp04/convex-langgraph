@@ -18,6 +18,7 @@ import schema from "./schema.js";
 import { stream } from "convex-helpers/server/stream";
 import { mergedStream } from "convex-helpers/server/stream";
 import { paginator } from "convex-helpers/server/pagination";
+import type { WithoutSystemFields } from "convex/server";
 
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
@@ -48,10 +49,7 @@ export const listDeltas = query({
   args: {
     threadId: v.id("threads"),
     cursors: v.array(
-      v.object({
-        streamId: v.id("streamingMessages"),
-        cursor: v.number(),
-      }),
+      v.object({ streamId: v.id("streamingMessages"), cursor: v.number() }),
     ),
   },
   returns: v.array(vStreamDelta),
@@ -85,10 +83,7 @@ export const create = mutation({
   args: omit(schema.tables.streamingMessages.validator.fields, ["state"]),
   returns: v.id("streamingMessages"),
   handler: async (ctx, args) => {
-    const state = {
-      kind: "streaming" as const,
-      lastHeartbeat: Date.now(),
-    };
+    const state = { kind: "streaming" as const, lastHeartbeat: Date.now() };
     const streamId = await ctx.db.insert("streamingMessages", {
       ...args,
       state,
@@ -152,11 +147,7 @@ export const list = query({
 });
 
 export const abortByOrder = mutation({
-  args: {
-    threadId: v.id("threads"),
-    order: v.number(),
-    reason: v.string(),
-  },
+  args: { threadId: v.id("threads"), order: v.number(), reason: v.string() },
   returns: v.boolean(),
   handler: async (ctx, args) => {
     const streams = await ctx.db
@@ -169,20 +160,14 @@ export const abortByOrder = mutation({
       )
       .take(100);
     for (const stream of streams) {
-      await abortById(ctx, {
-        streamId: stream._id,
-        reason: args.reason,
-      });
+      await abortById(ctx, { streamId: stream._id, reason: args.reason });
     }
     return streams.length > 0;
   },
 });
 
 export const abort = mutation({
-  args: {
-    streamId: v.id("streamingMessages"),
-    reason: v.string(),
-  },
+  args: { streamId: v.id("streamingMessages"), reason: v.string() },
   returns: v.boolean(),
   handler: abortById,
 });
@@ -220,37 +205,46 @@ async function cleanupTimeoutFn(
   }
 }
 
+// No longer used from the DeltaStreamer
 export const finish = mutation({
   args: {
     streamId: v.id("streamingMessages"),
     finalDelta: v.optional(deltaValidator),
   },
   returns: v.null(),
-  handler: async (ctx, args) => {
-    if (args.finalDelta) {
-      await ctx.db.insert("streamDeltas", args.finalDelta);
-    }
-    const stream = await ctx.db.get(args.streamId);
-    if (!stream) {
-      throw new Error(`Stream not found: ${args.streamId}`);
-    }
-    if (stream.state.kind !== "streaming") {
-      console.warn(
-        `Stream trying to finish but not currently streaming: ${args.streamId}`,
-      );
-      return;
-    }
-    await cleanupTimeoutFn(ctx, stream);
-    const cleanupFnId = await ctx.scheduler.runAfter(
-      DELETE_STREAM_DELAY,
-      api.streams.deleteStreamAsync,
-      { streamId: args.streamId },
-    );
-    await ctx.db.patch(args.streamId, {
-      state: { kind: "finished", endedAt: Date.now(), cleanupFnId },
-    });
-  },
+  handler: finishHandler,
 });
+
+export async function finishHandler(
+  ctx: MutationCtx,
+  args: {
+    streamId: Id<"streamingMessages">;
+    finalDelta?: WithoutSystemFields<Doc<"streamDeltas">>;
+  },
+) {
+  if (args.finalDelta) {
+    await ctx.db.insert("streamDeltas", args.finalDelta);
+  }
+  const stream = await ctx.db.get(args.streamId);
+  if (!stream) {
+    throw new Error(`Stream not found: ${args.streamId}`);
+  }
+  if (stream.state.kind !== "streaming") {
+    console.warn(
+      `Stream trying to finish ${args.streamId} but is ${stream.state.kind}`,
+    );
+    return;
+  }
+  await cleanupTimeoutFn(ctx, stream);
+  const cleanupFnId = await ctx.scheduler.runAfter(
+    DELETE_STREAM_DELAY,
+    api.streams.deleteStreamAsync,
+    { streamId: args.streamId },
+  );
+  await ctx.db.patch(args.streamId, {
+    state: { kind: "finished", endedAt: Date.now(), cleanupFnId },
+  });
+}
 
 async function heartbeatStream(
   ctx: MutationCtx,

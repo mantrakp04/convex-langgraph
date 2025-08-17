@@ -1,22 +1,16 @@
 import type { FlexibleSchema } from "@ai-sdk/provider-utils";
 import type {
-  DeepPartial,
   generateObject,
   GenerateObjectResult,
   generateText,
   GenerateTextResult,
-  JSONValue,
   LanguageModelRequestMetadata,
   LanguageModelResponseMetadata,
   LanguageModelUsage,
-  ModelMessage,
   LanguageModel,
-  RepairTextFunction,
   streamObject,
-  StreamObjectResult,
   streamText,
   StreamTextResult,
-  TelemetrySettings,
   ToolChoice,
   ToolSet,
 } from "ai";
@@ -36,9 +30,7 @@ import type { GenericId } from "convex/values";
 import type { Mounts } from "../component/_generated/api.js";
 import type { MessageDoc, ThreadDoc } from "../component/schema.js";
 import type {
-  CallSettings,
   ProviderMetadata,
-  ProviderOptions,
   StreamDelta,
   StreamMessage,
 } from "../validators.js";
@@ -118,16 +110,18 @@ export type GenerationOutputMetadata = {
   /**
    * The ID of the prompt message for the generation.
    */
-  messageId?: string;
+  promptMessageId?: string;
   /**
-   * The order of the prompt message for the generation.
+   * The order of the prompt message and responses for the generation.
+   * Each order starts with a user message, then followed by agent responses.
+   * If a promptMessageId is provided, that dictates the order.
    */
   order?: number;
   /**
    * The messages saved for the generation - both saved input and output.
    * If you passed promptMessageId, it will not include that message.
    */
-  messages?: MessageDoc[];
+  savedMessages?: MessageDoc[];
 };
 
 export type UsageHandler = (
@@ -235,77 +229,41 @@ export type StreamingTextArgs<
   toolChoice?: ToolChoice<TOOLS extends undefined ? AgentTools : TOOLS>;
 };
 
-type BaseGenerateObjectOptions = CallSettings & {
-  /**
-   * The model to use for the object generation. This will override the model
-   * specified in the Agent constructor.
-   */
-  model?: LanguageModel;
-  /**
-   * The system prompt to use for the object generation. This will override the
-   * system prompt specified in the Agent constructor.
-   */
-  system?: string;
-  /**
-   * The prompt to the LLM to use for the object generation.
-   * Specify this or messages, but not both.
-   */
-  prompt?: string | Array<ModelMessage>;
-  /**
-   * The messages to use for the object generation.
-   * Note: recent messages are automatically added based on the thread it's
-   * associated with and your contextOptions.
-   */
-  messages?: Array<ModelMessage>;
-  /**
-   * The message to use as the "prompt" for the object generation.
-   * If this is provided, it will be used instead of the prompt or messages.
-   * This is useful if you want to first save a user message, then use it as
-   * the prompt for the object generation in another call.
-   */
-  promptMessageId?: string;
-  experimental_repairText?: RepairTextFunction;
-  experimental_telemetry?: TelemetrySettings;
-  providerOptions?: ProviderOptions;
-  experimental_providerMetadata?: ProviderMetadata;
-};
+export type ObjectMode = "object" | "array" | "enum" | "no-schema";
 
-type StandardGenerateObjectOptions<T> = {
-  schema: FlexibleSchema<T>;
-  schemaName?: string;
-  schemaDescription?: string;
-  output?: "object" | "array";
-  mode?: "auto" | "json" | "tool";
-};
-
-// TODO: simplify this to just use the generateObject args, with an optional
-// model and tool/toolChoice types
-type GenerateObjectArgs<T> = BaseGenerateObjectOptions &
-  (
-    | StandardGenerateObjectOptions<T>
-    | { output: "enum"; enum: Array<T>; mode?: "auto" | "json" | "tool" }
-    | { output: "any"; schema: undefined; mode: "json" }
-  );
-
-type StreamObjectArgs<T> = BaseGenerateObjectOptions &
-  (
-    | StandardGenerateObjectOptions<T>
-    | { output: "any"; schema: undefined; mode: "json" }
-  );
-
-export type OurObjectArgs<T> = GenerateObjectArgs<T> &
-  Pick<
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    Parameters<typeof generateObject<any>>[0],
-    "experimental_repairText" | "abortSignal"
-  >;
-
-export type OurStreamObjectArgs<T extends FlexibleSchema<T>> =
-  StreamObjectArgs<T> &
-    Pick<
-      Parameters<typeof streamObject<T>>[0],
-      "onError" | "onFinish" | "abortSignal"
-    >;
+export type MaybeCustomCtx<
+  CustomCtx,
+  DataModel extends GenericDataModel,
+  AgentTools extends ToolSet,
+> =
+  CustomCtx extends Record<string, unknown>
+    ? {
+        /**
+         * If you have a custom ctx that you use with the Agent
+         * (e.g. new Agent<{ orgId: string }>(...))
+         * you need to provide this function to add any extra fields.
+         * e.g.
+         * ```ts
+         * const myAgent = new Agent<{ orgId: string }>(...);
+         * const myAction = myAgent.asTextAction({
+         *   customCtx: (ctx: ActionCtx, target, llmArgs) => {
+         *     const orgId = await lookupOrgId(ctx, target.threadId);
+         *     return { orgId };
+         *   },
+         * });
+         * ```
+         * Then, in your tools, you can
+         */
+        customCtx: (
+          ctx: GenericActionCtx<DataModel>,
+          target: {
+            userId?: string | undefined;
+            threadId?: string | undefined;
+          },
+          llmArgs: TextArgs<AgentTools>,
+        ) => CustomCtx;
+      }
+    : { customCtx?: never };
 
 type ThreadOutputMetadata = Required<GenerationOutputMetadata>;
 
@@ -343,7 +301,7 @@ export interface Thread<DefaultTools extends ToolSet> {
     OUTPUT = never,
     OUTPUT_PARTIAL = never,
   >(
-    args: TextArgs<
+    generateTextArgs: TextArgs<
       TOOLS extends undefined ? DefaultTools : TOOLS,
       TOOLS,
       OUTPUT,
@@ -370,7 +328,7 @@ export interface Thread<DefaultTools extends ToolSet> {
     OUTPUT = never,
     PARTIAL_OUTPUT = never,
   >(
-    args: StreamingTextArgs<
+    streamTextArgs: StreamingTextArgs<
       TOOLS extends undefined ? DefaultTools : TOOLS,
       TOOLS,
       OUTPUT,
@@ -406,8 +364,28 @@ export interface Thread<DefaultTools extends ToolSet> {
    * for the {@link ContextOptions} and {@link StorageOptions}.
    * @returns The result of the generateObject function.
    */
-  generateObject<T = JSONValue>(
-    args: OurObjectArgs<T>,
+  generateObject<T, Mode extends ObjectMode = "object">(
+    generateObjectArgs: Omit<
+      Parameters<typeof generateObject<FlexibleSchema<T>, Mode>>[0],
+      "model"
+    > & {
+      /**
+       * If provided, this message will be used as the "prompt" for the LLM call,
+       * instead of the prompt or messages.
+       * This is useful if you want to first save a user message, then use it as
+       * the prompt for the LLM call in another call.
+       */
+      promptMessageId?: string;
+      /**
+       * The model to use for the LLM calls. This will override the model specified
+       * in the Agent constructor.
+       */
+      model?: LanguageModel;
+      /**
+       * The tools to use for the tool calls. This will override tools specified
+       * in the Agent constructor or createThread / continueThread.
+       */
+    },
     options?: Options,
   ): Promise<GenerateObjectResult<T> & ThreadOutputMetadata>;
   /**
@@ -420,11 +398,35 @@ export interface Thread<DefaultTools extends ToolSet> {
    * for the {@link ContextOptions} and {@link StorageOptions}.
    * @returns The result of the streamObject function.
    */
-  streamObject<T extends FlexibleSchema<T>>(
-    args: OurStreamObjectArgs<T>,
+  streamObject<T extends FlexibleSchema<T>, Mode extends ObjectMode = "object">(
+    /**
+     * The same arguments you'd pass to "ai" sdk {@link streamObject}.
+     */
+    streamObjectArgs: Omit<
+      Parameters<typeof streamObject<FlexibleSchema<T>, Mode>>[0],
+      "model"
+    > & {
+      /**
+       * If provided, this message will be used as the "prompt" for the LLM call,
+       * instead of the prompt or messages.
+       * This is useful if you want to first save a user message, then use it as
+       * the prompt for the LLM call in another call.
+       */
+      promptMessageId?: string;
+      /**
+       * The model to use for the LLM calls. This will override the model specified
+       * in the Agent constructor.
+       */
+      model?: LanguageModel;
+      /**
+       * The tools to use for the tool calls. This will override tools specified
+       * in the Agent constructor or createThread / continueThread.
+       */
+    },
     options?: Options,
   ): Promise<
-    StreamObjectResult<DeepPartial<T>, T, never> & ThreadOutputMetadata
+    ReturnType<typeof streamObject<FlexibleSchema<T>, Mode>> &
+      ThreadOutputMetadata
   >;
 }
 
@@ -473,9 +475,7 @@ export type ActionCtx = RunActionCtx & {
   auth: Auth;
   storage: StorageActionWriter;
 };
-export type QueryCtx = RunQueryCtx & {
-  storage: StorageReader;
-};
+export type QueryCtx = RunQueryCtx & { storage: StorageReader };
 
 export type OpaqueIds<T> =
   T extends GenericId<infer _T>

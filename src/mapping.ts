@@ -128,7 +128,7 @@ export async function serializeNewMessagesInStep<TOOLS extends ToolSet>(
   component: AgentComponent,
   step: StepResult<TOOLS>,
   metadata: { model: string; provider: string },
-): Promise<MessageWithMetadata[]> {
+): Promise<{ messages: MessageWithMetadata[] }> {
   // If there are tool results, there's another message with the tool results
   // ref: https://github.com/vercel/ai/blob/main/packages/ai/core/generate-text/to-response-messages.ts
   const assistantFields = {
@@ -158,7 +158,8 @@ export async function serializeNewMessagesInStep<TOOLS extends ToolSet>(
       };
     }),
   );
-  return messages;
+  // TODO: capture step.files separately?
+  return { messages };
 }
 
 export async function serializeObjectResult(
@@ -288,6 +289,7 @@ export async function serializeContent(
             providerOptions: part.providerOptions,
           } satisfies Infer<typeof vReasoningPart>;
         }
+        // Not in current generation output, but could be in historical messages
         case "redacted-reasoning": {
           return {
             type: part.type,
