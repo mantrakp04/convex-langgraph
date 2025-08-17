@@ -1,4 +1,10 @@
-import type { FlexibleSchema } from "@ai-sdk/provider-utils";
+import type {
+  FlexibleSchema,
+  InferSchema,
+  ProviderOptions,
+  Schema,
+} from "@ai-sdk/provider-utils";
+import type { JSONValue } from "@ai-sdk/provider";
 import type {
   generateObject,
   GenerateObjectResult,
@@ -13,6 +19,10 @@ import type {
   StreamTextResult,
   ToolChoice,
   ToolSet,
+  RepairTextFunction,
+  TelemetrySettings,
+  CallSettings,
+  Prompt,
 } from "ai";
 import type {
   Auth,
@@ -35,6 +45,8 @@ import type {
   StreamMessage,
 } from "../validators.js";
 import type { StreamingOptions } from "./streaming.js";
+import type * as z3 from "zod/v3";
+import type * as z4 from "zod/v4";
 
 /**
  * Options to configure what messages are fetched as context,
@@ -235,6 +247,107 @@ export type StreamingTextArgs<
 };
 
 export type ObjectMode = "object" | "array" | "enum" | "no-schema";
+export type ObjectSchema = z3.Schema | z4.core.$ZodType | Schema;
+export type DefaultObjectSchema = z4.core.$ZodType<JSONValue>;
+
+/**
+ * Due to some issues with the type inference of the ai sdk, we need to
+ * manually type the arguments for the generateObject function.
+ * This is a workaround to allow the model to be optional.
+ */
+export type GenerateObjectArgs<
+  SCHEMA extends ObjectSchema = DefaultObjectSchema,
+  OUTPUT extends ObjectMode = InferSchema<SCHEMA> extends string
+    ? "enum"
+    : "object",
+  RESULT = OUTPUT extends "array"
+    ? Array<InferSchema<SCHEMA>>
+    : InferSchema<SCHEMA>,
+> = Omit<CallSettings, "stopSequences"> &
+  Prompt &
+  (OUTPUT extends "enum"
+    ? {
+        /**
+The enum values that the model should use.
+*/
+        enum: Array<RESULT>;
+        mode?: "json";
+        output: "enum";
+      }
+    : OUTPUT extends "no-schema"
+      ? // eslint-disable-next-line @typescript-eslint/no-empty-object-type
+        {}
+      : {
+          /**
+The schema of the object that the model should generate.
+*/
+          schema: SCHEMA;
+          /**
+Optional name of the output that should be generated.
+Used by some providers for additional LLM guidance, e.g.
+via tool or schema name.
+*/
+          schemaName?: string;
+          /**
+Optional description of the output that should be generated.
+Used by some providers for additional LLM guidance, e.g.
+via tool or schema description.
+*/
+          schemaDescription?: string;
+          /**
+The mode to use for object generation.
+
+The schema is converted into a JSON schema and used in one of the following ways
+
+- 'auto': The provider will choose the best mode for the model.
+- 'tool': A tool with the JSON schema as parameters is provided and the provider is instructed to use it.
+- 'json': The JSON schema and an instruction are injected into the prompt. If the provider supports JSON mode, it is enabled. If the provider supports JSON grammars, the grammar is used.
+
+Please note that most providers do not support all modes.
+
+Default and recommended: 'auto' (best mode for the model).
+*/
+          mode?: "auto" | "json" | "tool";
+        }) & {
+    output?: OUTPUT;
+    /**
+The language model to use.
+   */
+    model?: LanguageModel;
+    /**
+A function that attempts to repair the raw output of the model
+to enable JSON parsing.
+   */
+    experimental_repairText?: RepairTextFunction;
+    /**
+Optional telemetry configuration (experimental).
+     */
+    experimental_telemetry?: TelemetrySettings;
+    /**
+Additional provider-specific options. They are passed through
+to the provider from the AI SDK and enable provider-specific
+functionality that can be fully encapsulated in the provider.
+*/
+    providerOptions?: ProviderOptions;
+    /**
+     * Internal. For test use only. May change without notice.
+     */
+    _internal?: { generateId?: () => string; currentDate?: () => Date };
+  };
+
+export type StreamObjectArgs<
+  SCHEMA extends ObjectSchema = DefaultObjectSchema,
+  OUTPUT extends ObjectMode = InferSchema<SCHEMA> extends string
+    ? "enum"
+    : "object",
+  RESULT = OUTPUT extends "array"
+    ? Array<InferSchema<SCHEMA>>
+    : InferSchema<SCHEMA>,
+> = GenerateObjectArgs<SCHEMA, OUTPUT, RESULT> &
+  Pick<
+    Parameters<typeof streamObject<SCHEMA, OUTPUT, RESULT>>[0],
+    "onError" | "onFinish" | "_internal"
+  >;
 
 export type MaybeCustomCtx<
   CustomCtx,
@@ -369,11 +482,16 @@ export interface Thread<DefaultTools extends ToolSet> {
    * for the {@link ContextOptions} and {@link StorageOptions}.
    * @returns The result of the generateObject function.
    */
-  generateObject<T, Mode extends ObjectMode = "object">(
-    generateObjectArgs: Omit<
-      Parameters<typeof generateObject<FlexibleSchema<T>, Mode>>[0],
-      "model"
-    > & {
+  generateObject<
+    SCHEMA extends ObjectSchema = DefaultObjectSchema,
+    OUTPUT extends ObjectMode = InferSchema<SCHEMA> extends string
+      ? "enum"
+      : "object",
+    RESULT = OUTPUT extends "array"
+      ? Array<InferSchema<SCHEMA>>
+      : InferSchema<SCHEMA>,
+  >(
+    generateObjectArgs: GenerateObjectArgs<SCHEMA, OUTPUT, RESULT> & {
       /**
        * If provided, this message will be used as the "prompt" for the LLM call,
        * instead of the prompt or messages.
@@ -392,7 +510,7 @@ export interface Thread<DefaultTools extends ToolSet> {
        */
     },
     options?: Options,
-  ): Promise<GenerateObjectResult<T> & ThreadOutputMetadata>;
+  ): Promise<GenerateObjectResult<RESULT> & ThreadOutputMetadata>;
   /**
    * This behaves like {@link streamObject} from the "ai" package except that
    * it add context based on the userId and threadId and saves the input and
@@ -403,14 +521,19 @@ export interface Thread<DefaultTools extends ToolSet> {
    * for the {@link ContextOptions} and {@link StorageOptions}.
    * @returns The result of the streamObject function.
    */
-  streamObject<T extends FlexibleSchema<T>, Mode extends ObjectMode = "object">(
+  streamObject<
+    SCHEMA extends ObjectSchema = DefaultObjectSchema,
+    OUTPUT extends ObjectMode = InferSchema<SCHEMA> extends string
+      ? "enum"
+      : "object",
+    RESULT = OUTPUT extends "array"
+      ? Array<InferSchema<SCHEMA>>
+      : InferSchema<SCHEMA>,
+  >(
     /**
      * The same arguments you'd pass to "ai" sdk {@link streamObject}.
      */
-    streamObjectArgs: Omit<
-      Parameters<typeof streamObject<FlexibleSchema<T>, Mode>>[0],
-      "model"
-    > & {
+    streamObjectArgs: StreamObjectArgs<SCHEMA, OUTPUT, RESULT> & {
       /**
        * If provided, this message will be used as the "prompt" for the LLM call,
        * instead of the prompt or messages.
@@ -430,7 +553,7 @@ export interface Thread<DefaultTools extends ToolSet> {
     },
     options?: Options,
   ): Promise<
-    ReturnType<typeof streamObject<FlexibleSchema<T>, Mode>> &
+    ReturnType<typeof streamObject<SCHEMA, OUTPUT, RESULT>> &
       ThreadOutputMetadata
   >;
 }

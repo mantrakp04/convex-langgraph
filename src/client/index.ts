@@ -1,4 +1,4 @@
-import type { FlexibleSchema } from "@ai-sdk/provider-utils";
+import type { FlexibleSchema, InferSchema } from "@ai-sdk/provider-utils";
 import type {
   CallSettings,
   EmbeddingModel,
@@ -78,9 +78,12 @@ import type {
   ActionCtx,
   AgentComponent,
   ContextOptions,
+  DefaultObjectSchema,
   GenerationOutputMetadata,
   MaybeCustomCtx,
+  GenerateObjectArgs,
   ObjectMode,
+  ObjectSchema,
   Options,
   RawRequestResponseHandler,
   RunActionCtx,
@@ -88,6 +91,7 @@ import type {
   RunQueryCtx,
   StorageOptions,
   StreamingTextArgs,
+  StreamObjectArgs,
   SyncStreamsReturnValue,
   TextArgs,
   Thread,
@@ -775,44 +779,34 @@ export class Agent<
    * Use {@link continueThread} to get a version of this function already scoped
    * to a thread (and optionally userId).
    */
-  async generateObject<T, Mode extends ObjectMode = "object">(
+  async generateObject<
+    SCHEMA extends ObjectSchema = DefaultObjectSchema,
+    OUTPUT extends ObjectMode = InferSchema<SCHEMA> extends string
+      ? "enum"
+      : "object",
+    RESULT = OUTPUT extends "array"
+      ? Array<InferSchema<SCHEMA>>
+      : InferSchema<SCHEMA>,
+  >(
     ctx: ActionCtx & CustomCtx,
     threadOpts: { userId?: string | null; threadId?: string },
     /**
      * The arguments to the generateObject function, similar to the ai.generateObject function.
      */
-    generateObjectArgs: Omit<
-      Parameters<typeof generateObject<FlexibleSchema<T>, Mode>>[0],
-      "model"
-    > & {
-      /**
-       * If provided, this message will be used as the "prompt" for the LLM call,
-       * instead of the prompt or messages.
-       * This is useful if you want to first save a user message, then use it as
-       * the prompt for the LLM call in another call.
-       */
-      promptMessageId?: string;
-      /**
-       * The model to use for the LLM calls. This will override the model specified
-       * in the Agent constructor.
-       */
-      model?: LanguageModel;
-      /**
-       * The tools to use for the tool calls. This will override tools specified
-       * in the Agent constructor or createThread / continueThread.
-       */
-    },
+    generateObjectArgs: GenerateObjectArgs<SCHEMA, OUTPUT, RESULT>,
     /**
      * The {@link ContextOptions} and {@link StorageOptions}
      * options to use for fetching contextual messages and saving input/output messages.
      */
     options?: Options,
-  ): Promise<GenerateObjectResult<T> & GenerationOutputMetadata> {
+  ): Promise<GenerateObjectResult<RESULT> & GenerationOutputMetadata> {
     const { args, promptMessageId, order, fail, save, getSavedMessages } =
       await this.start(ctx, generateObjectArgs, { ...threadOpts, ...options });
 
     try {
-      const result = (await generateObject(args)) as GenerateObjectResult<T>;
+      const result = (await generateObject(
+        args,
+      )) as GenerateObjectResult<RESULT>;
 
       await save({ object: result });
       const metadata: GenerationOutputMetadata = {
@@ -836,18 +830,20 @@ export class Agent<
    * to a thread (and optionally userId).
    */
   async streamObject<
-    T extends FlexibleSchema<T>,
-    Mode extends ObjectMode = "object",
+    SCHEMA extends ObjectSchema = DefaultObjectSchema,
+    OUTPUT extends ObjectMode = InferSchema<SCHEMA> extends string
+      ? "enum"
+      : "object",
+    RESULT = OUTPUT extends "array"
+      ? Array<InferSchema<SCHEMA>>
+      : InferSchema<SCHEMA>,
   >(
     ctx: ActionCtx & CustomCtx,
     threadOpts: { userId?: string | null; threadId?: string },
     /**
      * The arguments to the streamObject function, similar to the ai `streamObject` function.
      */
-    streamObjectArgs: Omit<
-      Parameters<typeof streamObject<FlexibleSchema<T>, Mode>>[0],
-      "model"
-    > & {
+    streamObjectArgs: StreamObjectArgs<SCHEMA, OUTPUT, RESULT> & {
       /**
        * If provided, this message will be used as the "prompt" for the LLM call,
        * instead of the prompt or messages.
@@ -871,13 +867,13 @@ export class Agent<
      */
     options?: Options,
   ): Promise<
-    ReturnType<typeof streamObject<FlexibleSchema<T>, Mode>> &
+    ReturnType<typeof streamObject<SCHEMA, OUTPUT, RESULT>> &
       GenerationOutputMetadata
   > {
     const { args, promptMessageId, order, fail, save, getSavedMessages } =
       await this.start(ctx, streamObjectArgs, { ...threadOpts, ...options });
 
-    const stream = streamObject<FlexibleSchema<T>, Mode>({
+    const stream = streamObject<SCHEMA, OUTPUT, RESULT>({
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       ...(args as any),
       onError: async (error) => {
