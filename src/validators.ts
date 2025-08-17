@@ -180,7 +180,7 @@ export const vSource = v.union(
     type: v.optional(v.literal("source")),
     sourceType: v.literal("url"),
     id: v.string(),
-    url: v.optional(v.string()),
+    url: v.string(),
     title: v.optional(v.string()),
     providerOptions,
   }),
@@ -378,7 +378,7 @@ export const vTextStreamPartV4 = v.union(
     source: v.object({
       sourceType: v.literal("url"),
       id: v.string(),
-      url: v.optional(v.string()),
+      url: v.string(),
       title: v.optional(v.string()),
       providerOptions,
     }),
@@ -419,6 +419,9 @@ export const vTextStreamPartV5 = v.union(
     providerExecuted: v.optional(v.boolean()),
     dynamic: v.optional(v.boolean()),
     providerMetadata,
+    // For dynamic tool calls - if tool doesn't exist e.g.
+    invalid: v.optional(v.boolean()),
+    error: v.optional(v.any()),
   }),
   v.object({
     type: v.literal("tool-input-start"),

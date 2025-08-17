@@ -264,7 +264,7 @@ export type Mounts = {
                 sourceType: "url";
                 title?: string;
                 type?: "source";
-                url?: string;
+                url: string;
               }
             | {
                 filename?: string;
@@ -426,7 +426,7 @@ export type Mounts = {
                 sourceType: "url";
                 title?: string;
                 type?: "source";
-                url?: string;
+                url: string;
               }
             | {
                 filename?: string;
@@ -617,7 +617,7 @@ export type Mounts = {
               sourceType: "url";
               title?: string;
               type?: "source";
-              url?: string;
+              url: string;
             }
           | {
               filename?: string;
@@ -800,7 +800,7 @@ export type Mounts = {
                 sourceType: "url";
                 title?: string;
                 type?: "source";
-                url?: string;
+                url: string;
               }
             | {
                 filename?: string;
@@ -985,7 +985,7 @@ export type Mounts = {
               sourceType: "url";
               title?: string;
               type?: "source";
-              url?: string;
+              url: string;
             }
           | {
               filename?: string;
@@ -1157,7 +1157,7 @@ export type Mounts = {
               sourceType: "url";
               title?: string;
               type?: "source";
-              url?: string;
+              url: string;
             }
           | {
               filename?: string;
@@ -1420,7 +1420,7 @@ export type Mounts = {
               sourceType: "url";
               title?: string;
               type?: "source";
-              url?: string;
+              url: string;
             }
           | {
               filename?: string;
@@ -1480,7 +1480,7 @@ export type Mounts = {
                 providerOptions?: Record<string, Record<string, any>>;
                 sourceType: "url";
                 title?: string;
-                url?: string;
+                url: string;
               };
               type: "source";
             }
@@ -1535,7 +1535,7 @@ export type Mounts = {
               sourceType: "url";
               title?: string;
               type?: "source";
-              url?: string;
+              url: string;
             }
           | {
               filename?: string;
@@ -1548,7 +1548,9 @@ export type Mounts = {
             }
           | {
               dynamic?: boolean;
+              error?: any;
               input: any;
+              invalid?: boolean;
               providerExecuted?: boolean;
               providerMetadata?: Record<string, Record<string, any>>;
               toolCallId: string;
@@ -1639,7 +1641,7 @@ export type Mounts = {
                   providerOptions?: Record<string, Record<string, any>>;
                   sourceType: "url";
                   title?: string;
-                  url?: string;
+                  url: string;
                 };
                 type: "source";
               }
@@ -1694,7 +1696,7 @@ export type Mounts = {
                 sourceType: "url";
                 title?: string;
                 type?: "source";
-                url?: string;
+                url: string;
               }
             | {
                 filename?: string;
@@ -1707,7 +1709,9 @@ export type Mounts = {
               }
             | {
                 dynamic?: boolean;
+                error?: any;
                 input: any;
+                invalid?: boolean;
                 providerExecuted?: boolean;
                 providerMetadata?: Record<string, Record<string, any>>;
                 toolCallId: string;
@@ -1784,7 +1788,7 @@ export type Mounts = {
                 providerOptions?: Record<string, Record<string, any>>;
                 sourceType: "url";
                 title?: string;
-                url?: string;
+                url: string;
               };
               type: "source";
             }
@@ -1839,7 +1843,7 @@ export type Mounts = {
               sourceType: "url";
               title?: string;
               type?: "source";
-              url?: string;
+              url: string;
             }
           | {
               filename?: string;
@@ -1852,7 +1856,9 @@ export type Mounts = {
             }
           | {
               dynamic?: boolean;
+              error?: any;
               input: any;
+              invalid?: boolean;
               providerExecuted?: boolean;
               providerMetadata?: Record<string, Record<string, any>>;
               toolCallId: string;

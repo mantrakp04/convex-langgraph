@@ -9,8 +9,8 @@ import type {
   StreamArgs,
   StreamDelta,
   StreamMessage,
-  vTextStreamPartV5,
 } from "../validators.js";
+import { vTextStreamPartV5 } from "../validators.js";
 import type {
   AgentComponent,
   RunActionCtx,
@@ -20,6 +20,7 @@ import type {
 } from "./types.js";
 import { omit } from "convex-helpers";
 import type { Infer } from "convex/values";
+import { parse } from "convex-helpers/validators";
 
 /**
  * A function that handles fetching stream deltas, used with the React hooks
@@ -232,7 +233,7 @@ export class DeltaStreamer {
         },
       );
     }
-    this.#nextParts.push(...parts);
+    this.#nextParts.push(...parts.map((p) => parse(vTextStreamPartV5, p)));
     if (
       !this.#ongoingWrite &&
       Date.now() - this.#latestWrite >= this.options.throttleMs

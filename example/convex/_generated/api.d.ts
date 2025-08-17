@@ -372,7 +372,7 @@ export declare const components: {
                   sourceType: "url";
                   title?: string;
                   type?: "source";
-                  url?: string;
+                  url: string;
                 }
               | {
                   filename?: string;
@@ -562,7 +562,7 @@ export declare const components: {
                   sourceType: "url";
                   title?: string;
                   type?: "source";
-                  url?: string;
+                  url: string;
                 }
               | {
                   filename?: string;
@@ -757,7 +757,7 @@ export declare const components: {
                 sourceType: "url";
                 title?: string;
                 type?: "source";
-                url?: string;
+                url: string;
               }
             | {
                 filename?: string;
@@ -964,7 +964,7 @@ export declare const components: {
                   sourceType: "url";
                   title?: string;
                   type?: "source";
-                  url?: string;
+                  url: string;
                 }
               | {
                   filename?: string;
@@ -1153,7 +1153,7 @@ export declare const components: {
                 sourceType: "url";
                 title?: string;
                 type?: "source";
-                url?: string;
+                url: string;
               }
             | {
                 filename?: string;
@@ -1325,7 +1325,7 @@ export declare const components: {
                 sourceType: "url";
                 title?: string;
                 type?: "source";
-                url?: string;
+                url: string;
               }
             | {
                 filename?: string;
@@ -1612,7 +1612,7 @@ export declare const components: {
                 sourceType: "url";
                 title?: string;
                 type?: "source";
-                url?: string;
+                url: string;
               }
             | {
                 filename?: string;
@@ -1672,7 +1672,7 @@ export declare const components: {
                   providerOptions?: Record<string, Record<string, any>>;
                   sourceType: "url";
                   title?: string;
-                  url?: string;
+                  url: string;
                 };
                 type: "source";
               }
@@ -1727,7 +1727,7 @@ export declare const components: {
                 sourceType: "url";
                 title?: string;
                 type?: "source";
-                url?: string;
+                url: string;
               }
             | {
                 filename?: string;
@@ -1740,7 +1740,9 @@ export declare const components: {
               }
             | {
                 dynamic?: boolean;
+                error?: any;
                 input: any;
+                invalid?: boolean;
                 providerExecuted?: boolean;
                 providerMetadata?: Record<string, Record<string, any>>;
                 toolCallId: string;
@@ -1831,7 +1833,7 @@ export declare const components: {
                     providerOptions?: Record<string, Record<string, any>>;
                     sourceType: "url";
                     title?: string;
-                    url?: string;
+                    url: string;
                   };
                   type: "source";
                 }
@@ -1886,7 +1888,7 @@ export declare const components: {
                   sourceType: "url";
                   title?: string;
                   type?: "source";
-                  url?: string;
+                  url: string;
                 }
               | {
                   filename?: string;
@@ -1899,7 +1901,9 @@ export declare const components: {
                 }
               | {
                   dynamic?: boolean;
+                  error?: any;
                   input: any;
+                  invalid?: boolean;
                   providerExecuted?: boolean;
                   providerMetadata?: Record<string, Record<string, any>>;
                   toolCallId: string;
@@ -1976,7 +1980,7 @@ export declare const components: {
                   providerOptions?: Record<string, Record<string, any>>;
                   sourceType: "url";
                   title?: string;
-                  url?: string;
+                  url: string;
                 };
                 type: "source";
               }
@@ -2031,7 +2035,7 @@ export declare const components: {
                 sourceType: "url";
                 title?: string;
                 type?: "source";
-                url?: string;
+                url: string;
               }
             | {
                 filename?: string;
@@ -2044,7 +2048,9 @@ export declare const components: {
               }
             | {
                 dynamic?: boolean;
+                error?: any;
                 input: any;
+                invalid?: boolean;
                 providerExecuted?: boolean;
                 providerMetadata?: Record<string, Record<string, any>>;
                 toolCallId: string;
