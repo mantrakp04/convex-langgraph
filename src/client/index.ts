@@ -456,7 +456,7 @@ export class Agent<
         | { step: StepResult<TOOLS> }
         | { object: GenerateObjectResult<unknown> },
       createPendingMessage?: boolean,
-    ) => Promise<MessageDoc[]>;
+    ) => Promise<void>;
     fail: (reason: string) => Promise<void>;
     getSavedMessages: () => MessageDoc[];
   }> {
@@ -466,6 +466,7 @@ export class Agent<
       threadId: options?.threadId,
       ...opts,
     });
+    let pendingMessageId = context.pendingMessageId;
     // TODO: extract pending message if one exists
     const { args: aiArgs, promptMessageId, order, stepOrder, userId } = context;
     const messages = context.savedMessages ?? [];
@@ -483,9 +484,9 @@ export class Agent<
       if (threadId && promptMessageId) {
         console.error("RollbackMessage", promptMessageId, reason);
       }
-      if (context.pendingMessageId) {
+      if (pendingMessageId) {
         await ctx.runMutation(this.component.messages.updateMessage, {
-          messageId: context.pendingMessageId,
+          messageId: pendingMessageId,
           patch: { status: "failed", error: reason },
         });
       }
@@ -526,7 +527,6 @@ export class Agent<
           | { object: GenerateObjectResult<unknown> },
         createPendingMessage?: boolean,
       ) => {
-        let savedMessages: MessageDoc[] = [];
         if (threadId && promptMessageId && saveOutput) {
           const metadata = {
             // TODO: get up to date one when user selects mid-generation
@@ -552,6 +552,13 @@ export class Agent<
             { userId, threadId },
             serialized.messages.map((m) => m.message),
           );
+          if (createPendingMessage) {
+            serialized.messages.push({
+              message: { role: "assistant", content: [] },
+              status: "pending",
+            });
+            embeddings?.vectors.push(null);
+          }
           const saved = await ctx.runMutation(
             this.component.messages.addMessages,
             {
@@ -559,13 +566,19 @@ export class Agent<
               threadId,
               agentName: this.options.name,
               promptMessageId,
+              pendingMessageId,
               messages: serialized.messages,
               embeddings,
               failPendingSteps: false,
             },
           );
-          savedMessages = saved.messages;
-          messages.push(...saved.messages);
+          if (createPendingMessage) {
+            pendingMessageId = saved.messages.at(-1)!._id;
+            messages.push(...saved.messages.slice(0, -1));
+          } else {
+            pendingMessageId = undefined;
+            messages.push(...saved.messages);
+          }
         }
         const output = "object" in toSave ? toSave.object : toSave.step;
         if (this.options.rawRequestResponseHandler) {
@@ -588,7 +601,6 @@ export class Agent<
             providerMetadata: output.providerMetadata,
           });
         }
-        return savedMessages;
       },
     };
   }
@@ -941,6 +953,7 @@ export class Agent<
           : [args.message],
       metadata: args.metadata ? [args.metadata] : undefined,
       skipEmbeddings: args.skipEmbeddings,
+      pendingMessageId: args.pendingMessageId,
     });
     const message = messages.at(-1)!;
     return { messageId: message._id, message };
@@ -1566,6 +1579,7 @@ export class Agent<
       messages?: (ModelMessage | Message)[];
       system?: string;
       promptMessageId?: string;
+      pendingMessageId?: string;
       model?: LanguageModel;
     },
   >(
@@ -1585,6 +1599,7 @@ export class Agent<
       CallSettings;
     userId: string | undefined;
     promptMessageId: string | undefined;
+    pendingMessageId: string | undefined;
     order: number | undefined;
     stepOrder: number | undefined;
     savedMessages: MessageDoc[] | undefined;
@@ -1624,28 +1639,42 @@ export class Agent<
     let order = promptMessage?.order;
     let stepOrder = promptMessage?.stepOrder;
     let savedMessages = undefined;
-    if (
-      threadId &&
-      messages.length + prompt.length &&
-      storageOptions?.saveMessages !== "none" &&
-      // If it was a promptMessageId, we don't want to save it again.
-      (!args.promptMessageId || storageOptions?.saveMessages === "all")
-    ) {
-      const saveAll = storageOptions?.saveMessages === "all";
-      const coreMessages = [...messages, ...prompt];
-      const toSave = saveAll ? coreMessages : coreMessages.slice(-1);
-      const metadata = Array.from({ length: toSave.length }, () => ({}));
-      const saved = await this.saveMessages(ctx, {
-        threadId,
-        userId,
-        messages: toSave,
-        metadata,
-        failPendingSteps: true,
-      });
-      promptMessageId = saved.messages.at(-1)!._id;
+    let pendingMessageId = undefined;
+    if (threadId && storageOptions?.saveMessages !== "none") {
+      let saved: { messages: MessageDoc[] };
+      if (
+        messages.length + prompt.length &&
+        // If it was a promptMessageId, we don't want to save it again.
+        (!args.promptMessageId || storageOptions?.saveMessages === "all")
+      ) {
+        const saveAll = storageOptions?.saveMessages === "all";
+        const coreMessages = [...messages, ...prompt];
+        const toSave = saveAll ? coreMessages : coreMessages.slice(-1);
+        const metadata = Array.from({ length: toSave.length }, () => ({}));
+        saved = await this.saveMessages(ctx, {
+          threadId,
+          userId,
+          messages: [...toSave, { role: "assistant", content: [] }],
+          metadata: [...metadata, { status: "pending" }],
+          failPendingSteps: true,
+          pendingMessageId: args.pendingMessageId,
+        });
+        promptMessageId = saved.messages.at(-2)!._id;
+      } else {
+        saved = await this.saveMessages(ctx, {
+          threadId,
+          userId,
+          messages: [{ role: "assistant", content: [] }],
+          metadata: [{ status: "pending" }],
+          failPendingSteps: true,
+          pendingMessageId: args.pendingMessageId,
+        });
+      }
+      pendingMessageId = saved.messages.at(-1)!._id;
       order = saved.messages.at(-1)!.order;
       stepOrder = saved.messages.at(-1)!.stepOrder;
-      savedMessages = saved.messages;
+      // Don't return the pending message
+      savedMessages = saved.messages.slice(0, -1);
     }
 
     if (promptMessage?.message) {
@@ -1701,6 +1730,7 @@ export class Agent<
         CallSettings,
       userId,
       promptMessageId,
+      pendingMessageId,
       savedMessages,
       order,
       stepOrder,

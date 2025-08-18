@@ -405,6 +405,7 @@ export declare const components: {
               | { message: string; type: "other" }
             >;
           }>;
+          pendingMessageId?: string;
           promptMessageId?: string;
           threadId: string;
           userId?: string;

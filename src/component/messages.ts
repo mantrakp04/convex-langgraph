@@ -1,6 +1,9 @@
 import { assert, omit, pick } from "convex-helpers";
 import { mergedStream, stream } from "convex-helpers/server/stream";
-import { paginationOptsValidator } from "convex/server";
+import {
+  paginationOptsValidator,
+  type WithoutSystemFields,
+} from "convex/server";
 import type { ObjectType } from "convex/values";
 import {
   DEFAULT_MESSAGE_RANGE,
@@ -122,6 +125,8 @@ const addMessagesArgs = {
   messages: v.array(vMessageWithMetadataInternal),
   embeddings: v.optional(vMessageEmbeddingsWithDimension),
   failPendingSteps: v.optional(v.boolean()),
+  // A pending message to update. If the pending message failed, abort.
+  pendingMessageId: v.optional(v.id("messages")),
 };
 export const addMessages = mutation({
   args: addMessagesArgs,
@@ -139,8 +144,14 @@ async function addMessagesHandler(
     assert(thread, `Thread ${args.threadId} not found`);
     userId = thread.userId;
   }
-  const { embeddings, failPendingSteps, messages, promptMessageId, ...rest } =
-    args;
+  const {
+    embeddings,
+    failPendingSteps,
+    messages,
+    promptMessageId,
+    pendingMessageId,
+    ...rest
+  } = args;
   const parentMessage = promptMessageId && (await ctx.db.get(promptMessageId));
   if (failPendingSteps) {
     assert(args.threadId, "threadId is required to fail pending steps");
@@ -149,10 +160,12 @@ async function addMessagesHandler(
       .withIndex("threadId_status_tool_order_stepOrder", (q) =>
         q.eq("threadId", threadId).eq("status", "pending"),
       )
-      .collect();
+      .order("desc")
+      .take(100);
     await Promise.all(
       pendingMessages
         .filter((m) => !parentMessage || m.order === parentMessage.order)
+        .filter((m) => !pendingMessageId || m._id !== pendingMessageId)
         .map((m) =>
           ctx.db.patch(m._id, { status: "failed", error: "Restarting" }),
         ),
@@ -160,6 +173,13 @@ async function addMessagesHandler(
   }
   let order, stepOrder;
   let fail = false;
+  if (pendingMessageId) {
+    const pendingMessage = await ctx.db.get(pendingMessageId);
+    assert(pendingMessage, `Pending msg ${pendingMessageId} not found`);
+    if (pendingMessage.status === "failed") {
+      fail = true;
+    }
+  }
   if (promptMessageId) {
     assert(parentMessage, `Parent message ${promptMessageId} not found`);
     if (parentMessage.status === "failed") {
@@ -193,19 +213,7 @@ async function addMessagesHandler(
         threadId,
       });
     }
-    if (message.message.role === "user") {
-      if (parentMessage && parentMessage.order === order) {
-        // see if there's a later message than the parent message order
-        const maxMessage = await getMaxMessage(ctx, threadId);
-        order = (maxMessage?.order ?? order) + 1;
-      } else {
-        order++;
-      }
-      stepOrder = 0;
-    } else {
-      stepOrder++;
-    }
-    const messageId = await ctx.db.insert("messages", {
+    const messageDoc: WithoutSystemFields<Doc<"messages">> = {
       ...rest,
       ...message,
       embeddingId,
@@ -219,7 +227,34 @@ async function addMessagesHandler(
         ? (parentMessage?.error ?? "Parent message failed")
         : undefined,
       stepOrder,
-    });
+    };
+    if (i === 0 && pendingMessageId) {
+      const pendingMessage = await ctx.db.get(pendingMessageId);
+      assert(pendingMessage, `Pending msg ${pendingMessageId} not found`);
+      if (message.fileIds) {
+        await changeRefcount(
+          ctx,
+          pendingMessage.fileIds ?? [],
+          message.fileIds,
+        );
+      }
+      await ctx.db.replace(pendingMessageId, messageDoc);
+      toReturn.push((await ctx.db.get(pendingMessageId))!);
+      continue;
+    }
+    if (message.message.role === "user") {
+      if (parentMessage && parentMessage.order === order) {
+        // see if there's a later message than the parent message order
+        const maxMessage = await getMaxMessage(ctx, threadId);
+        order = (maxMessage?.order ?? order) + 1;
+      } else {
+        order++;
+      }
+      stepOrder = 0;
+    } else {
+      stepOrder++;
+    }
+    const messageId = await ctx.db.insert("messages", messageDoc);
     if (message.fileIds) {
       await changeRefcount(ctx, [], message.fileIds);
     }

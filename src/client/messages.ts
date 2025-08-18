@@ -74,6 +74,10 @@ export type SaveMessagesArgs = {
    * The embeddings to save with the messages.
    */
   embeddings?: MessageEmbeddings;
+  /**
+   * A pending message ID to replace when adding messages.
+   */
+  pendingMessageId?: string;
 };
 
 /**
@@ -88,7 +92,7 @@ export async function saveMessages(
      */
     agentName?: string;
   },
-) {
+): Promise<{ messages: MessageDoc[] }> {
   let embeddings: MessageEmbeddingsWithDimension | undefined;
   if (args.embeddings) {
     const dimension = args.embeddings.vectors.find((v) => v !== null)?.length;
@@ -106,6 +110,7 @@ export async function saveMessages(
     userId: args.userId ?? undefined,
     agentName: args.agentName,
     promptMessageId: args.promptMessageId,
+    pendingMessageId: args.pendingMessageId,
     embeddings,
     messages: await Promise.all(
       args.messages.map(async (m, i) => {
@@ -138,6 +143,10 @@ export type SaveMessageArgs = {
    * The embedding to save with the message.
    */
   embedding?: { vector: number[]; model: string };
+  /**
+   * A pending message ID to replace with this message.
+   */
+  pendingMessageId?: string;
 } & (
   | {
       prompt?: undefined;
@@ -183,6 +192,7 @@ export async function saveMessage(
     threadId: args.threadId,
     userId: args.userId ?? undefined,
     agentName: args.agentName,
+    pendingMessageId: args.pendingMessageId,
     messages:
       args.prompt !== undefined
         ? [{ role: "user", content: args.prompt }]
