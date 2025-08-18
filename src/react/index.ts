@@ -120,6 +120,7 @@ export function useThreadMessages<
       ...paginated,
       results: paginated.results
         .map((m) => ({ ...m, streaming: false }))
+        // Note: this is intentionally after paginated results.
         .concat(streamListMessages)
         .sort((a, b) =>
           a.order === b.order ? a.stepOrder - b.stepOrder : a.order - b.order,
@@ -133,7 +134,12 @@ export function useThreadMessages<
             if (last.order !== msg.order || last.stepOrder !== msg.stepOrder) {
               return [...msgs, msg];
             }
-            if (last.status === "pending" && msg.status !== "pending") {
+            if (
+              last.status === "pending" &&
+              (msg.streaming || msg.status !== "pending")
+            ) {
+              // Let's prefer a streaming or finalized message over a pending
+              // one.
               return [...msgs.slice(0, -1), msg];
             }
             // skip the new one if the previous one (listed) was finalized
