@@ -485,9 +485,9 @@ export class Agent<
         console.error("RollbackMessage", promptMessageId, reason);
       }
       if (pendingMessageId) {
-        await ctx.runMutation(this.component.messages.updateMessage, {
+        await ctx.runMutation(this.component.messages.finalizeMessage, {
           messageId: pendingMessageId,
-          patch: { status: "failed", error: reason },
+          result: { status: "failed", error: reason },
         });
       }
     };

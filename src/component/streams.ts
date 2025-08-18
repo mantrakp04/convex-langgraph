@@ -1,6 +1,7 @@
 import { omit, pick } from "convex-helpers";
 import { v } from "convex/values";
 import {
+  type MessageWithMetadataInternal,
   type StreamDelta,
   vStreamDelta,
   vStreamMessage,
@@ -19,6 +20,8 @@ import { stream } from "convex-helpers/server/stream";
 import { mergedStream } from "convex-helpers/server/stream";
 import { paginator } from "convex-helpers/server/pagination";
 import type { WithoutSystemFields } from "convex/server";
+import { mergeDeltas } from "../react/deltas.js";
+import { serializeOrThrow } from "../mapping.js";
 
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
@@ -161,14 +164,22 @@ export const abortByOrder = mutation({
 });
 
 export const abort = mutation({
-  args: { streamId: v.id("streamingMessages"), reason: v.string(), finalDelta: v.optional(deltaValidator) },
+  args: {
+    streamId: v.id("streamingMessages"),
+    reason: v.string(),
+    finalDelta: v.optional(deltaValidator),
+  },
   returns: v.boolean(),
   handler: abortById,
 });
 
 async function abortById(
   ctx: MutationCtx,
-  args: { streamId: Id<"streamingMessages">; reason: string; finalDelta?: WithoutSystemFields<Doc<"streamDeltas">> },
+  args: {
+    streamId: Id<"streamingMessages">;
+    reason: string;
+    finalDelta?: WithoutSystemFields<Doc<"streamDeltas">>;
+  },
 ) {
   const stream = await ctx.db.get(args.streamId);
   if (!stream) {
@@ -274,11 +285,7 @@ async function heartbeatStream(
     { streamId: args.streamId },
   );
   await ctx.db.patch(args.streamId, {
-    state: {
-      kind: "streaming",
-      lastHeartbeat: Date.now(),
-      timeoutFnId,
-    },
+    state: { kind: "streaming", lastHeartbeat: Date.now(), timeoutFnId },
   });
   return true;
 }
@@ -293,10 +300,7 @@ export const timeoutStream = internalMutation({
       return;
     }
     await ctx.db.patch(args.streamId, {
-      state: {
-        kind: "aborted",
-        reason: "timeout",
-      },
+      state: { kind: "aborted", reason: "timeout" },
     });
   },
 });
@@ -351,11 +355,7 @@ export async function deleteStreamsPageForThreadId(
     "stepOrder",
   ]).first();
   if (!streamMessage) {
-    return {
-      isDone: true,
-      streamOrder: undefined,
-      deltaCursor: undefined,
-    };
+    return { isDone: true, streamOrder: undefined, deltaCursor: undefined };
   }
   const result = await deletePageForStreamId(ctx, {
     streamId: streamMessage._id,
@@ -364,11 +364,7 @@ export async function deleteStreamsPageForThreadId(
   if (result.isDone) {
     deltaCursor = undefined;
   }
-  return {
-    isDone: false,
-    streamOrder: streamMessage.order,
-    deltaCursor,
-  };
+  return { isDone: false, streamOrder: streamMessage.order, deltaCursor };
 }
 
 export const deleteStreamsPageForThreadIdMutation = internalMutation({
@@ -463,3 +459,114 @@ export const deleteAllStreamsForThreadIdSync = action({
     }
   },
 });
+
+export async function getStreamingMessages(
+  ctx: MutationCtx,
+  threadId: Id<"threads">,
+  order: number,
+  stepOrder: number,
+): Promise<Doc<"streamingMessages">[]> {
+  return mergedStream(
+    (["aborted", "streaming", "finished"] as const).map((state) =>
+      stream(ctx.db, schema)
+        .query("streamingMessages")
+        .withIndex("threadId_state_order_stepOrder", (q) =>
+          q
+            .eq("threadId", threadId)
+            .eq("state.kind", state)
+            .eq("order", order)
+            .lte("stepOrder", stepOrder),
+        )
+        .order("desc"),
+    ),
+    ["stepOrder"],
+  ).take(10);
+}
+
+export async function getStreamingMessagesWithMetadata(
+  ctx: MutationCtx,
+  {
+    threadId,
+    order,
+    stepOrder,
+  }: { threadId: Id<"threads">; order: number; stepOrder: number },
+  metadata: { status: "success" | "failed"; error?: string },
+): Promise<MessageWithMetadataInternal[]> {
+  // See if there are any streaming messages for this order
+  const streamingMessages = await getStreamingMessages(
+    ctx,
+    threadId,
+    order,
+    stepOrder,
+  );
+  const messages = (
+    await Promise.all(
+      streamingMessages.map((m) =>
+        getMessagesWithMetadataForStreamingMessage(
+          ctx,
+          threadId,
+          stepOrder,
+          m,
+          metadata,
+        ),
+      ),
+    )
+  ).flat();
+  return messages;
+}
+
+export async function getMessagesWithMetadataForStreamingMessage(
+  ctx: MutationCtx,
+  threadId: Id<"threads">,
+  stepOrder: number,
+  streamingMessage: Doc<"streamingMessages">,
+  metadata: { status: "success" | "failed"; error?: string },
+): Promise<MessageWithMetadataInternal[]> {
+  const deltas = await ctx.db
+    .query("streamDeltas")
+    .withIndex("streamId_start_end", (q) =>
+      q.eq("streamId", streamingMessage._id),
+    )
+    .take(1000);
+  const [messageDocs] = mergeDeltas(
+    threadId,
+    [
+      {
+        ...streamingMessage,
+        status: "streaming",
+        streamId: streamingMessage._id,
+      },
+    ],
+    [],
+    deltas,
+  );
+  // We don't save messages that have already been saved
+  const numToSkip = stepOrder - streamingMessage.stepOrder;
+  const messages = await Promise.all(
+    messageDocs
+      .slice(numToSkip)
+      .filter((m) => m.message !== undefined)
+      .map(async (msg) => {
+        const message = await serializeOrThrow(msg.message!);
+        return {
+          message,
+          ...pick(msg, [
+            "fileIds",
+            "status",
+            "finishReason",
+            "model",
+            "provider",
+            "providerMetadata",
+            "sources",
+            "reasoning",
+            "reasoningDetails",
+            "usage",
+            "warnings",
+            "error",
+          ]),
+          ...metadata,
+        } as MessageWithMetadataInternal;
+      }),
+  );
+  return messages;
+}

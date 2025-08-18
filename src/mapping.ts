@@ -76,6 +76,25 @@ export async function serializeMessage(
   };
 }
 
+export async function serializeOrThrow(
+  message: ModelMessage | Message,
+): Promise<SerializedMessage> {
+  const { content } = await serializeContent(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    {} as any,
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    {} as any,
+    message.content,
+  );
+  return {
+    role: message.role,
+    content,
+    ...(message.providerOptions
+      ? { providerOptions: message.providerOptions }
+      : {}),
+  } as SerializedMessage;
+}
+
 export function deserializeMessage(message: SerializedMessage): ModelMessage {
   return {
     ...message,

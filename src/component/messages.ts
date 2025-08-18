@@ -4,7 +4,7 @@ import {
   paginationOptsValidator,
   type WithoutSystemFields,
 } from "convex/server";
-import type { Infer, ObjectType } from "convex/values";
+import type { ObjectType } from "convex/values";
 import {
   DEFAULT_MESSAGE_RANGE,
   DEFAULT_RECENT_MESSAGES,
@@ -37,8 +37,7 @@ import {
   vVectorId,
 } from "./vector/tables.js";
 import { changeRefcount } from "./files.js";
-import { mergeDeltas } from "../react/deltas.js";
-import { serializeMessage } from "@convex-dev/agent";
+import { getStreamingMessagesWithMetadata } from "./streams.js";
 
 function publicMessage(message: Doc<"messages">): MessageDoc {
   return omit(message, ["parentMessageId", "stepId", "files"]);
@@ -325,76 +324,12 @@ export const finalizeMessage = mutation({
     }
     // See if we can add any in-progress data
     if (message.message === undefined) {
-      // See if there are any streaming messages for this order
-      const streamingMessage = await mergedStream(
-        (["aborted", "streaming", "finished"] as const).map((state) =>
-          stream(ctx.db, schema)
-            .query("streamingMessages")
-            .withIndex("threadId_state_order_stepOrder", (q) =>
-              q
-                .eq("threadId", message.threadId)
-                .eq("state.kind", state)
-                .eq("order", message.order)
-                .lte("stepOrder", message.stepOrder),
-            )
-            .order("desc"),
-        ),
-        ["stepOrder"],
-      ).first();
-      if (streamingMessage) {
-        const deltas = await ctx.db
-          .query("streamDeltas")
-          .withIndex("streamId_start_end", (q) =>
-            q.eq("streamId", streamingMessage._id),
-          )
-          .take(1000);
-        const [messageDocs] = mergeDeltas(
-          message.threadId,
-          [
-            {
-              ...streamingMessage,
-              status: "aborted",
-              streamId: streamingMessage._id,
-            },
-          ],
-          [],
-          deltas,
-        );
-        // We don't save messages that have already been saved
-        const numToSkip = message.stepOrder - streamingMessage.stepOrder;
-        const messages = await Promise.all(
-          messageDocs
-            .slice(numToSkip)
-            .filter((m) => m.message !== undefined)
-            .map(async (msg) => {
-              const { message } = await serializeMessage(
-                ctx,
-                // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                api as any,
-                msg.message!,
-              );
-              return {
-                message,
-                ...pick(msg, [
-                  "fileIds",
-                  "status",
-                  "finishReason",
-                  "model",
-                  "provider",
-                  "providerMetadata",
-                  "sources",
-                  "reasoning",
-                  "reasoningDetails",
-                  "usage",
-                  "warnings",
-                  "error",
-                ]),
-                status: result.status,
-                ...(result.status === "failed" ? { error: result.error } : {}),
-              } as Infer<typeof vMessageWithMetadataInternal>;
-            }),
-        );
-
+      const messages = await getStreamingMessagesWithMetadata(
+        ctx,
+        message,
+        result,
+      );
+      if (messages.length > 0) {
         await addMessagesHandler(ctx, {
           messages,
           threadId: message.threadId,

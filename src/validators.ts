@@ -253,6 +253,9 @@ export const vMessageWithMetadataInternal = v.object({
   warnings: v.optional(v.array(vLanguageModelCallWarning)),
   error: v.optional(v.string()),
 });
+export type MessageWithMetadataInternal = Infer<
+  typeof vMessageWithMetadataInternal
+>;
 export const vMessageWithMetadata = v.object({
   ...vMessageWithMetadataInternal.fields,
   fileIds: v.optional(v.array(v.string())),
