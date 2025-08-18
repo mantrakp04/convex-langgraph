@@ -45,7 +45,7 @@ import { openai } from "@ai-sdk/openai";
 
 const agent = new Agent(components.agent, {
   name: "My Agent",
-  chat: openai.chat("gpt-4o-mini"),
+  languageModel: openai.chat("gpt-4o-mini"),
 });
 ```
 
@@ -89,7 +89,7 @@ import { components } from "./_generated/api";
 // Define an agent similarly to the AI SDK
 const supportAgent = new Agent(components.agent, {
   // The chat completions model to use for the agent.
-  chat: openai.chat("gpt-4o-mini"),
+  languageModel: openai.chat("gpt-4o-mini"),
   // The default system prompt if not over-ridden.
   instructions: "You are a helpful assistant.",
   tools: {
