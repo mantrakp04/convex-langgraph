@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.1
+
+- Defaults to consuming the stream when saving deltas, so you don't have to
+  do `result.consumeStream()`. You can pass `returnImmediately: true` if you
+  want to save deltas and also process the stream yourself.
+- Agent name is now required.
+- You can specify default `providerOption`s at the Agent level.
+- The `agent` param in `ToolCtx` is now optional to make it easier to manually
+  wrap tools before the agent is defined.
+
 ## 0.2.0 AI SDK v5 support
 
 Adds support for the AI SDK v5, and associated versions of LLM providers.
