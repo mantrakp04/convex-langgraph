@@ -58,11 +58,6 @@ npm run alpha
 - Add an example of using MCP with the Agent.
 - Automatically turn big text content into a file when saving a message and keep
   as a fileId. Re-hydrate it when reading out for generation.
-- When a generateText finishes with a tool call, return a `continue` fn that can
-  be used to save the tool call response(s) and continue the generation at the
-  same order.
-- Add a configurable storage provider - consistent API Maybe they have to pass
-  in an equivalent of `components.agent.{messages,threads}`
 
 ## Playground feature wishlist (contributions welcome!)
 
