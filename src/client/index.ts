@@ -778,9 +778,9 @@ export class Agent<
       },
       onStepFinish: async (step) => {
         steps.push(step);
-        await streamer?.flush();
         const createPendingMessage = await willContinue(steps, args.stopWhen);
         await call.save({ step }, createPendingMessage);
+        await streamer?.flush();
         return args.onStepFinish?.(step);
       },
     }) as StreamTextResult<

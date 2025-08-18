@@ -190,12 +190,16 @@ export class DeltaStreamer {
     if (metadata.abortSignal) {
       metadata.abortSignal.addEventListener("abort", async () => {
         if (this.streamId) {
+          this.abortController.abort();
+          await this.#ongoingWrite;
+          const finalDelta =
+            this.#nextParts.length > 0 ? this.#createDelta() : undefined;
           await this.ctx.runMutation(this.component.streams.abort, {
             streamId: this.streamId,
             reason: "abortSignal",
+            finalDelta,
           });
         }
-        this.abortController.abort();
       });
     }
   }
