@@ -176,14 +176,6 @@ async function addMessagesHandler(
   let order, stepOrder;
   let fail = false;
   let error: string | undefined;
-  if (pendingMessageId) {
-    const pendingMessage = await ctx.db.get(pendingMessageId);
-    assert(pendingMessage, `Pending msg ${pendingMessageId} not found`);
-    if (pendingMessage.status === "failed") {
-      fail = true;
-      error = `Updating message that failed: ${pendingMessageId}, error: ${pendingMessage.error ?? error}`;
-    }
-  }
   if (promptMessageId) {
     assert(promptMessage, `Parent message ${promptMessageId} not found`);
     if (promptMessage.status === "failed") {
@@ -224,16 +216,27 @@ async function addMessagesHandler(
       embeddingId,
       parentMessageId: promptMessageId,
       userId,
-      order,
       tool: isTool(message.message),
       text: extractText(message.message),
       status: fail ? "failed" : (message.status ?? "success"),
       error: fail ? error : message.error,
-      stepOrder,
-    } satisfies WithoutSystemFields<Doc<"messages">>;
+    } satisfies Omit<
+      WithoutSystemFields<Doc<"messages">>,
+      "order" | "stepOrder"
+    >;
+    // If there is a pending message, we replace that one with the first message
+    // and subsequent ones will follow the regular order/subOrder advancement.
     if (i === 0 && pendingMessageId) {
       const pendingMessage = await ctx.db.get(pendingMessageId);
       assert(pendingMessage, `Pending msg ${pendingMessageId} not found`);
+      if (pendingMessage.status === "failed") {
+        fail = true;
+        error =
+          `Trying to update a message that failed: ${pendingMessageId}, ` +
+          `error: ${pendingMessage.error ?? error}`;
+        messageDoc.status = "failed";
+        messageDoc.error = error;
+      }
       if (message.fileIds) {
         await changeRefcount(
           ctx,
@@ -241,8 +244,12 @@ async function addMessagesHandler(
           message.fileIds,
         );
       }
-      await ctx.db.replace(pendingMessageId, messageDoc);
-      toReturn.push((await ctx.db.get(pendingMessageId))!);
+      await ctx.db.replace(pendingMessage._id, {
+        ...messageDoc,
+        order: pendingMessage.order,
+        stepOrder: pendingMessage.stepOrder,
+      });
+      toReturn.push(pendingMessage);
       continue;
     }
     if (message.message.role === "user") {
@@ -255,9 +262,16 @@ async function addMessagesHandler(
       }
       stepOrder = 0;
     } else {
+      if (order < 0) {
+        order = 0;
+      }
       stepOrder++;
     }
-    const messageId = await ctx.db.insert("messages", messageDoc);
+    const messageId = await ctx.db.insert("messages", {
+      ...messageDoc,
+      order,
+      stepOrder,
+    });
     if (message.fileIds) {
       await changeRefcount(ctx, [], message.fileIds);
     }
