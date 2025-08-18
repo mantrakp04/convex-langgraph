@@ -1,9 +1,9 @@
-import type { CoreMessage } from "ai";
+import type { ModelMessage } from "ai";
 import type { Message } from "./validators.js";
 
 export const DEFAULT_RECENT_MESSAGES = 100;
 
-export function isTool(message: Message | CoreMessage) {
+export function isTool(message: Message | ModelMessage) {
   return (
     message.role === "tool" ||
     (message.role === "assistant" &&
@@ -12,7 +12,7 @@ export function isTool(message: Message | CoreMessage) {
   );
 }
 
-export function extractText(message: Message | CoreMessage) {
+export function extractText(message: Message | ModelMessage) {
   switch (message.role) {
     case "user":
       if (typeof message.content === "string") {
