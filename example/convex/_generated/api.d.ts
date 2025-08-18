@@ -17,6 +17,7 @@ import type * as chat_basic from "../chat/basic.js";
 import type * as chat_human from "../chat/human.js";
 import type * as chat_streamAbort from "../chat/streamAbort.js";
 import type * as chat_streaming from "../chat/streaming.js";
+import type * as chat_streamingReasoning from "../chat/streamingReasoning.js";
 import type * as crons from "../crons.js";
 import type * as debugging_rawRequestResponseHandler from "../debugging/rawRequestResponseHandler.js";
 import type * as files_addFile from "../files/addFile.js";
@@ -68,6 +69,7 @@ declare const fullApi: ApiFromModules<{
   "chat/human": typeof chat_human;
   "chat/streamAbort": typeof chat_streamAbort;
   "chat/streaming": typeof chat_streaming;
+  "chat/streamingReasoning": typeof chat_streamingReasoning;
   crons: typeof crons;
   "debugging/rawRequestResponseHandler": typeof debugging_rawRequestResponseHandler;
   "files/addFile": typeof files_addFile;
