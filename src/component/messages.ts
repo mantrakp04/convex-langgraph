@@ -168,9 +168,16 @@ async function addMessagesHandler(
       pendingMessages
         .filter((m) => !promptMessage || m.order === promptMessage.order)
         .filter((m) => !pendingMessageId || m._id !== pendingMessageId)
-        .map((m) =>
-          ctx.db.patch(m._id, { status: "failed", error: "Restarting" }),
-        ),
+        .map(async (m) => {
+          if (m.embeddingId) {
+            await ctx.db.delete(m.embeddingId);
+          }
+          await ctx.db.patch(m._id, {
+            status: "failed",
+            error: "Restarting",
+            embeddingId: undefined,
+          });
+        }),
     );
   }
   let order, stepOrder;
@@ -201,7 +208,12 @@ async function addMessagesHandler(
   for (let i = 0; i < messages.length; i++) {
     const message = messages[i];
     let embeddingId: VectorTableId | undefined;
-    if (embeddings && embeddings.vectors[i]) {
+    if (
+      embeddings &&
+      embeddings.vectors[i] &&
+      !fail &&
+      message.status !== "failed"
+    ) {
       embeddingId = await insertVector(ctx, embeddings.dimension, {
         vector: embeddings.vectors[i]!,
         model: embeddings.model,
@@ -358,7 +370,14 @@ export const finalizeMessage = mutation({
       }
     }
     if (result.status === "failed") {
-      await ctx.db.patch(messageId, { status: "failed", error: result.error });
+      if (message.embeddingId) {
+        await ctx.db.delete(message.embeddingId);
+      }
+      await ctx.db.patch(messageId, {
+        status: "failed",
+        error: result.error,
+        embeddingId: undefined,
+      });
     } else {
       await ctx.db.patch(messageId, { status: "success" });
     }
@@ -398,6 +417,13 @@ export const updateMessage = mutation({
       patch.message = args.patch.message;
       patch.tool = isTool(args.patch.message);
       patch.text = extractText(args.patch.message);
+    }
+
+    if (args.patch.status === "failed") {
+      if (message.embeddingId) {
+        await ctx.db.delete(message.embeddingId);
+      }
+      patch.embeddingId = undefined;
     }
 
     await ctx.db.patch(args.messageId, patch);
