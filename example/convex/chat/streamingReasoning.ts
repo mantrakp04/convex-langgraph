@@ -1,29 +1,12 @@
 // See the docs at https://docs.convex.dev/agents/messages
-import { paginationOptsValidator } from "convex/server";
-import {
-  Agent,
-  createThread,
-  listMessages,
-  syncStreams,
-  vStreamArgs,
-} from "@convex-dev/agent";
-import { components, internal } from "../_generated/api";
-import {
-  action,
-  httpAction,
-  internalAction,
-  internalMutation,
-  mutation,
-  query,
-} from "../_generated/server";
+import { Agent } from "@convex-dev/agent";
+import { components } from "../_generated/api";
+import { action } from "../_generated/server";
 import { v } from "convex/values";
 import { authorizeThreadAccess } from "../threads";
 import { storyAgent } from "../agents/story";
-import { smoothStream, stepCountIs, streamText, tool } from "ai";
-import { languageModel } from "../modelsForDemo";
-import { createOpenAI } from "@ai-sdk/openai";
-import { createGroq, groq } from "@ai-sdk/groq";
-import { serializeTextStreamingPartsV5 } from "../../../src/parts";
+import { stepCountIs, tool } from "ai";
+import { groq } from "@ai-sdk/groq";
 import z from "zod/v3";
 import { defaultConfig } from "../agents/config";
 
