@@ -243,7 +243,7 @@ export class Agent<
        * The name for the agent. This will be attributed on each message
        * created by this agent.
        */
-      name?: string;
+      name: string;
       /**
        * The LLM model to use for generating / streaming text and objects.
        * e.g.

@@ -10,6 +10,7 @@ export const runAgentAsTool = action({
   args: {},
   handler: async (ctx) => {
     const agentWithTools = new Agent(components.agent, {
+      name: "agentWithTools",
       instructions: "You are a helpful assistant.",
       tools: {
         doSomething: tool({
@@ -58,6 +59,7 @@ export const runAgentAsTool = action({
       },
     });
     const dispatchAgent = new Agent(components.agent, {
+      name: "dispatchAgent",
       instructions:
         "You can call agentWithToolsAsTool as many times as told with the argument whatToDo.",
       tools: { agentWithToolsAsTool },
