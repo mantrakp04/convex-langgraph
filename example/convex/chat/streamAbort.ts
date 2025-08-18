@@ -7,7 +7,7 @@ import {
   mutation,
   internalMutation,
 } from "../_generated/server";
-import { abortStream, listStreams } from "@convex-dev/agent";
+import { abortStream, createThread, listStreams } from "@convex-dev/agent";
 import { agent } from "../agents/simple";
 import { smoothStream } from "ai";
 import { authorizeThreadAccess } from "../threads";
@@ -37,10 +37,12 @@ export const abortStreamByOrder = mutation({
 export const streamThenAbortAsync = action({
   args: {},
   handler: async (ctx) => {
-    const { thread, threadId } = await agent.createThread(ctx, {
+    const threadId = await createThread(ctx, components.agent, {
       title: "Thread with aborted message",
     });
-    const result = await thread.streamText(
+    const result = await agent.streamText(
+      ctx,
+      { threadId },
       {
         prompt: "Write an essay on the importance of effusive dialogue",
         experimental_transform: smoothStream({ chunking: "line" }),
@@ -48,7 +50,7 @@ export const streamThenAbortAsync = action({
           console.error(error);
         },
       },
-      { saveStreamDeltas: { chunking: "line" } },
+      { saveStreamDeltas: { chunking: "line", returnImmediately: true } },
     );
     let canceled = false;
     try {
@@ -57,7 +59,7 @@ export const streamThenAbortAsync = action({
         if (!canceled) {
           await abortStream(ctx, components.agent, {
             threadId,
-            order: result.order,
+            order: result.order!,
             reason: "Aborting explicitly",
           });
           canceled = true;

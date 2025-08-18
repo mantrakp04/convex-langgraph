@@ -23,16 +23,9 @@ export const streamOneShot = action({
   handler: async (ctx, { prompt, threadId }) => {
     await authorizeThreadAccess(ctx, threadId);
     const { thread } = await storyAgent.continueThread(ctx, { threadId });
-    const result = await thread.streamText(
-      { prompt },
-      { saveStreamDeltas: true },
-    );
+    await thread.streamText({ prompt }, { saveStreamDeltas: true });
     // We don't need to return anything, as the response is saved as deltas
     // in the database and clients are subscribed to the stream.
-
-    // We do need to make sure the stream is finished - by awaiting each chunk
-    // or using this call to consume it all.
-    await result.consumeStream();
   },
 });
 

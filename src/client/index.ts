@@ -817,6 +817,13 @@ export class Agent<
       savedMessages: call.getSavedMessages(),
       messageId: promptMessageId,
     };
+    if (
+      (typeof options?.saveStreamDeltas === "object" &&
+        !options.saveStreamDeltas.returnImmediately) ||
+      options?.saveStreamDeltas === true
+    ) {
+      await result.consumeStream();
+    }
     return Object.assign(result, metadata);
   }
 

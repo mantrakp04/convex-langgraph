@@ -126,11 +126,20 @@ export type StreamingOptions = {
    * Defaults to 250.
    */
   throttleMs?: number;
+  /**
+   * If set to true, this will return immediately, as it would if you weren't
+   * saving the deltas. Otherwise, the call will "consume" the stream with
+   * .consumeStream(), which waits for the stream to finish before returning.
+   *
+   * When saving deltas, you're often not interactin with the stream otherwise.
+   */
+  returnImmediately?: boolean;
 };
 export const DEFAULT_STREAMING_OPTIONS = {
   // This chunks by sentences / clauses. Punctuation followed by whitespace.
   chunking: /[\p{P}\s]/u,
   throttleMs: 250,
+  returnImmediately: false,
 } satisfies StreamingOptions;
 
 export function mergeTransforms<TOOLS extends ToolSet>(
