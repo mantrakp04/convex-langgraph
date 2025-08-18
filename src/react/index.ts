@@ -98,6 +98,15 @@ export function useThreadMessages<
     { initialNumItems: options.initialNumItems },
   );
 
+  let startOrder = paginated.results.at(-1)?.order ?? 0;
+  for (let i = paginated.results.length - 1; i >= 0; i--) {
+    const m = paginated.results[i];
+    if (!m.streaming && m.status === "pending") {
+      // round down to the nearest 10 for some cache benefits
+      startOrder = m.order - (m.order % 10);
+      break;
+    }
+  }
   // These are streaming messages that will not include full messages.
   const streamMessages = useStreamingThreadMessages(
     query as ThreadStreamQuery<
@@ -108,7 +117,7 @@ export function useThreadMessages<
       args === "skip" ||
       paginated.status === "LoadingFirstPage"
       ? "skip"
-      : { ...args, startOrder: paginated.results.at(-1)?.order },
+      : { ...args, startOrder },
   );
 
   const merged = useMemo(() => {
@@ -179,11 +188,7 @@ export function useStreamingThreadMessages<
   const [streams, setStreams] = useState<
     Array<{ streamId: string; cursor: number; messages: MessageDoc[] }>
   >([]);
-  const startOrderRef = useRef<number>(0);
   const queryArgs = args === "skip" ? args : omit(args, ["startOrder"]);
-  if (args !== "skip" && !startOrderRef.current && args.startOrder) {
-    startOrderRef.current = args.startOrder;
-  }
   // Get all the active streams
   const streamList = useQuery(
     query,
@@ -194,7 +199,7 @@ export function useStreamingThreadMessages<
           paginationOpts: { cursor: null, numItems: 0 },
           streamArgs: {
             kind: "list",
-            startOrder: startOrderRef.current,
+            startOrder: queryArgs.startOrder ?? 0,
           } as StreamArgs,
         } as FunctionArgs<Query>),
   ) as
