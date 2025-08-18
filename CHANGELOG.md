@@ -1,6 +1,10 @@
 # Changelog
 
-## 0.2.0 AI SDK v5 support (alpha)
+## 0.2.0 AI SDK v5 support
+
+Adds support for the AI SDK v5, and associated versions of LLM providers.
+This involves some breaking changes associated with the changes to the UI,
+but the data at rest is backwards compatible.
 
 - Supports LanguageModel: a string for gateway or LanguageModelV2.
 - No longer returns lastMessageId when saving message, instead it returns all
