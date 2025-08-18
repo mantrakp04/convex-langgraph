@@ -1490,7 +1490,7 @@ export declare const components: {
             model?: string;
             provider?: string;
             providerOptions?: Record<string, Record<string, any>>;
-            status: "pending" | "success" | "failed";
+            status?: "pending" | "success" | "failed";
           };
         },
         {

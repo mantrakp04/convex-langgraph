@@ -57,9 +57,10 @@ export const schema = defineSchema({
     sources: v.optional(v.array(vSource)),
     warnings: v.optional(v.array(vLanguageModelCallWarning)),
     finishReason: v.optional(vFinishReason),
-    // DEPRECATED
+    // Likely deprecated soon
     reasoning: v.optional(v.string()),
     reasoningDetails: v.optional(vReasoningDetails),
+    // DEPRECATED
     id: v.optional(v.string()), // external id, e.g. from Vercel AI SDK
     parentMessageId: v.optional(v.id("messages")),
     stepId: v.optional(v.string()),

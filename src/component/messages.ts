@@ -38,6 +38,7 @@ import {
 } from "./vector/tables.js";
 import { changeRefcount } from "./files.js";
 import { getStreamingMessagesWithMetadata } from "./streams.js";
+import { partial } from "convex-helpers/validators";
 
 function publicMessage(message: Doc<"messages">): MessageDoc {
   return omit(message, ["parentMessageId", "stepId", "files"]);
@@ -354,16 +355,18 @@ export const updateMessage = mutation({
   args: {
     messageId: v.id("messages"),
     patch: v.object(
-      pick(schema.tables.messages.validator.fields, [
-        "message",
-        "fileIds",
-        "status",
-        "error",
-        "model",
-        "provider",
-        "providerOptions",
-        "finishReason",
-      ]),
+      partial(
+        pick(schema.tables.messages.validator.fields, [
+          "message",
+          "fileIds",
+          "status",
+          "error",
+          "model",
+          "provider",
+          "providerOptions",
+          "finishReason",
+        ]),
+      ),
     ),
   },
   returns: vMessageDoc,
