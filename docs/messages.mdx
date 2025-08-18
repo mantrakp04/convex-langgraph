@@ -323,7 +323,7 @@ The helper also adds some additional fields:
 To reference these, ensure you're importing `UIMessage` from
 `@convex-dev/agent/react`.
 
-### Text smoothing with the `useSmoothText` hook
+### Text smoothing with `SmoothText` and `useSmoothText`
 
 The `useSmoothText` hook is a simple hook that smooths the text as it changes.
 It can work with any text, but is especially handy for streaming text.
@@ -351,6 +351,15 @@ function Message({ message }: { message: UIMessage }) {
   });
   return <div>{visibleText}</div>;
 }
+```
+
+If you don't want to use the hook, you can use the `SmoothText` component.
+
+```tsx
+import { SmoothText } from "@convex-dev/agent/react";
+
+//...
+<SmoothText text={message.text} />
 ```
 
 ### Optimistic updates for sending messages
