@@ -1,6 +1,11 @@
 // See the docs at https://docs.convex.dev/agents/tools
 import { components } from "../_generated/api";
-import { Agent, createTool, stepCountIs } from "@convex-dev/agent";
+import {
+  Agent,
+  createThread,
+  createTool,
+  stepCountIs,
+} from "@convex-dev/agent";
 import z from "zod/v3";
 import { action } from "../_generated/server";
 import { tool } from "ai";
@@ -44,17 +49,21 @@ export const runAgentAsTool = action({
       }),
       handler: async (ctx, args) => {
         // Create a nested thread to call the agent with tools
-        const { thread } = await agentWithTools.createThread(ctx, {
+        const threadId = await createThread(ctx, components.agent, {
           userId: ctx.userId,
         });
-        const result = await thread.generateText({
-          messages: [
-            {
-              role: "assistant",
-              content: `I'll do this now: ${args.whatToDo}`,
-            },
-          ],
-        });
+        const result = await agentWithTools.generateText(
+          ctx,
+          { threadId },
+          {
+            messages: [
+              {
+                role: "assistant",
+                content: `I'll do this now: ${args.whatToDo}`,
+              },
+            ],
+          },
+        );
         return result.text;
       },
     });
@@ -67,17 +76,21 @@ export const runAgentAsTool = action({
       ...defaultConfig,
     });
 
-    const { thread } = await dispatchAgent.createThread(ctx);
+    const threadId = await createThread(ctx, components.agent);
     console.time("overall");
-    const result = await thread.generateText({
-      messages: [
-        {
-          role: "user",
-          content:
-            "Call fastAgent with whatToDo set to doSomething three times and doSomethingElse one time",
-        },
-      ],
-    });
+    const result = await dispatchAgent.generateText(
+      ctx,
+      { threadId },
+      {
+        messages: [
+          {
+            role: "user",
+            content:
+              "Call fastAgent with whatToDo set to doSomething three times and doSomethingElse one time",
+          },
+        ],
+      },
+    );
     console.timeEnd("overall");
     return result.text;
   },

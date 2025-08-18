@@ -42,8 +42,6 @@ export const answerQuestionViaRAG = internalAction({
     promptMessageId: v.string(),
   },
   handler: async (ctx, { threadId, prompt: rawPrompt, promptMessageId }) => {
-    const { thread } = await agent.continueThread(ctx, { threadId });
-
     // Search the RAG index for context.
     const context = await rag.search(ctx, {
       namespace: "global",
@@ -60,7 +58,9 @@ export const answerQuestionViaRAG = internalAction({
     const system =
       "Answer the user's question and explain what context you used to answer it.";
 
-    const result = await thread.streamText(
+    const result = await agent.streamText(
+      ctx,
+      { threadId },
       // By providing both prompt and promptMessageId, it will use the prompt
       // in place of the promptMessageId's message, but still be considered
       // a response to the promptMessageId message (raw prompt).
@@ -69,7 +69,7 @@ export const answerQuestionViaRAG = internalAction({
     );
     // To show the context in the demo UI, we record the context used
     await ctx.runMutation(internal.rag.utils.recordContextUsed, {
-      messageId: result.promptMessageId,
+      messageId: result.promptMessageId!,
       entries: context.entries,
       results: context.results,
     });

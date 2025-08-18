@@ -91,9 +91,6 @@ export const submitFileQuestion = mutation({
 export const generateResponse = internalAction({
   args: { threadId: v.string(), promptMessageId: v.string() },
   handler: async (ctx, { threadId, promptMessageId }) => {
-    const { thread } = await fileAgent.continueThread(ctx, { threadId });
-    await thread.generateText({
-      promptMessageId,
-    });
+    await fileAgent.generateText(ctx, { threadId }, { promptMessageId });
   },
 });

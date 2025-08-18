@@ -88,16 +88,19 @@ For example code, see [ragAsPrompt.ts](../example/convex/rag/ragAsPrompt.ts) for
 the overall code. The simplest version is:
 
 ```ts
-const { thread } = await agent.continueThread(ctx, { threadId });
 const context = await rag.search(ctx, {
   namespace: "global",
   query: userPrompt,
   limit: 10,
 });
 
-const result = await thread.generateText({
-  prompt: `# Context:\n\n ${context.text}\n\n---\n\n# Question:\n\n"""${userPrompt}\n"""`,
-});
+const result = await agent.generateText(
+  ctx,
+  { threadId },
+  {
+    prompt: `# Context:\n\n ${context.text}\n\n---\n\n# Question:\n\n"""${userPrompt}\n"""`,
+  },
+);
 ```
 
 ### 2. Tool-based RAG
@@ -183,8 +186,8 @@ you can pass it to an LLM, but note it takes a long time for big files.
 
 ### Parsing text files
 
-Generally you can use text files directly, for code or markdown or anything
-with a natural structure an LLM can understand.
+Generally you can use text files directly, for code or markdown or anything with
+a natural structure an LLM can understand.
 
 However, to get good embeddings, you can once again use an LLM to translate the
 text into a more structured format.

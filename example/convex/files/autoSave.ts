@@ -2,6 +2,8 @@
 import { v } from "convex/values";
 import { action } from "../_generated/server";
 import { agent } from "../agents/simple";
+import { components } from "../_generated/api";
+import { createThread } from "@convex-dev/agent";
 
 /**
  * This is a simple example of how to use the automatic file saving.
@@ -17,21 +19,25 @@ export const askAboutImage = action({
     mediaType: v.string(),
   },
   handler: async (ctx, { prompt, image, mediaType }) => {
-    const { thread, threadId } = await agent.createThread(ctx, {});
-    const result = await thread.generateText({
-      prompt,
-      messages: [
-        {
-          role: "user",
-          content: [
-            // You can pass the data in directly. It will automatically store
-            // it in file storage and pass around the URL.
-            { type: "image", image, mediaType },
-            { type: "text", text: prompt },
-          ],
-        },
-      ],
-    });
+    const threadId = await createThread(ctx, components.agent);
+    const result = await agent.generateText(
+      ctx,
+      { threadId },
+      {
+        prompt,
+        messages: [
+          {
+            role: "user",
+            content: [
+              // You can pass the data in directly. It will automatically store
+              // it in file storage and pass around the URL.
+              { type: "image", image, mediaType },
+              { type: "text", text: prompt },
+            ],
+          },
+        ],
+      },
+    );
     return { threadId, result: result.text };
   },
 });

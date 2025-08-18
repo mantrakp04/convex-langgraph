@@ -147,7 +147,12 @@ export {
   filterOutOrphanedToolMessages,
 } from "./search.js";
 export { abortStream, listStreams, syncStreams } from "./streaming.js";
-export { createThread, getThreadMetadata } from "./threads.js";
+export {
+  createThread,
+  getThreadMetadata,
+  updateThreadMetadata,
+  searchThreadTitles,
+} from "./threads.js";
 export { createTool, extractText, isTool };
 export type {
   AgentComponent,

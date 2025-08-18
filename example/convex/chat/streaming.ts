@@ -1,6 +1,11 @@
 // See the docs at https://docs.convex.dev/agents/messages
 import { paginationOptsValidator } from "convex/server";
-import { listMessages, syncStreams, vStreamArgs } from "@convex-dev/agent";
+import {
+  createThread,
+  listMessages,
+  syncStreams,
+  vStreamArgs,
+} from "@convex-dev/agent";
 import { components, internal } from "../_generated/api";
 import {
   action,
@@ -22,8 +27,12 @@ export const streamOneShot = action({
   args: { prompt: v.string(), threadId: v.string() },
   handler: async (ctx, { prompt, threadId }) => {
     await authorizeThreadAccess(ctx, threadId);
-    const { thread } = await storyAgent.continueThread(ctx, { threadId });
-    await thread.streamText({ prompt }, { saveStreamDeltas: true });
+    await storyAgent.streamText(
+      ctx,
+      { threadId },
+      { prompt },
+      { saveStreamDeltas: true },
+    );
     // We don't need to return anything, as the response is saved as deltas
     // in the database and clients are subscribed to the stream.
   },
@@ -56,8 +65,9 @@ export const initiateAsyncStreaming = mutation({
 export const streamAsync = internalAction({
   args: { promptMessageId: v.string(), threadId: v.string() },
   handler: async (ctx, { promptMessageId, threadId }) => {
-    const { thread } = await storyAgent.continueThread(ctx, { threadId });
-    const result = await thread.streamText(
+    const result = await storyAgent.streamText(
+      ctx,
+      { threadId },
       { promptMessageId },
       // more custom delta options (`true` uses defaults)
       { saveStreamDeltas: { chunking: "word", throttleMs: 100 } },
@@ -127,8 +137,8 @@ export const listThreadMessages = query({
 export const streamTextWithoutSavingDeltas = action({
   args: { prompt: v.string() },
   handler: async (ctx, { prompt }) => {
-    const { threadId, thread } = await storyAgent.createThread(ctx, {});
-    const result = await thread.streamText({ prompt });
+    const threadId = await createThread(ctx, components.agent);
+    const result = await storyAgent.streamText(ctx, { threadId }, { prompt });
     for await (const chunk of result.textStream) {
       // do something with the chunks as they come in.
       console.log(chunk);
@@ -154,18 +164,16 @@ export const streamTextWithoutSavingDeltas = action({
  * Note: you can also save deltas if you want so all clients can stream them.
  */
 export const streamOverHttp = httpAction(async (ctx, request) => {
-  const { threadId, prompt } = (await request.json()) as {
+  const body = (await request.json()) as {
     threadId?: string;
     prompt: string;
   };
-  const { thread } = threadId
-    ? await storyAgent.continueThread(ctx, { threadId })
-    : await storyAgent.createThread(ctx, {});
-  const result = await thread.streamText({ prompt });
+  const threadId = body.threadId ?? (await createThread(ctx, components.agent));
+  const result = await storyAgent.streamText(ctx, { threadId }, body);
   const response = result.toTextStreamResponse();
   // Set this so the client can try to de-dupe showing the streamed message and
   // the final result.
-  response.headers.set("X-Message-Id", result.promptMessageId);
+  response.headers.set("X-Message-Id", result.promptMessageId!);
   return response;
 });
 

@@ -106,11 +106,13 @@ export const abortStreamByStreamId = internalMutation({
 export const streamThenUseAbortSignal = action({
   args: {},
   handler: async (ctx) => {
-    const { thread } = await agent.createThread(ctx, {
+    const threadId = await createThread(ctx, components.agent, {
       title: "Thread using abortSignal",
     });
     const abortController = new AbortController();
-    const result = await thread.streamText(
+    const result = await agent.streamText(
+      ctx,
+      { threadId },
       {
         prompt: "Write an essay on the importance of effusive dialogue",
         abortSignal: abortController.signal,

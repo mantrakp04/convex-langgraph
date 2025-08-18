@@ -1,5 +1,5 @@
 // See the docs at https://docs.convex.dev/agents/messages
-import { Agent } from "@convex-dev/agent";
+import { Agent, createThread } from "@convex-dev/agent";
 import { components } from "../_generated/api";
 import { action } from "../_generated/server";
 import { v } from "convex/values";
@@ -23,10 +23,12 @@ const streamingReasoningAgent = new Agent(components.agent, {
 export const streamReasoning = action({
   args: {},
   handler: async (ctx, args) => {
-    const { thread } = await streamingReasoningAgent.createThread(ctx, {
+    const threadId = await createThread(ctx, components.agent, {
       title: "Streaming Reasoning",
     });
-    const result = await thread.streamText(
+    const result = await streamingReasoningAgent.streamText(
+      ctx,
+      { threadId },
       {
         prompt: "What is the best flavor of ice cream?",
         providerOptions: {
@@ -67,8 +69,9 @@ export const streamOneShot = action({
   args: { prompt: v.string(), threadId: v.string() },
   handler: async (ctx, { prompt, threadId }) => {
     await authorizeThreadAccess(ctx, threadId);
-    const { thread } = await storyAgent.continueThread(ctx, { threadId });
-    const result = await thread.streamText(
+    const result = await storyAgent.streamText(
+      ctx,
+      { threadId },
       { prompt },
       { saveStreamDeltas: true },
     );
