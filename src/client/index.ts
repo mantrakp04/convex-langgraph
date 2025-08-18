@@ -572,9 +572,19 @@ export class Agent<
               failPendingSteps: false,
             },
           );
+          const lastMessage = saved.messages.at(-1)!;
           if (createPendingMessage) {
-            pendingMessageId = saved.messages.at(-1)!._id;
-            messages.push(...saved.messages.slice(0, -1));
+            if (lastMessage.status === "failed") {
+              pendingMessageId = undefined;
+              messages.push(...saved.messages);
+              await fail(
+                lastMessage.error ??
+                  "Aborting - the pending message was marked as failed",
+              );
+            } else {
+              pendingMessageId = lastMessage._id;
+              messages.push(...saved.messages.slice(0, -1));
+            }
           } else {
             pendingMessageId = undefined;
             messages.push(...saved.messages);
