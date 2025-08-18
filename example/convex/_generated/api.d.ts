@@ -1737,6 +1737,12 @@ export declare const components: {
         },
         null
       >;
+      heartbeat: FunctionReference<
+        "mutation",
+        "internal",
+        { streamId: string },
+        null
+      >;
       list: FunctionReference<
         "query",
         "internal",

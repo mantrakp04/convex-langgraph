@@ -1543,6 +1543,12 @@ export type Mounts = {
       },
       null
     >;
+    heartbeat: FunctionReference<
+      "mutation",
+      "public",
+      { streamId: string },
+      null
+    >;
     list: FunctionReference<
       "query",
       "public",

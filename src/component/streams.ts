@@ -37,8 +37,17 @@ export const addDelta = mutation({
   args: deltaValidator,
   returns: v.boolean(),
   handler: async (ctx, args) => {
+    const stream = await ctx.db.get(args.streamId);
+    if (!stream) {
+      console.warn("Stream not found", args.streamId);
+      return false;
+    }
+    if (stream.state.kind !== "streaming") {
+      return false;
+    }
     await ctx.db.insert("streamDeltas", args);
-    return heartbeatStream(ctx, { streamId: args.streamId });
+    await heartbeatStream(ctx, { streamId: args.streamId });
+    return true;
   },
 });
 
@@ -251,22 +260,29 @@ export async function finishHandler(
   });
 }
 
+// TODO: use this heartbeat while streaming, every 30 seconds or so,
+// then reduce the timeout to 60 seconds.
+export const heartbeat = mutation({
+  args: { streamId: v.id("streamingMessages") },
+  returns: v.null(),
+  handler: heartbeatStream,
+});
+
 async function heartbeatStream(
   ctx: MutationCtx,
   args: { streamId: Id<"streamingMessages"> },
-): Promise<boolean> {
+): Promise<void> {
   const stream = await ctx.db.get(args.streamId);
   if (!stream) {
     console.warn("Stream not found", args.streamId);
-    return false;
+    return;
   }
   if (stream.state.kind !== "streaming") {
-    console.warn("Stream is not streaming", args.streamId);
-    return false;
+    return;
   }
   if (Date.now() - stream.state.lastHeartbeat < TIMEOUT_INTERVAL / 4) {
     // Debounce heartbeating.
-    return true;
+    return;
   }
   if (!stream.state.timeoutFnId) {
     throw new Error("Stream has no timeout function");
@@ -287,7 +303,6 @@ async function heartbeatStream(
   await ctx.db.patch(args.streamId, {
     state: { kind: "streaming", lastHeartbeat: Date.now(), timeoutFnId },
   });
-  return true;
 }
 
 export const timeoutStream = internalMutation({
