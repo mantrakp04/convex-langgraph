@@ -3,6 +3,19 @@ import { useEffect, useRef, useState } from "react";
 const FPS = 20;
 const MS_PER_FRAME = 1000 / FPS;
 const MAX_TIME_JUMP_MS = 250;
+
+export type SmoothTextOptions = {
+  /**
+   * The number of characters to display per second.
+   */
+  charsPerSec?: number;
+  /**
+   * Whether to initially start streaming.
+   * If this later turns to false, it'll continue streaming.
+   * This will start streaming the first value it sees.
+   */
+  startStreaming?: boolean;
+};
 /**
  * A hook that smoothly displays text as it is streamed.
  *
@@ -15,21 +28,7 @@ const MAX_TIME_JUMP_MS = 250;
  */
 export function useSmoothText(
   text: string,
-  {
-    charsPerSec = 256,
-    startStreaming = false,
-  }: {
-    /**
-     * The number of characters to display per second.
-     */
-    charsPerSec?: number;
-    /**
-     * Whether to initially start streaming.
-     * If this later turns to false, it'll continue streaming.
-     * This will start streaming the first value it sees.
-     */
-    startStreaming?: boolean;
-  } = {},
+  { charsPerSec = 256, startStreaming = false }: SmoothTextOptions = {},
 ): [string, { cursor: number; isStreaming: boolean }] {
   const [visibleText, setVisibleText] = useState(startStreaming ? "" : text);
   const smoothState = useRef({

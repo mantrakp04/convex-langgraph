@@ -23,6 +23,7 @@ import type {
 
 export { optimisticallySendMessage } from "./optimisticallySendMessage.js";
 export { useSmoothText } from "./useSmoothText.js";
+export { SmoothText } from "./SmoothText.js";
 export { toUIMessages, type UIMessage, type ThreadQuery };
 
 /**
