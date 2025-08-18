@@ -1198,11 +1198,12 @@ export class Agent<
     if (textIndexes.length === 0) {
       return undefined;
     }
+    const values = messageTexts.filter((t): t is string => !!t);
     // Then embed those messages.
     const textEmbeddings = await this.doEmbed(ctx, {
       userId,
       threadId,
-      values: messageTexts as string[],
+      values,
     });
     // Then assemble the embeddings into a single array with nulls for the messages without text.
     const embeddingsOrNull = Array(messages.length).fill(null);

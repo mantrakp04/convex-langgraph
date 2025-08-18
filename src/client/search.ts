@@ -98,9 +98,10 @@ export async function fetchContextMessages(
         "You must provide an embedding and embeddingModel to use vector search",
       );
     }
-    const embeddingFields = opts.searchOptions?.vectorSearch
-      ? await args.getEmbedding?.(text)
-      : undefined;
+    const embeddingFields =
+      opts.searchOptions?.vectorSearch && text
+        ? await args.getEmbedding?.(text)
+        : undefined;
     const searchMessages = await ctx.runAction(
       component.messages.searchMessages,
       {
