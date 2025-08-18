@@ -7,7 +7,7 @@ import {
 } from "convex/react";
 import { usePaginatedQuery } from "convex-helpers/react";
 import type { FunctionArgs } from "convex/server";
-import { useMemo, useRef, useState } from "react";
+import { useMemo, useState } from "react";
 import type { MessageDoc } from "../client/index.js";
 import type { SyncStreamsReturnValue } from "../client/types.js";
 import type { StreamArgs } from "../validators.js";
