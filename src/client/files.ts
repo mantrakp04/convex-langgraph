@@ -115,7 +115,7 @@ export async function storeFile(
 /**
  * Get file metadata from the component.
  * This also returns filePart (and imagePart if the file is an image),
- * which are useful to construct a CoreMessage like
+ * which are useful to construct a ModelMessage like
  * ```ts
  * const { filePart, imagePart } = await getFile(ctx, components.agent, fileId);
  * const message: UserMessage = {
