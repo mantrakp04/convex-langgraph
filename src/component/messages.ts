@@ -152,7 +152,7 @@ async function addMessagesHandler(
     pendingMessageId,
     ...rest
   } = args;
-  const parentMessage = promptMessageId && (await ctx.db.get(promptMessageId));
+  const promptMessage = promptMessageId && (await ctx.db.get(promptMessageId));
   if (failPendingSteps) {
     assert(args.threadId, "threadId is required to fail pending steps");
     const pendingMessages = await ctx.db
@@ -164,7 +164,7 @@ async function addMessagesHandler(
       .take(100);
     await Promise.all(
       pendingMessages
-        .filter((m) => !parentMessage || m.order === parentMessage.order)
+        .filter((m) => !promptMessage || m.order === promptMessage.order)
         .filter((m) => !pendingMessageId || m._id !== pendingMessageId)
         .map((m) =>
           ctx.db.patch(m._id, { status: "failed", error: "Restarting" }),
@@ -173,22 +173,25 @@ async function addMessagesHandler(
   }
   let order, stepOrder;
   let fail = false;
+  let error: string | undefined;
   if (pendingMessageId) {
     const pendingMessage = await ctx.db.get(pendingMessageId);
     assert(pendingMessage, `Pending msg ${pendingMessageId} not found`);
     if (pendingMessage.status === "failed") {
       fail = true;
+      error = `Updating message that failed: ${pendingMessageId}, error: ${pendingMessage.error ?? error}`;
     }
   }
   if (promptMessageId) {
-    assert(parentMessage, `Parent message ${promptMessageId} not found`);
-    if (parentMessage.status === "failed") {
+    assert(promptMessage, `Parent message ${promptMessageId} not found`);
+    if (promptMessage.status === "failed") {
       fail = true;
+      error = promptMessage.error ?? error ?? "The prompt message failed";
     }
-    order = parentMessage.order;
+    order = promptMessage.order;
     // Defend against there being existing messages with this parent.
     const maxMessage = await getMaxMessage(ctx, threadId, order);
-    stepOrder = maxMessage?.stepOrder ?? parentMessage.stepOrder;
+    stepOrder = maxMessage?.stepOrder ?? promptMessage.stepOrder;
   } else {
     const maxMessage = await getMaxMessage(ctx, threadId);
     order = maxMessage?.order ?? -1;
@@ -213,7 +216,7 @@ async function addMessagesHandler(
         threadId,
       });
     }
-    const messageDoc: WithoutSystemFields<Doc<"messages">> = {
+    const messageDoc = {
       ...rest,
       ...message,
       embeddingId,
@@ -223,11 +226,9 @@ async function addMessagesHandler(
       tool: isTool(message.message),
       text: extractText(message.message),
       status: fail ? "failed" : (message.status ?? "success"),
-      error: fail
-        ? (parentMessage?.error ?? "Parent message failed")
-        : undefined,
+      error: fail ? error : message.error,
       stepOrder,
-    };
+    } satisfies WithoutSystemFields<Doc<"messages">>;
     if (i === 0 && pendingMessageId) {
       const pendingMessage = await ctx.db.get(pendingMessageId);
       assert(pendingMessage, `Pending msg ${pendingMessageId} not found`);
@@ -243,7 +244,7 @@ async function addMessagesHandler(
       continue;
     }
     if (message.message.role === "user") {
-      if (parentMessage && parentMessage.order === order) {
+      if (promptMessage && promptMessage.order === order) {
         // see if there's a later message than the parent message order
         const maxMessage = await getMaxMessage(ctx, threadId);
         order = (maxMessage?.order ?? order) + 1;
