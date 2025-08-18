@@ -2,6 +2,7 @@ import type {
   FlexibleSchema,
   IdGenerator,
   InferSchema,
+  ProviderOptions,
 } from "@ai-sdk/provider-utils";
 import type {
   CallSettings,
@@ -196,12 +197,6 @@ export type Config = {
    */
   storageOptions?: StorageOptions;
   /**
-   * The default settings to use for the LLM calls.
-   * This can be overridden at each generate/stream callsite on a per-field
-   * basis. To clear a default setting, you'll need to pass `undefined`.
-   */
-  callSettings?: CallSettings;
-  /**
    * The usage handler to use for this agent.
    */
   usageHandler?: UsageHandler;
@@ -210,6 +205,18 @@ export type Config = {
    * log the raw request body or response headers to a table, or logs.
    */
   rawRequestResponseHandler?: RawRequestResponseHandler;
+  /**
+   * Default provider options to pass for the LLM calls.
+   * This can be overridden at each generate/stream callsite on a per-field
+   * basis. To clear a default setting, you'll need to pass `undefined`.
+   */
+  providerOptions?: ProviderOptions;
+  /**
+   * The default settings to use for the LLM calls.
+   * This can be overridden at each generate/stream callsite on a per-field
+   * basis. To clear a default setting, you'll need to pass `undefined`.
+   */
+  callSettings?: CallSettings;
 };
 
 export class Agent<
@@ -1742,6 +1749,7 @@ export class Agent<
     return {
       args: {
         ...this.options.callSettings,
+        ...this.options.providerOptions,
         ...rest,
         model: model ?? this.options.languageModel,
         system: args.system ?? this.options.instructions,
