@@ -7,7 +7,7 @@ import type { ProviderOptions } from "../validators.js";
 
 export type ToolCtx<DataModel extends GenericDataModel = GenericDataModel> =
   GenericActionCtx<DataModel> & {
-    agent: Agent;
+    agent?: Agent;
     userId?: string;
     threadId?: string;
     messageId?: string;
