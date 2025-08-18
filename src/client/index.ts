@@ -1395,25 +1395,17 @@ export class Agent<
    * @param args What message to save. Generally the parent message sent into
    *   the generateText call.
    */
-  async completeMessage(
+  async finalizeMessage(
     ctx: RunMutationCtx,
     args: {
-      threadId: string;
       messageId: string;
-      result: { kind: "error"; error: string } | { kind: "success" };
+      result: { status: "failed"; error: string } | { status: "success" };
     },
   ): Promise<void> {
-    const result = args.result;
-    if (result.kind === "success") {
-      await ctx.runMutation(this.component.messages.commitMessage, {
-        messageId: args.messageId,
-      });
-    } else {
-      await ctx.runMutation(this.component.messages.rollbackMessage, {
-        messageId: args.messageId,
-        error: result.error,
-      });
-    }
+    await ctx.runMutation(this.component.messages.finalizeMessage, {
+      messageId: args.messageId,
+      result: args.result,
+    });
   }
 
   /**

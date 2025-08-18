@@ -602,12 +602,6 @@ export declare const components: {
           }>;
         }
       >;
-      commitMessage: FunctionReference<
-        "mutation",
-        "internal",
-        { messageId: string },
-        null
-      >;
       deleteByIds: FunctionReference<
         "mutation",
         "internal",
@@ -625,6 +619,15 @@ export declare const components: {
           threadId: string;
         },
         { isDone: boolean; lastOrder?: number; lastStepOrder?: number }
+      >;
+      finalizeMessage: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          messageId: string;
+          result: { status: "success" } | { error: string; status: "failed" };
+        },
+        null
       >;
       getMessagesByIds: FunctionReference<
         "query",
@@ -1005,12 +1008,6 @@ export declare const components: {
           pageStatus?: "SplitRecommended" | "SplitRequired" | null;
           splitCursor?: string | null;
         }
-      >;
-      rollbackMessage: FunctionReference<
-        "mutation",
-        "internal",
-        { error?: string; messageId: string },
-        null
       >;
       searchMessages: FunctionReference<
         "action",

@@ -460,12 +460,6 @@ export type Mounts = {
         }>;
       }
     >;
-    commitMessage: FunctionReference<
-      "mutation",
-      "public",
-      { messageId: string },
-      null
-    >;
     deleteByIds: FunctionReference<
       "mutation",
       "public",
@@ -483,6 +477,15 @@ export type Mounts = {
         threadId: string;
       },
       { isDone: boolean; lastOrder?: number; lastStepOrder?: number }
+    >;
+    finalizeMessage: FunctionReference<
+      "mutation",
+      "public",
+      {
+        messageId: string;
+        result: { status: "success" } | { error: string; status: "failed" };
+      },
+      null
     >;
     getMessagesByIds: FunctionReference<
       "query",
@@ -835,12 +838,6 @@ export type Mounts = {
         pageStatus?: "SplitRecommended" | "SplitRequired" | null;
         splitCursor?: string | null;
       }
-    >;
-    rollbackMessage: FunctionReference<
-      "mutation",
-      "public",
-      { error?: string; messageId: string },
-      null
     >;
     searchMessages: FunctionReference<
       "action",
