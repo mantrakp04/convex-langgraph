@@ -24,9 +24,6 @@ export type UIMessage<
   stepOrder: number;
   status: "streaming" | MessageStatus;
   agentName?: string;
-  /**
-   * @deprecated Use `parts` instead.
-   */
   text: string;
 };
 

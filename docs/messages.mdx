@@ -385,7 +385,7 @@ provide them as a prompt, as well as all generated messages.
 You can save messages to the database manually using `saveMessage` or
 `saveMessages`.
 
-- You can pass a `prompt` or a full `message` (`CoreMessage` type)
+- You can pass a `prompt` or a full `message` (`ModelMessage` type)
 - The `metadata` argument is optional and allows you to provide more details,
   such as `sources`, `reasoningDetails`, `usage`, `warnings`, `error`, etc.
 
@@ -531,7 +531,7 @@ import { ... } from "@convex-dev/agent";
 - `filterOutOrphanedToolMessages` is a utility function that filters out tool
   call messages that don't have a corresponding tool result message.
 - `extractText` is a utility function that extracts text from a
-  `CoreMessage`-like object.
+  `ModelMessage`-like object.
 
 ### Validators and types
 
@@ -541,7 +541,7 @@ There are types to validate and provide types for various values
 import { ... } from "@convex-dev/agent";
 ```
 
-- `vMessage` is a validator for a `CoreMessage`-like object (with a `role` and
+- `vMessage` is a validator for a `ModelMessage`-like object (with a `role` and
   `content` field e.g.).
 - `MessageDoc` and `vMessageDoc` are the types for a message (which includes a
   `.message` field with the `vMessage` type).
