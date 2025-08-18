@@ -1,4 +1,4 @@
-import type { TextStreamPart, ToolSet, UIMessageChunk } from "ai";
+import type { TextStreamPart, ToolSet } from "ai";
 import type { MessageDoc } from "../client/index.js";
 import type {
   Message,

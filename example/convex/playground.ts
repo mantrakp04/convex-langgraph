@@ -26,7 +26,6 @@ export const {
   generateText,
   fetchPromptContext,
 } = definePlaygroundAPI(components.agent, {
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   agents: async (ctx, { userId, threadId }) => [
     weatherAgent,
     fashionAgent,
