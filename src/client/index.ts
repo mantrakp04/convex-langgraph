@@ -775,8 +775,8 @@ export class Agent<
       },
       onError: async (error) => {
         console.error("onError", error);
-        await streamer?.flush();
         await call.fail(errorToString(error.error));
+        await streamer?.fail(errorToString(error.error));
         return streamTextArgs.onError?.(error);
       },
       // onFinish: async (event) => {
@@ -795,7 +795,9 @@ export class Agent<
         steps.push(step);
         const createPendingMessage = await willContinue(steps, args.stopWhen);
         await call.save({ step }, createPendingMessage);
-        await streamer?.flush();
+        if (!createPendingMessage) {
+          await streamer?.finish();
+        }
         return args.onStepFinish?.(step);
       },
     }) as StreamTextResult<

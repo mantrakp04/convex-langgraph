@@ -191,9 +191,8 @@ export class DeltaStreamer {
       metadata.abortSignal.addEventListener("abort", async () => {
         if (this.streamId) {
           this.abortController.abort();
+          const finalDelta = this.#createDelta();
           await this.#ongoingWrite;
-          const finalDelta =
-            this.#nextParts.length > 0 ? this.#createDelta() : undefined;
           await this.ctx.runMutation(this.component.streams.abort, {
             streamId: this.streamId,
             reason: "abortSignal",
@@ -228,6 +227,9 @@ export class DeltaStreamer {
       return;
     }
     const delta = this.#createDelta();
+    if (!delta) {
+      return;
+    }
     this.#latestWrite = Date.now();
     try {
       const success = await this.ctx.runMutation(
@@ -253,7 +255,10 @@ export class DeltaStreamer {
     }
   }
 
-  #createDelta(): StreamDelta {
+  #createDelta(): StreamDelta | undefined {
+    if (this.#nextParts.length === 0) {
+      return undefined;
+    }
     const start = this.#cursor;
     const end = start + this.#nextParts.length;
     this.#cursor = end;
@@ -265,13 +270,32 @@ export class DeltaStreamer {
     return { streamId: this.streamId, start, end, parts };
   }
 
-  public async flush() {
-    if (this.#ongoingWrite) {
-      await this.#ongoingWrite;
-      this.#ongoingWrite = undefined;
+  public async finish() {
+    if (!this.streamId) {
+      return;
     }
-    if (this.streamId && this.#nextParts.length > 0) {
-      await this.#sendDelta();
+    const finalDelta = this.#createDelta();
+    await this.#ongoingWrite;
+    await this.ctx.runMutation(this.component.streams.finish, {
+      streamId: this.streamId,
+      finalDelta,
+    });
+  }
+
+  public async fail(reason: string) {
+    if (this.abortController.signal.aborted) {
+      return;
     }
+    this.abortController.abort();
+    if (!this.streamId) {
+      return;
+    }
+    const finalDelta = this.#createDelta();
+    await this.#ongoingWrite;
+    await this.ctx.runMutation(this.component.streams.abort, {
+      streamId: this.streamId,
+      reason,
+      finalDelta,
+    });
   }
 }
