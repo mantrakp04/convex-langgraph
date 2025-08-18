@@ -1,4 +1,8 @@
-import type { FlexibleSchema, InferSchema } from "@ai-sdk/provider-utils";
+import type {
+  FlexibleSchema,
+  IdGenerator,
+  InferSchema,
+} from "@ai-sdk/provider-utils";
 import type {
   CallSettings,
   EmbeddingModel,
@@ -436,6 +440,9 @@ export class Agent<
        * aborted, it will trigger this signal when detected.
        */
       abortSignal?: AbortSignal;
+      // We optimistically override the generateId function to use the pending
+      // message id.
+      _internal?: { generateId?: IdGenerator };
     },
     options?: Options & { userId?: string | null; threadId?: string },
   ): Promise<{
@@ -470,6 +477,14 @@ export class Agent<
     // TODO: extract pending message if one exists
     const { args: aiArgs, promptMessageId, order, stepOrder, userId } = context;
     const messages = context.savedMessages ?? [];
+    if (pendingMessageId) {
+      if (!aiArgs._internal?.generateId) {
+        aiArgs._internal = {
+          ...aiArgs._internal,
+          generateId: () => pendingMessageId ?? crypto.randomUUID(),
+        };
+      }
+    }
     const toolCtx = {
       ...(ctx as UserActionCtx & CustomCtx),
       userId,
