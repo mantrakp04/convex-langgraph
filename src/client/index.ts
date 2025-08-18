@@ -483,15 +483,24 @@ export class Agent<
       if (threadId && promptMessageId) {
         console.error("RollbackMessage", promptMessageId, reason);
       }
+      if (context.pendingMessageId) {
+        await ctx.runMutation(this.component.messages.updateMessage, {
+          messageId: context.pendingMessageId,
+          patch: { status: "failed", error: reason },
+        });
+      }
     };
     let activeModel = aiArgs.model;
-    // const abortController = new AbortController();
-    // if (aiArgs.abortSignal) {
-    //   const abortSignal = aiArgs.abortSignal;
-    //   aiArgs.abortSignal.addEventListener("abort", async () => {
-    //     await fail(abortSignal.reason ?? "Aborted");
-    //   }, { once: true });
-    // }
+    if (aiArgs.abortSignal) {
+      const abortSignal = aiArgs.abortSignal;
+      aiArgs.abortSignal.addEventListener(
+        "abort",
+        async () => {
+          await fail(abortSignal.reason ?? "Aborted");
+        },
+        { once: true },
+      );
+    }
     return {
       args: {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
