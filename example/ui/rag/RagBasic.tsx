@@ -236,19 +236,19 @@ function RagBasicUI() {
               {documentChunks.results && documentChunks.results.length > 0 ? (
                 <div className="p-4 space-y-3">
                   {documentChunks.results.map((chunk) => (
-                    <>
+                    <div
+                      key={selectedEntry + "-chunk-" + chunk.order}
+                      className="space-y-2"
+                    >
                       <div className="text-sm font-medium text-gray-500">
                         Chunk {chunk.order}
                       </div>
-                      <div
-                        key={chunk.order}
-                        className="bg-gray-50 border border-gray-200 rounded-lg p-4"
-                      >
+                      <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
                         <div className="text-sm text-gray-800 leading-relaxed">
                           {chunk.text}
                         </div>
                       </div>
-                    </>
+                    </div>
                   ))}
 
                   {documentChunks.status === "CanLoadMore" && (
