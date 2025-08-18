@@ -93,21 +93,6 @@ is a `Thread` object, which has convenience methods that are thread-specific:
 
 See [Messages docs](./messages.mdx) for more details on generating messages.
 
-### Overriding behavior with `agent.continueThread`
-
-You can override a few things when using `agent.continueThread`:
-
-```ts
-const { thread } = await agent.continueThread(ctx, {
-  threadId,
-  userId, // Associates generated messages with this user.
-  tools, // Replaces the agent's default tools
-  usageHandler, // Replaces the agent's default usage handler
-});
-
-await thread.generateText({ prompt }); // Uses the thread-specific options.
-```
-
 ## Deleting threads
 
 You can delete threads by their `threadId`.

@@ -181,7 +181,7 @@ export type Config = {
    * import { openai } from "@ai-sdk/openai"
    * const myAgent = new Agent(components.agent, {
    *   ...
-   *   textEmbedding: openai.embedding("text-embedding-3-small")
+   *   textEmbeddingModel: openai.embedding("text-embedding-3-small")
    */
   textEmbeddingModel?: EmbeddingModel<string>;
   /**
@@ -1117,7 +1117,7 @@ export class Agent<
         assert("runAction" in ctx);
         assert(
           this.options.textEmbeddingModel,
-          "A textEmbedding model is required to be set on the Agent that you're doing vector search with",
+          "A textEmbeddingModel is required to be set on the Agent that you're doing vector search with",
         );
         return {
           embedding: (
@@ -1273,7 +1273,7 @@ export class Agent<
     if (!embeddings) {
       if (!this.options.textEmbeddingModel) {
         throw new Error(
-          "No embeddings were generated for the messages. You must pass a textEmbedding model to the agent constructor.",
+          "No embeddings were generated for the messages. You must pass a textEmbeddingModel to the agent constructor.",
         );
       }
       throw new Error(
@@ -1770,7 +1770,7 @@ export class Agent<
     const embeddingModel = this.options.textEmbeddingModel;
     assert(
       embeddingModel,
-      "a textEmbedding model is required to be set on the Agent that you're doing vector search with",
+      "a textEmbeddingModel is required to be set on the Agent that you're doing vector search with",
     );
     const result = await embedMany({
       ...this.options.callSettings,

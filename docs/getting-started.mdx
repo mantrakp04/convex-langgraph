@@ -75,7 +75,7 @@ That's it! Next check out creating [Threads](./threads.mdx) and
 ### Customizing the agent
 
 The agent by default only needs a `chat` model to be configured. However, for
-vector search, you'll need a `textEmbedding` model. A `name` is helpful to
+vector search, you'll need a `textEmbeddingModel` model. A `name` is helpful to
 attribute each message to a specific agent. Other options are defaults that can
 be over-ridden at each LLM call-site.
 
@@ -106,7 +106,7 @@ const supportAgent = new Agent(components.agent, {
     myTool: tool({ description, parameters, execute: () => {}}),
   },
   // Embedding model to power vector search of message history (RAG).
-  textEmbedding: openai.embedding("text-embedding-3-small"),
+  textEmbeddingModel: openai.embedding("text-embedding-3-small"),
   // Used for fetching context messages. See https://docs.convex.dev/agents/context
   contextOptions,
   // Used for storing messages. See https://docs.convex.dev/agents/messages
