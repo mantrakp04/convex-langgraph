@@ -1469,7 +1469,16 @@ export type Mounts = {
     abort: FunctionReference<
       "mutation",
       "public",
-      { reason: string; streamId: string },
+      {
+        finalDelta?: {
+          end: number;
+          parts: Array<any>;
+          start: number;
+          streamId: string;
+        };
+        reason: string;
+        streamId: string;
+      },
       boolean
     >;
     abortByOrder: FunctionReference<

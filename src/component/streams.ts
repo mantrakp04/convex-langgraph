@@ -35,13 +35,7 @@ export const addDelta = mutation({
   returns: v.boolean(),
   handler: async (ctx, args) => {
     await ctx.db.insert("streamDeltas", args);
-    await heartbeatStream(ctx, { streamId: args.streamId });
-    const stream = await ctx.db.get(args.streamId);
-    if (stream?.state.kind !== "streaming") {
-      console.warn(`Stream is not streaming: ${args.streamId}`);
-      return false;
-    }
-    return true;
+    return heartbeatStream(ctx, { streamId: args.streamId });
   },
 });
 
@@ -167,23 +161,23 @@ export const abortByOrder = mutation({
 });
 
 export const abort = mutation({
-  args: { streamId: v.id("streamingMessages"), reason: v.string() },
+  args: { streamId: v.id("streamingMessages"), reason: v.string(), finalDelta: v.optional(deltaValidator) },
   returns: v.boolean(),
   handler: abortById,
 });
 
 async function abortById(
   ctx: MutationCtx,
-  args: { streamId: Id<"streamingMessages">; reason: string },
+  args: { streamId: Id<"streamingMessages">; reason: string; finalDelta?: WithoutSystemFields<Doc<"streamDeltas">> },
 ) {
   const stream = await ctx.db.get(args.streamId);
   if (!stream) {
     throw new Error(`Stream not found: ${args.streamId}`);
   }
+  if (args.finalDelta) {
+    await ctx.db.insert("streamDeltas", args.finalDelta);
+  }
   if (stream.state.kind !== "streaming") {
-    console.warn(
-      `Stream trying to abort but not currently streaming (${stream.state.kind}): ${args.streamId}`,
-    );
     return false;
   }
   await cleanupTimeoutFn(ctx, stream);
@@ -249,19 +243,19 @@ export async function finishHandler(
 async function heartbeatStream(
   ctx: MutationCtx,
   args: { streamId: Id<"streamingMessages"> },
-) {
+): Promise<boolean> {
   const stream = await ctx.db.get(args.streamId);
   if (!stream) {
     console.warn("Stream not found", args.streamId);
-    return;
+    return false;
   }
   if (stream.state.kind !== "streaming") {
     console.warn("Stream is not streaming", args.streamId);
-    return;
+    return false;
   }
   if (Date.now() - stream.state.lastHeartbeat < TIMEOUT_INTERVAL / 4) {
     // Debounce heartbeating.
-    return;
+    return true;
   }
   if (!stream.state.timeoutFnId) {
     throw new Error("Stream has no timeout function");
@@ -286,6 +280,7 @@ async function heartbeatStream(
       timeoutFnId,
     },
   });
+  return true;
 }
 
 export const timeoutStream = internalMutation({
