@@ -12,7 +12,8 @@ export const rawRequestResponseHandler: RawRequestResponseHandler = async (
     agentName,
     threadId,
     userId,
-    request,
-    response,
+    // This is to remove undefined values
+    request: JSON.parse(JSON.stringify(request)),
+    responseHeaders: response.headers,
   });
 };
