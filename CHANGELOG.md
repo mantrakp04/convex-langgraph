@@ -7,6 +7,7 @@
   the messages it saved with all metadata.
 - All saved messages are returned when generating / streaming text / objects.
   Not just the prompt message ID / order.
+- Adds a `SmoothText` component that can be used to render streaming text.
 - Generating / streaming will return a `promptMessageId` field, which is the
   message ID of the last message that was used as the prompt. This replaces the
   `messageId` field, which was confusing.
@@ -27,9 +28,10 @@
 - A pending message is now created by default when generating / streaming text /
   objects, representing the message that is being generated. It will attempt to
   only create pending messages when it anticipates generating a response.
+- On failure / abort, the pending message is updated with streaming contents.
 - Breaking: the `thread` return value from `continueThread` no longer allows
-  overriding the tools at the thread level. You can still override the agent
-  defaults at the call-site.
+  overriding the tools or usage handler at the thread level. You can still
+  override the agent defaults at the call-site.
 
 ## 0.1.18
 
