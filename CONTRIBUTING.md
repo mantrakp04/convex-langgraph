@@ -47,24 +47,14 @@ npm run alpha
 # Idea/ feature backlog:
 
 - Convenience function to create a thread by copying an existing thread (fork)
-- Add a "failed" message when an error is thrown in generate/stream call.
-- Add a "failed" message when a stream is aborted.
-- Support new AI SDK version (and LanguageModelProviderV2)
 - Add a `contextHandler` option to the Agent component, that can be used to see
   and modify the context passed to the LLM before it's called.
   - take in { searchMessages, recentMessages, systemMessage, promptMessage }
   - returns single message[]? - can add / prune / modify or { searchMessages,
     recentMessages, systemMessage, promptMessage } or something else?
-- When aborting a stream, save the in-progress message as failed with the
-  contents so far, and replace the abort.
 - Allow aborting normal generateText
-- Add a placeholder aborted message, check for that when adding step (conflict
-  in step order)
 - Improve the demo to show more of the features & have nicer UI
-  - Add an example of aborting a stream.
   - Add an example of using tracing / telemetry.
-- Refactor agent code to more helper functions, and break up `client/index.ts`
-  into more files.
 - Add an example of using MCP with the Agent.
 - Automatically turn big text content into a file when saving a message and keep
   as a fileId. Re-hydrate it when reading out for generation.
