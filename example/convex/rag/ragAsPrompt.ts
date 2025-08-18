@@ -90,6 +90,7 @@ export const askQuestion = mutation({
     const { messageId } = await agent.saveMessage(ctx, {
       threadId,
       prompt,
+      skipEmbeddings: true, // We're in a mutation. They'll be added later.
     });
     await ctx.scheduler.runAfter(
       0,
