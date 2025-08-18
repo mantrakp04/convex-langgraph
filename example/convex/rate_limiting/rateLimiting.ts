@@ -58,6 +58,7 @@ export const rateLimitedUsageHandler: UsageHandler = async (ctx, args) => {
 export const rateLimitedAgent = new Agent(components.agent, {
   name: "Rate Limited Agent",
   ...defaultConfig,
+  usageHandler: rateLimitedUsageHandler,
 });
 
 // Step 1: Submit a question. It checks to see if you are exceeding rate limits.
