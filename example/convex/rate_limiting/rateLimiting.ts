@@ -115,10 +115,12 @@ export const generateResponse = internalAction({
   handler: async (ctx, args) => {
     // Because the agent has a usage handler that will use the rate limiter, we
     // don't need to do anything special here.
-    await rateLimitedAgent.generateText(
+    const resp = await rateLimitedAgent.streamText(
       ctx,
       { threadId: args.threadId },
       { promptMessageId: args.promptMessageId },
+      { saveStreamDeltas: true },
     );
+    await resp.consumeStream();
   },
 });

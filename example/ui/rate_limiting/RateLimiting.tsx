@@ -2,6 +2,7 @@ import { useMutation, useQuery } from "convex/react";
 import { Toaster } from "../components/ui/toaster";
 import { api } from "../../convex/_generated/api";
 import {
+  SmoothText,
   toUIMessages,
   useThreadMessages,
   type UIMessage,
@@ -47,9 +48,9 @@ export default function Example() {
     api.rate_limiting.rateLimiting.submitQuestion,
   );
   const messages = useThreadMessages(
-    api.chat.basic.listThreadMessages,
+    api.chat.streaming.listThreadMessages,
     threadId ? { threadId } : "skip",
-    { initialNumItems: 10 },
+    { initialNumItems: 10, stream: true },
   );
   const createThread = useMutation(api.threads.createNewThread);
 
@@ -296,7 +297,11 @@ function Message({ message }: { message: UIMessage }) {
           const key = message.key + i;
           switch (part.type) {
             case "text":
-              return <div key={key}>{part.text}</div>;
+              return (
+                <div key={key}>
+                  <SmoothText text={part.text} />
+                </div>
+              );
             case "file":
               if (part.mediaType?.startsWith("image/")) {
                 return (
