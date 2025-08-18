@@ -200,24 +200,6 @@ export class DeltaStreamer {
     }
   }
 
-  public reset(updates: {
-    order?: number;
-    stepOrder?: number;
-    agentName?: string;
-    model?: string;
-    provider?: string;
-    providerOptions?: ProviderOptions;
-  }) {
-    this.streamId = undefined;
-    this.#nextParts = [];
-    this.#cursor = 0;
-    Object.assign(this.metadata, {
-      ...updates,
-      order: updates.order ?? this.metadata.order,
-      stepOrder: updates.stepOrder ?? this.metadata.stepOrder,
-    });
-  }
-
   public async addParts(parts: TextStreamPart<ToolSet>[]) {
     if (this.abortController.signal.aborted) {
       return;
@@ -225,11 +207,7 @@ export class DeltaStreamer {
     if (!this.streamId) {
       this.streamId = await this.ctx.runMutation(
         this.component.streams.create,
-        {
-          ...omit(this.metadata, ["abortSignal"]),
-          order: this.metadata.order,
-          stepOrder: this.metadata.stepOrder,
-        },
+        omit(this.metadata, ["abortSignal"]),
       );
     }
     this.#nextParts.push(...parts);

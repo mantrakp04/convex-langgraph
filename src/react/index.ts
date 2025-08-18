@@ -124,12 +124,22 @@ export function useThreadMessages<
         .sort((a, b) =>
           a.order === b.order ? a.stepOrder - b.stepOrder : a.order - b.order,
         )
-        // They shouldn't overlap, but check for duplicates just in case.
-        .filter(
-          (m, i, arr) =>
-            !arr[i - 1] ||
-            m.order !== arr[i - 1].order ||
-            m.stepOrder !== arr[i - 1].stepOrder,
+        .reduce(
+          (msgs, msg) => {
+            const last = msgs.at(-1);
+            if (!last) {
+              return [msg];
+            }
+            if (last.order !== msg.order || last.stepOrder !== msg.stepOrder) {
+              return [...msgs, msg];
+            }
+            if (last.status === "pending" && msg.status !== "pending") {
+              return [...msgs.slice(0, -1), msg];
+            }
+            // skip the new one if the previous one (listed) was finalized
+            return msgs;
+          },
+          [] as (ThreadMessagesResult<Query> & { streaming: boolean })[],
         ),
     };
   }, [paginated, streamMessages]);

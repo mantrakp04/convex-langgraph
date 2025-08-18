@@ -467,7 +467,7 @@ export class Agent<
       ...opts,
     });
     // TODO: extract pending message if one exists
-    const { args: aiArgs, promptMessageId, order, userId } = context;
+    const { args: aiArgs, promptMessageId, order, stepOrder, userId } = context;
     const messages = context.savedMessages ?? [];
     const toolCtx = {
       ...(ctx as UserActionCtx & CustomCtx),
@@ -510,7 +510,7 @@ export class Agent<
         // abortSignal: abortController.signal,
       },
       order: order ?? 0,
-      stepOrder: (messages.at(-1)?.stepOrder ?? -1) + 1,
+      stepOrder: stepOrder ?? 0,
       userId,
       promptMessageId,
       getSavedMessages: () => messages,
@@ -718,7 +718,7 @@ export class Agent<
             provider: getProviderName(args.model),
             providerOptions: args.providerOptions,
             order,
-            stepOrder: stepOrder + 1,
+            stepOrder,
             abortSignal: args.abortSignal,
           })
         : undefined;
@@ -750,11 +750,6 @@ export class Agent<
         if (result) {
           const model = result.model ?? options.model;
           call.updateModel(model);
-          streamer?.reset({
-            model: getModelName(model),
-            provider: getProviderName(model),
-            providerOptions: options.messages.at(-1)?.providerOptions,
-          });
           return result;
         }
         return undefined;
@@ -763,14 +758,7 @@ export class Agent<
         steps.push(step);
         await streamer?.flush();
         const createPendingMessage = await willContinue(steps, args.stopWhen);
-        const saved = await call.save({ step }, createPendingMessage);
-        if (streamer) {
-          if (saved.length > 0) {
-            streamer.reset({ stepOrder: saved.at(-1)!.stepOrder + 1 });
-          } else {
-            streamer.reset({ stepOrder: streamer.metadata.stepOrder + 1 });
-          }
-        }
+        await call.save({ step }, createPendingMessage);
         return args.onStepFinish?.(step);
       },
     }) as StreamTextResult<
