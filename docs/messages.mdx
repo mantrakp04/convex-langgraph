@@ -233,17 +233,18 @@ export const listThreadMessages = query({
 
 To retrieve the stream deltas, you only have to make a few changes to the query:
 
-```diff
- import { paginationOptsValidator } from "convex/server";
--import { listMessages } from "@convex-dev/agent";
-+import { vStreamArgs, listMessages, syncStreams } from "@convex-dev/agent";
- import { components } from "./_generated/api";
+```ts
+import { paginationOptsValidator } from "convex/server";
+// highlight-next-line
+import { vStreamArgs, listMessages, syncStreams } from "@convex-dev/agent";
+import { components } from "./_generated/api";
 
- export const listThreadMessages = query({
-   args: {
-     threadId: v.string(),
-     paginationOpts: paginationOptsValidator,
-+    streamArgs: vStreamArgs,
+export const listThreadMessages = query({
+  args: {
+    threadId: v.string(),
+    paginationOpts: paginationOptsValidator,
+    // highlight-next-line
+    streamArgs: vStreamArgs,
    },
    handler: async (ctx, { threadId, paginationOpts, streamArgs }) => {
      // await authorizeThreadAccess(ctx, threadId);
@@ -252,14 +253,12 @@ To retrieve the stream deltas, you only have to make a few changes to the query:
        threadId,
        paginationOpts
      });
-+    const streams = await syncStreams(ctx, components.agent, {
-+      threadId,
-+      streamArgs
-+    });
 
-     // Here you could filter out / modify the documents & stream deltas.
--    return paginated;
-+    return { ...paginated, streams };
+     // highlight-next-line
+     const streams = await syncStreams(ctx, components.agent, args);
+
+     // highlight-next-line
+     return { ...paginated, streams };
    },
  });
 ```
