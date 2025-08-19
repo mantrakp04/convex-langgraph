@@ -160,7 +160,7 @@ but the data at rest is backwards compatible.
 - Image and file handling! It now auto-saves large input messages, and has an
   API to save and get metadata about files, as well as automatic reference
   counting for files being used in messages, so you can vacuum unused files.
-  Check out [examples/files-images](./examples/files-images), which also
+  Check out [examples/files-images](./example/convex/files), which also
   includes an example generating an image and saving it in messages one-shot.
 - Adds a `rawRequestResponseHandler` argument to the Agent that is a good spot
   to log or save all raw request/responses if you're trying to debug model
