@@ -20,10 +20,10 @@
     "noUnusedParameters": false,
     "noImplicitAny": false,
 
+    "assumeChangesOnlyAffectDirectDependencies": false,
+
     "baseUrl": ".",
-    "paths": {
-      "@/*": ["./src/*"]
-    }
+    "paths": { "@/*": ["./src/*"] }
   },
   "include": ["src", "src/vite-env.d.ts"]
 }

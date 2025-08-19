@@ -98,7 +98,7 @@
     "vite": "^6.3.5"
   },
   "peerDependencies": {
-    "@convex-dev/agent": "^0.2.1",
+    "@convex-dev/agent": ">=0.2.2-alpha.1",
     "convex-helpers": "^0.1.103",
     "convex": "^1.25.4",
     "zod": "^3.25.0 || ^4.0.0"

@@ -5,11 +5,14 @@ import {
   type TextStreamPart,
   type ToolSet,
 } from "ai";
-import type {
-  ProviderOptions,
-  StreamArgs,
-  StreamDelta,
-  StreamMessage,
+import {
+  vStreamDelta,
+  vStreamMessage,
+  vPaginationResult,
+  type ProviderOptions,
+  type StreamArgs,
+  type StreamDelta,
+  type StreamMessage,
 } from "../validators.js";
 import type {
   AgentComponent,
@@ -20,6 +23,18 @@ import type {
 } from "./types.js";
 import { omit } from "convex-helpers";
 import { serializeTextStreamingPartsV5 } from "../parts.js";
+import { v } from "convex/values";
+import { vMessageDoc } from "../component/schema.js";
+
+export const vStreamMessagesReturnValue = v.object({
+  ...vPaginationResult(vMessageDoc).fields,
+  streams: v.optional(
+    v.union(
+      v.object({ kind: v.literal("list"), messages: v.array(vStreamMessage) }),
+      v.object({ kind: v.literal("deltas"), deltas: v.array(vStreamDelta) }),
+    ),
+  ),
+});
 
 /**
  * A function that handles fetching stream deltas, used with the React hooks
@@ -33,29 +48,33 @@ import { serializeTextStreamingPartsV5 } from "../parts.js";
 export async function syncStreams(
   ctx: RunQueryCtx,
   component: AgentComponent,
-  args: {
+  {
+    threadId,
+    streamArgs,
+    includeStatuses,
+  }: {
     threadId: string;
-    streamArgs: StreamArgs | undefined;
+    streamArgs?: StreamArgs | undefined;
     // By default, only streaming messages are included.
     includeStatuses?: ("streaming" | "finished" | "aborted")[];
   },
 ): Promise<SyncStreamsReturnValue | undefined> {
-  if (!args.streamArgs) return undefined;
-  if (args.streamArgs.kind === "list") {
+  if (!streamArgs) return undefined;
+  if (streamArgs.kind === "list") {
     return {
       kind: "list",
       messages: await listStreams(ctx, component, {
-        threadId: args.threadId,
-        startOrder: args.streamArgs.startOrder,
-        includeStatuses: args.includeStatuses,
+        threadId,
+        startOrder: streamArgs.startOrder,
+        includeStatuses,
       }),
     };
   } else {
     return {
       kind: "deltas",
       deltas: await ctx.runQuery(component.streams.listDeltas, {
-        threadId: args.threadId,
-        cursors: args.streamArgs.cursors,
+        threadId,
+        cursors: streamArgs.cursors,
       }),
     };
   }

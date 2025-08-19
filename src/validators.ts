@@ -80,10 +80,7 @@ export const vReasoningDetails = v.array(
       text: v.string(),
       signature: v.optional(v.string()),
     }),
-    v.object({
-      type: v.literal("redacted"),
-      data: v.string(),
-    }),
+    v.object({ type: v.literal("redacted"), data: v.string() }),
   ),
 );
 
@@ -111,10 +108,7 @@ export const vAssistantContent = v.union(
 
 const vToolResultContent = v.array(
   v.union(
-    v.object({
-      type: v.literal("text"),
-      text: v.string(),
-    }),
+    v.object({ type: v.literal("text"), text: v.string() }),
     v.object({
       type: v.literal("image"),
       data: v.string(),

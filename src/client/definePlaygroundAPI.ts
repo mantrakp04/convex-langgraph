@@ -21,6 +21,9 @@ import {
   vThreadDoc,
   type Agent,
   type AgentComponent,
+  vStreamArgs,
+  syncStreams,
+  vStreamMessagesReturnValue,
 } from "./index.js";
 
 export type PlaygroundAPI = ApiFromModules<{
@@ -185,16 +188,20 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
       apiKey: v.string(),
       threadId: v.string(),
       paginationOpts: paginationOptsValidator,
+      streamArgs: vStreamArgs,
     },
     handler: async (ctx, args) => {
       await validateApiKey(ctx, args.apiKey);
-      return listMessages_(ctx, component, {
+      const paginated = await listMessages_(ctx, component, {
         threadId: args.threadId,
         paginationOpts: args.paginationOpts,
         statuses: ["success", "failed", "pending"],
       });
+      const streams = await syncStreams(ctx, component, args);
+
+      return { ...paginated, streams };
     },
-    returns: vPaginationResult(vMessageDoc),
+    returns: vStreamMessagesReturnValue,
   });
 
   // Create a thread (mutation)
@@ -254,7 +261,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
       const namedAgent = agents.find(({ name }) => name === agentName);
       if (!namedAgent) throw new Error(`Unknown agent: ${agentName}`);
       const { agent } = namedAgent;
-      const { messageId, text } = await agent.generateText(
+      const { text } = await agent.streamText(
         ctx,
         { threadId, userId },
         {
@@ -264,8 +271,9 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
         },
         { contextOptions, storageOptions },
       );
-      return { messageId, text };
+      return { text: await text };
     },
+    returns: v.object({ text: v.string() }),
   });
 
   // Fetch prompt context (action)

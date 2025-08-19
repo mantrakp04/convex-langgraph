@@ -91,12 +91,12 @@ const MessageItem: React.FC<MessageItemProps> = ({
       )}
 
       <div className="ml-6 mt-2">
-        {JSON.stringify(message.message?.parts, null, 2)}
         {message.message?.parts.map((part, i) => {
           if ("toolCallId" in part) {
             // dynamic tool & named tool
             return (
               <ToolCall
+                key={part.toolCallId}
                 part={part}
                 expanded={expandedToolCall === part.toolCallId}
                 toggleExpanded={(e) => toggleToolCall(part.toolCallId, e)}

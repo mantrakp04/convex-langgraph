@@ -146,7 +146,12 @@ export {
   fetchContextMessages,
   filterOutOrphanedToolMessages,
 } from "./search.js";
-export { abortStream, listStreams, syncStreams } from "./streaming.js";
+export {
+  abortStream,
+  listStreams,
+  syncStreams,
+  vStreamMessagesReturnValue,
+} from "./streaming.js";
 export {
   createThread,
   getThreadMetadata,
