@@ -8,7 +8,7 @@ function baseMessageDoc(overrides: Partial<MessageDoc> = {}): MessageDoc {
   return {
     _id: "msg1",
     _creationTime: Date.now(),
-    order: 1,
+    order: 0,
     stepOrder: 0,
     status: "success",
     threadId: "thread1",

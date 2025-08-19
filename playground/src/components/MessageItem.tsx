@@ -10,7 +10,8 @@ import {
   Wrench,
   FileIcon,
 } from "lucide-react";
-import { UIMessage } from "ai";
+import { DynamicToolUIPart, ToolUIPart, UIMessage } from "ai";
+import { SmoothText } from "@convex-dev/agent/react";
 
 interface MessageItemProps {
   user: User | undefined;
@@ -94,107 +95,67 @@ const MessageItem: React.FC<MessageItemProps> = ({
       )}
 
       <div className="ml-6 mt-2">
+        {JSON.stringify(message.message?.parts, null, 2)}
         {message.message?.parts.map((part, i) => {
+          if ("toolCallId" in part) {
+            // dynamic tool & named tool
+            return (
+              <ToolCall
+                part={part}
+                expanded={expandedToolCall === part.toolCallId}
+                toggleExpanded={(e) => toggleToolCall(part.toolCallId, e)}
+              />
+            );
+          }
           switch (part.type) {
-            case "tool-invocation": {
-              const toolCall = part.toolInvocation;
-              const isToolCallExpanded =
-                expandedToolCall === toolCall.toolCallId;
-              return (
-                <div
-                  key={toolCall.toolCallId + " " + i}
-                  className={`tool-call-bubble mt-2 ${
-                    isToolCallExpanded
-                      ? "bg-secondary border border-primary/30 rounded-lg"
-                      : ""
-                  }`}
-                >
-                  <div
-                    className="flex items-center gap-2 p-2 cursor-pointer"
-                    onClick={(e) => toggleToolCall(toolCall.toolCallId, e)}
-                  >
-                    <div className="w-5 h-5 flex items-center justify-center rounded-full bg-muted-foreground text-muted">
-                      <Wrench size={12} />
-                    </div>
-                    <span className="font-medium text-sm">
-                      {toolCall.toolName}
-                    </span>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="p-0 h-5 w-5 ml-auto"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        toggleToolCall(toolCall.toolCallId, e);
-                      }}
-                    >
-                      {isToolCallExpanded ? (
-                        <ChevronUp size={14} />
-                      ) : (
-                        <ChevronDown size={14} />
-                      )}
-                    </Button>
-                  </div>
-                  {isToolCallExpanded && (
-                    <div className="mt-2 text-sm p-2">
-                      <div className="mb-2">
-                        <div className="font-medium mb-1">Arguments:</div>
-                        <pre className="bg-secondary p-2 rounded-md overflow-x-auto text-xs">
-                          {JSON.stringify(toolCall.args, null, 2)}
-                        </pre>
-                      </div>
-                      {toolCall.state === "result" && (
-                        <div>
-                          <div className="font-medium mb-1">Return Value:</div>
-                          <pre className="bg-secondary p-2 rounded-md overflow-x-auto text-xs">
-                            {JSON.stringify(toolCall.result, null, 2)}
-                          </pre>
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              );
-            }
             case "reasoning":
               return (
                 <div key={message._id + " reasoning " + i}>
-                  {part.reasoning}
+                  <SmoothText
+                    text={part.text}
+                    startStreaming={part.state === "streaming"}
+                  />
+                  {part.state === "streaming" && <span>...</span>}
                 </div>
               );
-            case "source":
+            case "source-url":
               return (
                 <div key={message._id + " source " + i}>
-                  <a href={part.source.url} target="_blank">
-                    {part.source.title ?? part.source.url}
+                  <a href={part.url} target="_blank">
+                    {part.title ?? part.url}
                   </a>
                 </div>
               );
+            case "source-document":
+              return (
+                <div key={message._id + " source " + i}>
+                  Document {part.sourceId}: {part.title}: {part.mediaType}{" "}
+                  {part.filename ? `(${part.filename})` : ""}
+                </div>
+              );
             case "file":
-              return part.mimeType.startsWith("image/") ? (
-                part.data.startsWith("http") ? (
-                  <div key={message._id + " file " + i} className="mt-2">
-                    <img
-                      src={part.data}
-                      className="rounded-lg max-w-full max-h-[300px]"
-                    />
-                  </div>
-                ) : (
-                  <div key={i} className="mt-2">
-                    <img
-                      src={URL.createObjectURL(
-                        new Blob([part.data], {
-                          type: part.mimeType,
-                        }),
-                      )}
-                      className="rounded-lg max-w-full max-h-[300px]"
-                    />
-                  </div>
-                )
+              return part.mediaType.startsWith("image/") ? (
+                <div key={message._id + " file " + i} className="mt-2">
+                  <img
+                    src={part.url}
+                    className="rounded-lg max-w-full max-h-[300px]"
+                  />
+                </div>
               ) : (
-                <a key={i} className="mt-2" href={part.data} target="_blank">
+                <a key={i} className="mt-2" href={part.url} target="_blank">
                   <FileIcon size={14} />
-                  <span>{part.mimeType}</span>
+
+                  <span>
+                    {part.filename
+                      ? `${part.filename} (${part.mediaType})`
+                      : part.mediaType}
+                  </span>
+                  {(part.providerMetadata && (
+                    <span className="text-xs text-muted-foreground">
+                      {JSON.stringify(part.providerMetadata)}
+                    </span>
+                  )) ||
+                    null}
                 </a>
               );
           }
@@ -205,3 +166,89 @@ const MessageItem: React.FC<MessageItemProps> = ({
 };
 
 export default MessageItem;
+
+const ToolCall: React.FC<{
+  part: ToolUIPart | DynamicToolUIPart;
+  expanded: boolean;
+  toggleExpanded: (e: React.MouseEvent) => void;
+}> = ({ part, expanded, toggleExpanded }) => {
+  const toolName =
+    "toolName" in part
+      ? part.toolName
+      : part.type.startsWith("tool-")
+        ? part.type.slice(5)
+        : part.type;
+  return (
+    <div
+      key={part.toolCallId + " " + part.state}
+      className={`tool-call-bubble mt-2 ${
+        expanded ? "bg-secondary border border-primary/30 rounded-lg" : ""
+      }`}
+    >
+      <div
+        className="flex items-center gap-2 p-2 cursor-pointer"
+        onClick={toggleExpanded}
+      >
+        <div className="w-5 h-5 flex items-center justify-center rounded-full bg-muted-foreground text-muted">
+          <Wrench size={12} />
+        </div>
+        <span className="font-medium text-sm">{toolName}</span>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="p-0 h-5 w-5 ml-auto"
+          onClick={(e) => {
+            e.stopPropagation();
+            toggleExpanded(e);
+          }}
+        >
+          {expanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+        </Button>
+      </div>
+      {expanded && (
+        <div className="mt-2 text-sm p-2">
+          <div className="mb-2">
+            <div className="font-medium mb-1">
+              State:
+              <span>
+                <pre className="bg-secondary p-2 rounded-md overflow-x-auto text-xs inline">
+                  {part.state}
+                </pre>
+              </span>
+            </div>
+            <div className="font-medium mb-1">
+              Type:
+              <span>
+                <pre className="bg-secondary p-2 rounded-md overflow-x-auto text-xs inline">
+                  {part.type}
+                </pre>
+              </span>
+            </div>
+          </div>
+          <div className="mb-2">
+            <div className="font-medium mb-1">Arguments:</div>
+            <pre className="bg-secondary p-2 rounded-md overflow-x-auto text-xs">
+              {JSON.stringify(part.input, null, 2)}
+            </pre>
+            {part.state === "output-available" && (
+              <>
+                <div className="font-medium mb-1">Return Value:</div>
+                <pre className="bg-secondary p-2 rounded-md overflow-x-auto text-xs">
+                  {JSON.stringify(part.output, null, 2)}
+                </pre>
+              </>
+            )}
+            {part.state === "output-error" && (
+              <>
+                <div className="font-medium mb-1">Error:</div>
+                <pre className="bg-secondary p-2 rounded-md overflow-x-auto text-xs">
+                  {JSON.stringify(part.errorText, null, 2)}
+                </pre>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
