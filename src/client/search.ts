@@ -77,7 +77,10 @@ export async function fetchContextMessages(
       ...page.reverse(),
     );
   }
-  if (opts.searchOptions?.textSearch || opts.searchOptions?.vectorSearch) {
+  if (
+    (opts.searchOptions?.textSearch || opts.searchOptions?.vectorSearch) &&
+    opts.searchOptions?.limit
+  ) {
     const targetMessage = contextMessages.find(
       (m) => m._id === args.upToAndIncludingMessageId,
     )?.message;
