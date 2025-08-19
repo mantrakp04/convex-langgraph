@@ -124,26 +124,6 @@ export function toUIMessages<
           ...partCommon,
         } satisfies TextUIPart);
       }
-      for (const source of message.sources ?? []) {
-        if (source.sourceType === "url") {
-          assistantMessage.parts.push({
-            type: "source-url",
-            url: source.url!,
-            sourceId: source.id,
-            providerMetadata: message.providerMetadata,
-            title: source.title,
-          } satisfies SourceUrlUIPart);
-        } else {
-          assistantMessage.parts.push({
-            type: "source-document",
-            mediaType: source.mediaType,
-            sourceId: source.id,
-            title: source.title,
-            filename: source.filename,
-            providerMetadata: message.providerMetadata,
-          } satisfies SourceDocumentUIPart);
-        }
-      }
       for (const contentPart of nonStringContent) {
         switch (contentPart.type) {
           case "text":
@@ -238,6 +218,26 @@ export function toUIMessages<
             }
             break;
           }
+        }
+      }
+      for (const source of message.sources ?? []) {
+        if (source.sourceType === "url") {
+          assistantMessage.parts.push({
+            type: "source-url",
+            url: source.url!,
+            sourceId: source.id,
+            providerMetadata: message.providerMetadata,
+            title: source.title,
+          } satisfies SourceUrlUIPart);
+        } else {
+          assistantMessage.parts.push({
+            type: "source-document",
+            mediaType: source.mediaType,
+            sourceId: source.id,
+            title: source.title,
+            filename: source.filename,
+            providerMetadata: message.providerMetadata,
+          } satisfies SourceDocumentUIPart);
         }
       }
     }
