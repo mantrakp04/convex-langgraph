@@ -25,6 +25,7 @@ export type UIMessage<
   status: "streaming" | MessageStatus;
   agentName?: string;
   text: string;
+  _creationTime: number;
 };
 
 export function toUIMessages<
@@ -45,13 +46,13 @@ export function toUIMessages<
     if (!coreMessage) continue;
     const common = {
       id: message._id,
-      createdAt: new Date(message._creationTime),
+      _creationTime: message._creationTime,
       order: message.order,
       stepOrder: message.stepOrder,
       status: message.streaming ? ("streaming" as const) : message.status,
       key: `${message.threadId}-${message.order}-${message.stepOrder}`,
       text,
-    };
+    } satisfies Partial<UIMessage<METADATA, DATA_PARTS, TOOLS>>;
     const partCommon = {
       state: message.streaming ? ("streaming" as const) : ("done" as const),
       ...(message.providerMetadata
