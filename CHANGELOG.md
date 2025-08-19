@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.2 alpha
+
+- Add \_creationTime to UIMessage (number) to replace v4's createdAt
+
 ## 0.2.1
 
 - Defaults to consuming the stream when saving deltas, so you don't have to
