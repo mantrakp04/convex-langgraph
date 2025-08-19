@@ -68,22 +68,21 @@ export function toUIMessages<
       });
     } else if (coreMessage.role === "user") {
       const parts: UIMessage<METADATA, DATA_PARTS, TOOLS>["parts"] = [];
-      if (text) {
+      if (text && !nonStringContent.length) {
         parts.push({ type: "text", text });
       }
       nonStringContent.forEach((contentPart) => {
         switch (contentPart.type) {
+          case "text":
+            parts.push({ type: "text", text: contentPart.text, ...partCommon });
+            break;
           case "file":
           case "image":
             parts.push(toUIFilePart(contentPart));
             break;
         }
       });
-      uiMessages.push({
-        ...common,
-        role: "user",
-        parts,
-      });
+      uiMessages.push({ ...common, role: "user", parts });
     } else {
       if (coreMessage.role === "tool" && !assistantMessage) {
         console.warn(
