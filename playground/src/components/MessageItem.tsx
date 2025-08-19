@@ -17,9 +17,7 @@ interface MessageItemProps {
   user: User | undefined;
   message: Omit<Message, "message"> & { message: UIMessage };
   isSelected: boolean;
-  onClick: () => void;
-  onSelectToolCall?: (toolCallId: string) => void;
-  selectedToolCallId?: string | null;
+  onClick: React.MouseEventHandler<HTMLDivElement>;
 }
 
 const MessageItem: React.FC<MessageItemProps> = ({
@@ -27,8 +25,6 @@ const MessageItem: React.FC<MessageItemProps> = ({
   message,
   isSelected,
   onClick,
-  onSelectToolCall,
-  selectedToolCallId,
 }) => {
   const [expandedToolCall, setExpandedToolCall] = useState<string | null>(null);
 

@@ -16,9 +16,6 @@ const MessageList: React.FC<MessageListProps> = ({
   selectedMessageId,
   onSelectMessage,
 }) => {
-  const [selectedToolCallId, setSelectedToolCallId] = useState<string | null>(
-    null,
-  );
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const uiMessages = useMemo(() => {
     // TODO: segment the messages by "order" so the message item can show all of
@@ -30,18 +27,9 @@ const MessageList: React.FC<MessageListProps> = ({
         messages.find((message) => message._id === uiMessage.id) ??
         messages.find((m) => m.id === uiMessage.id)!;
       uiMessage.id = message._id;
-      return {
-        ...message,
-        message: uiMessage,
-      };
+      return { ...message, message: uiMessage };
     });
   }, [messages]);
-
-  const handleSelectToolCall = (toolCallId: string) => {
-    setSelectedToolCallId(
-      selectedToolCallId === toolCallId ? null : toolCallId,
-    );
-  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -62,10 +50,7 @@ const MessageList: React.FC<MessageListProps> = ({
           isSelected={message._id === selectedMessageId}
           onClick={() => {
             onSelectMessage(message._id);
-            setSelectedToolCallId(null);
           }}
-          onSelectToolCall={handleSelectToolCall}
-          selectedToolCallId={selectedToolCallId}
         />
       ))}
       {/* Add an invisible div at the bottom to scroll to */}
