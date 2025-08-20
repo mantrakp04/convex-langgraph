@@ -16,7 +16,6 @@ import {
   type TextPart,
   type ToolCallPart,
   type ToolResultPart,
-  type ReasoningUIPart,
 } from "ai";
 import type {
   Message,

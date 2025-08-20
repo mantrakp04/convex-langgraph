@@ -198,7 +198,6 @@ export type Mounts = {
                       | {
                           providerOptions?: Record<string, Record<string, any>>;
                           signature?: string;
-                          state?: "streaming" | "done";
                           text: string;
                           type: "reasoning";
                         }
@@ -264,7 +263,6 @@ export type Mounts = {
             | {
                 providerOptions?: Record<string, Record<string, any>>;
                 signature?: string;
-                state?: "streaming" | "done";
                 text: string;
                 type: "reasoning";
               }
@@ -373,7 +371,6 @@ export type Mounts = {
                       | {
                           providerOptions?: Record<string, Record<string, any>>;
                           signature?: string;
-                          state?: "streaming" | "done";
                           text: string;
                           type: "reasoning";
                         }
@@ -441,7 +438,6 @@ export type Mounts = {
             | {
                 providerOptions?: Record<string, Record<string, any>>;
                 signature?: string;
-                state?: "streaming" | "done";
                 text: string;
                 type: "reasoning";
               }
@@ -581,7 +577,6 @@ export type Mounts = {
                     | {
                         providerOptions?: Record<string, Record<string, any>>;
                         signature?: string;
-                        state?: "streaming" | "done";
                         text: string;
                         type: "reasoning";
                       }
@@ -649,7 +644,6 @@ export type Mounts = {
           | {
               providerOptions?: Record<string, Record<string, any>>;
               signature?: string;
-              state?: "streaming" | "done";
               text: string;
               type: "reasoning";
             }
@@ -778,7 +772,6 @@ export type Mounts = {
                       | {
                           providerOptions?: Record<string, Record<string, any>>;
                           signature?: string;
-                          state?: "streaming" | "done";
                           text: string;
                           type: "reasoning";
                         }
@@ -846,7 +839,6 @@ export type Mounts = {
             | {
                 providerOptions?: Record<string, Record<string, any>>;
                 signature?: string;
-                state?: "streaming" | "done";
                 text: string;
                 type: "reasoning";
               }
@@ -971,7 +963,6 @@ export type Mounts = {
                     | {
                         providerOptions?: Record<string, Record<string, any>>;
                         signature?: string;
-                        state?: "streaming" | "done";
                         text: string;
                         type: "reasoning";
                       }
@@ -1039,7 +1030,6 @@ export type Mounts = {
           | {
               providerOptions?: Record<string, Record<string, any>>;
               signature?: string;
-              state?: "streaming" | "done";
               text: string;
               type: "reasoning";
             }
@@ -1157,7 +1147,6 @@ export type Mounts = {
                     | {
                         providerOptions?: Record<string, Record<string, any>>;
                         signature?: string;
-                        state?: "streaming" | "done";
                         text: string;
                         type: "reasoning";
                       }
@@ -1225,7 +1214,6 @@ export type Mounts = {
           | {
               providerOptions?: Record<string, Record<string, any>>;
               signature?: string;
-              state?: "streaming" | "done";
               text: string;
               type: "reasoning";
             }
@@ -1333,7 +1321,6 @@ export type Mounts = {
                       | {
                           providerOptions?: Record<string, Record<string, any>>;
                           signature?: string;
-                          state?: "streaming" | "done";
                           text: string;
                           type: "reasoning";
                         }
@@ -1459,7 +1446,6 @@ export type Mounts = {
                     | {
                         providerOptions?: Record<string, Record<string, any>>;
                         signature?: string;
-                        state?: "streaming" | "done";
                         text: string;
                         type: "reasoning";
                       }
@@ -1527,7 +1513,6 @@ export type Mounts = {
           | {
               providerOptions?: Record<string, Record<string, any>>;
               signature?: string;
-              state?: "streaming" | "done";
               text: string;
               type: "reasoning";
             }

@@ -306,7 +306,6 @@ export declare const components: {
                               Record<string, any>
                             >;
                             signature?: string;
-                            state?: "streaming" | "done";
                             text: string;
                             type: "reasoning";
                           }
@@ -385,7 +384,6 @@ export declare const components: {
               | {
                   providerOptions?: Record<string, Record<string, any>>;
                   signature?: string;
-                  state?: "streaming" | "done";
                   text: string;
                   type: "reasoning";
                 }
@@ -516,7 +514,6 @@ export declare const components: {
                               Record<string, any>
                             >;
                             signature?: string;
-                            state?: "streaming" | "done";
                             text: string;
                             type: "reasoning";
                           }
@@ -597,7 +594,6 @@ export declare const components: {
               | {
                   providerOptions?: Record<string, Record<string, any>>;
                   signature?: string;
-                  state?: "streaming" | "done";
                   text: string;
                   type: "reasoning";
                 }
@@ -741,7 +737,6 @@ export declare const components: {
                       | {
                           providerOptions?: Record<string, Record<string, any>>;
                           signature?: string;
-                          state?: "streaming" | "done";
                           text: string;
                           type: "reasoning";
                         }
@@ -809,7 +804,6 @@ export declare const components: {
             | {
                 providerOptions?: Record<string, Record<string, any>>;
                 signature?: string;
-                state?: "streaming" | "done";
                 text: string;
                 type: "reasoning";
               }
@@ -956,7 +950,6 @@ export declare const components: {
                               Record<string, any>
                             >;
                             signature?: string;
-                            state?: "streaming" | "done";
                             text: string;
                             type: "reasoning";
                           }
@@ -1037,7 +1030,6 @@ export declare const components: {
               | {
                   providerOptions?: Record<string, Record<string, any>>;
                   signature?: string;
-                  state?: "streaming" | "done";
                   text: string;
                   type: "reasoning";
                 }
@@ -1166,7 +1158,6 @@ export declare const components: {
                       | {
                           providerOptions?: Record<string, Record<string, any>>;
                           signature?: string;
-                          state?: "streaming" | "done";
                           text: string;
                           type: "reasoning";
                         }
@@ -1234,7 +1225,6 @@ export declare const components: {
             | {
                 providerOptions?: Record<string, Record<string, any>>;
                 signature?: string;
-                state?: "streaming" | "done";
                 text: string;
                 type: "reasoning";
               }
@@ -1352,7 +1342,6 @@ export declare const components: {
                       | {
                           providerOptions?: Record<string, Record<string, any>>;
                           signature?: string;
-                          state?: "streaming" | "done";
                           text: string;
                           type: "reasoning";
                         }
@@ -1420,7 +1409,6 @@ export declare const components: {
             | {
                 providerOptions?: Record<string, Record<string, any>>;
                 signature?: string;
-                state?: "streaming" | "done";
                 text: string;
                 type: "reasoning";
               }
@@ -1546,7 +1534,6 @@ export declare const components: {
                               Record<string, any>
                             >;
                             signature?: string;
-                            state?: "streaming" | "done";
                             text: string;
                             type: "reasoning";
                           }
@@ -1685,7 +1672,6 @@ export declare const components: {
                       | {
                           providerOptions?: Record<string, Record<string, any>>;
                           signature?: string;
-                          state?: "streaming" | "done";
                           text: string;
                           type: "reasoning";
                         }
@@ -1753,7 +1739,6 @@ export declare const components: {
             | {
                 providerOptions?: Record<string, Record<string, any>>;
                 signature?: string;
-                state?: "streaming" | "done";
                 text: string;
                 type: "reasoning";
               }
