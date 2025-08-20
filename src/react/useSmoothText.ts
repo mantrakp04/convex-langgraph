@@ -30,7 +30,9 @@ export function useSmoothText(
   text: string,
   { charsPerSec = 256, startStreaming = false }: SmoothTextOptions = {},
 ): [string, { cursor: number; isStreaming: boolean }] {
-  const [visibleText, setVisibleText] = useState(startStreaming ? "" : text);
+  const [visibleText, setVisibleText] = useState(
+    startStreaming ? "" : text || "",
+  );
   const smoothState = useRef({
     tick: Date.now() + (visibleText.length * 1000) / charsPerSec,
     cursor: visibleText.length,
