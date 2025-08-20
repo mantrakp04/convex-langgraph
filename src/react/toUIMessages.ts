@@ -10,7 +10,7 @@ import type {
   UIDataTypes,
   UITools,
 } from "ai";
-import type { MessageDoc } from "../client/index.js";
+import { extractText, type MessageDoc } from "../client/index.js";
 import { deserializeMessage, toUIFilePart } from "../mapping.js";
 import type { MessageStatus } from "../validators.js";
 
@@ -39,7 +39,8 @@ export function toUIMessages<
   let assistantMessage: UIMessage<METADATA, DATA_PARTS, TOOLS> | undefined;
   for (const message of messages) {
     const coreMessage = message.message && deserializeMessage(message.message);
-    const text = message.text ?? "";
+    const text =
+      message.text || ((message.message && extractText(message.message)) ?? "");
     const content = coreMessage?.content;
     const nonStringContent =
       content && typeof content !== "string" ? content : [];
