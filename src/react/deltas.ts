@@ -11,6 +11,7 @@ import type {
   vToolResultPart,
 } from "../validators.js";
 import type { Infer } from "convex/values";
+import { serializeWarnings } from "../mapping.js";
 
 export function mergeDeltas(
   threadId: string,
@@ -192,11 +193,11 @@ export function applyDeltasToStreamMessage(
             throw new Error("Expected last content to be a tool call");
           }
           if (typeof lastContent.args !== "string") {
-            throw new Error("Expected args to be a string");
+            lastContent.args = lastContent.args?.toString() ?? "";
           }
           const delta =
             "argsTextDelta" in part ? part.argsTextDelta : part.delta;
-          lastContent.args = (lastContent.args ?? "") + delta;
+          lastContent.args = lastContent.args + delta;
         }
         break;
       case "tool-call": {
@@ -227,6 +228,7 @@ export function applyDeltasToStreamMessage(
         currentMessage.sources.push(part);
         break;
       case "raw":
+      case "start":
         // ignore
         break;
       default:
@@ -430,6 +432,81 @@ export function createStreamingMessage(
         message: { role: "tool", content: [] },
         sources: [part],
       };
+    case "raw":
+    case "start":
+      return {
+        ...metadata,
+        tool: false,
+        message: { role: "assistant", content: [] },
+      };
+    case "start-step":
+      return {
+        ...metadata,
+        message: { role: "assistant", content: [] },
+        ...(part.warnings?.length > 0
+          ? { warnings: serializeWarnings(part.warnings) }
+          : {}),
+      };
+    case "reasoning-start":
+      return {
+        ...metadata,
+        message: { role: "assistant", content: [] },
+        reasoning: "",
+      };
+    case "abort":
+      return {
+        ...metadata,
+        message: { role: "assistant", content: [] },
+        status: "failed",
+        error: "abort",
+      };
+    case "tool-error":
+      return {
+        ...metadata,
+        message: {
+          role: "assistant",
+          content: [
+            {
+              type: "tool-call",
+              toolCallId: part.toolCallId,
+              args: part.input,
+              toolName: part.toolName,
+              providerExecuted: part.providerExecuted,
+            },
+            {
+              type: "tool-result",
+              result: part.error,
+              toolCallId: part.toolCallId,
+              isError: true,
+              args: part.input,
+              toolName: part.toolName,
+              providerExecuted: part.providerExecuted,
+            },
+          ],
+        },
+        error: part.error?.toString(),
+      };
+    case "text-start":
+      return {
+        ...metadata,
+        message: { role: "assistant", content: [] },
+        providerMetadata: part.providerMetadata,
+        id: part.id,
+        _id: part.id,
+      };
+    case "error": {
+      const errorMessage: MessageDoc = {
+        ...metadata,
+        message: {
+          role: "assistant",
+          content: [],
+        },
+      };
+      if (part.error) {
+        errorMessage.error = part.error?.toString();
+      }
+      return errorMessage;
+    }
     // case "raw":
     //   return {
     //     ...metadata,
