@@ -356,6 +356,50 @@ describe("toUIMessages", () => {
     expect(textParts[0].text).toBe("Hello!");
   });
 
+  it("sets text field correctly when message has many parts with text part as final part", () => {
+    const messages = [
+      baseMessageDoc({
+        message: {
+          role: "assistant",
+          content: [
+            {
+              type: "reasoning",
+              text: "Let me think about this...",
+            },
+            {
+              type: "tool-call",
+              toolName: "calculator",
+              toolCallId: "call1",
+              args: { operation: "add", a: 2, b: 3 },
+            },
+            {
+              type: "file",
+              mimeType: "application/json",
+              data: "some-file-data",
+            },
+            {
+              type: "text",
+              text: "Here's my final answer.",
+            },
+          ],
+        },
+        text: "Here's my final answer.",
+        reasoning: "Let me think about this...",
+      }),
+    ];
+
+    const uiMessages = toUIMessages(messages);
+
+    expect(uiMessages).toHaveLength(1);
+    expect(uiMessages[0].role).toBe("assistant");
+    expect(uiMessages[0].text).toBe("Here's my final answer.");
+
+    // Verify that the text part exists in parts
+    const textParts = uiMessages[0].parts.filter((p) => p.type === "text");
+    expect(textParts).toHaveLength(1);
+    expect(textParts[0].text).toBe("Here's my final answer.");
+  });
+
   // Add more tests for array content, tool calls, etc. as needed
 
   it("should update tool call state from input-available to output-available", () => {
