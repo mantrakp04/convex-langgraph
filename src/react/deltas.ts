@@ -1,4 +1,4 @@
-import type { TextStreamPart, ToolSet } from "ai";
+import type { ProviderMetadata, TextStreamPart, ToolSet } from "ai";
 import type { MessageDoc } from "../client/index.js";
 import type {
   Message,
@@ -182,8 +182,6 @@ export function applyDeltasToStreamMessage(
           args: "",
           providerExecuted:
             "providerExecuted" in part ? part.providerExecuted : undefined,
-          providerOptions:
-            "providerMetadata" in part ? part.providerMetadata : undefined,
         } satisfies Infer<typeof vToolCallPart>;
         break;
       }
@@ -218,9 +216,6 @@ export function applyDeltasToStreamMessage(
           contentToAdd = {
             type: "reasoning",
             text: part.text,
-            providerOptions:
-              "providerMetadata" in part ? part.providerMetadata : undefined,
-            state: "streaming",
           } satisfies Infer<typeof vReasoningPart>;
         }
         break;
@@ -238,6 +233,12 @@ export function applyDeltasToStreamMessage(
         console.warn(`Received unexpected part: ${JSON.stringify(part)}`);
         break;
     }
+    if ("providerMetadata" in part) {
+      currentMessage.providerMetadata = mergeProviderMetadata(
+        currentMessage.providerMetadata,
+        part.providerMetadata,
+      );
+    }
     if (contentToAdd) {
       if (!currentMessage.message!.content) {
         currentMessage.message!.content = [];
@@ -251,6 +252,29 @@ export function applyDeltasToStreamMessage(
     }
   }
   return [newStream, true];
+}
+
+function mergeProviderMetadata(
+  existing: ProviderMetadata | undefined,
+  part: ProviderMetadata | undefined,
+): ProviderMetadata | undefined {
+  if (!existing && !part) {
+    return undefined;
+  }
+  if (!existing) {
+    return part;
+  }
+  if (!part) {
+    return existing;
+  }
+  const merged: ProviderMetadata = existing;
+  for (const [provider, metadata] of Object.entries(part)) {
+    merged[provider] = {
+      ...merged[provider],
+      ...metadata,
+    };
+  }
+  return merged;
 }
 
 function toolCallContent(
@@ -330,6 +354,9 @@ export function createStreamingMessage(
     threadId,
     tool: false,
   };
+  if ("providerMetadata" in part) {
+    metadata.providerMetadata = part.providerMetadata;
+  }
   switch (part.type) {
     case "text-delta": {
       const text = part.text || "";
@@ -353,8 +380,6 @@ export function createStreamingMessage(
               args: "", // when it's a string, it's a partial call
               providerExecuted:
                 "providerExecuted" in part ? part.providerExecuted : undefined,
-              providerOptions:
-                "providerMetadata" in part ? part.providerMetadata : undefined,
             },
           ],
         },
