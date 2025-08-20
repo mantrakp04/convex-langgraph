@@ -93,19 +93,6 @@ export const vToolCallPart = v.object({
   providerExecuted: v.optional(v.boolean()),
 });
 
-export const vAssistantContent = v.union(
-  v.string(),
-  v.array(
-    v.union(
-      vTextPart,
-      vFilePart,
-      vReasoningPart,
-      vRedactedReasoningPart,
-      vToolCallPart,
-    ),
-  ),
-);
-
 const vToolResultContent = v.array(
   v.union(
     v.object({ type: v.literal("text"), text: v.string() }),
@@ -133,6 +120,20 @@ export const vToolResultPart = v.object({
   experimental_content: v.optional(vToolResultContent),
 });
 export const vToolContent = v.array(vToolResultPart);
+
+export const vAssistantContent = v.union(
+  v.string(),
+  v.array(
+    v.union(
+      vTextPart,
+      vFilePart,
+      vReasoningPart,
+      vRedactedReasoningPart,
+      vToolCallPart,
+      vToolResultPart,
+    ),
+  ),
+);
 
 export const vContent = v.union(vUserContent, vAssistantContent, vToolContent);
 export type Content = Infer<typeof vContent>;

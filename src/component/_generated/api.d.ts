@@ -215,6 +215,20 @@ export type Mounts = {
                           toolName: string;
                           type: "tool-call";
                         }
+                      | {
+                          args?: any;
+                          experimental_content?: Array<
+                            | { text: string; type: "text" }
+                            | { data: string; mimeType?: string; type: "image" }
+                          >;
+                          isError?: boolean;
+                          providerExecuted?: boolean;
+                          providerOptions?: Record<string, Record<string, any>>;
+                          result: any;
+                          toolCallId: string;
+                          toolName: string;
+                          type: "tool-result";
+                        }
                     >;
                 providerOptions?: Record<string, Record<string, any>>;
                 role: "assistant";
@@ -375,6 +389,20 @@ export type Mounts = {
                           toolCallId: string;
                           toolName: string;
                           type: "tool-call";
+                        }
+                      | {
+                          args?: any;
+                          experimental_content?: Array<
+                            | { text: string; type: "text" }
+                            | { data: string; mimeType?: string; type: "image" }
+                          >;
+                          isError?: boolean;
+                          providerExecuted?: boolean;
+                          providerOptions?: Record<string, Record<string, any>>;
+                          result: any;
+                          toolCallId: string;
+                          toolName: string;
+                          type: "tool-result";
                         }
                     >;
                 providerOptions?: Record<string, Record<string, any>>;
@@ -570,6 +598,20 @@ export type Mounts = {
                         toolName: string;
                         type: "tool-call";
                       }
+                    | {
+                        args?: any;
+                        experimental_content?: Array<
+                          | { text: string; type: "text" }
+                          | { data: string; mimeType?: string; type: "image" }
+                        >;
+                        isError?: boolean;
+                        providerExecuted?: boolean;
+                        providerOptions?: Record<string, Record<string, any>>;
+                        result: any;
+                        toolCallId: string;
+                        toolName: string;
+                        type: "tool-result";
+                      }
                   >;
               providerOptions?: Record<string, Record<string, any>>;
               role: "assistant";
@@ -753,6 +795,20 @@ export type Mounts = {
                           toolName: string;
                           type: "tool-call";
                         }
+                      | {
+                          args?: any;
+                          experimental_content?: Array<
+                            | { text: string; type: "text" }
+                            | { data: string; mimeType?: string; type: "image" }
+                          >;
+                          isError?: boolean;
+                          providerExecuted?: boolean;
+                          providerOptions?: Record<string, Record<string, any>>;
+                          result: any;
+                          toolCallId: string;
+                          toolName: string;
+                          type: "tool-result";
+                        }
                     >;
                 providerOptions?: Record<string, Record<string, any>>;
                 role: "assistant";
@@ -932,6 +988,20 @@ export type Mounts = {
                         toolName: string;
                         type: "tool-call";
                       }
+                    | {
+                        args?: any;
+                        experimental_content?: Array<
+                          | { text: string; type: "text" }
+                          | { data: string; mimeType?: string; type: "image" }
+                        >;
+                        isError?: boolean;
+                        providerExecuted?: boolean;
+                        providerOptions?: Record<string, Record<string, any>>;
+                        result: any;
+                        toolCallId: string;
+                        toolName: string;
+                        type: "tool-result";
+                      }
                   >;
               providerOptions?: Record<string, Record<string, any>>;
               role: "assistant";
@@ -1104,6 +1174,20 @@ export type Mounts = {
                         toolName: string;
                         type: "tool-call";
                       }
+                    | {
+                        args?: any;
+                        experimental_content?: Array<
+                          | { text: string; type: "text" }
+                          | { data: string; mimeType?: string; type: "image" }
+                        >;
+                        isError?: boolean;
+                        providerExecuted?: boolean;
+                        providerOptions?: Record<string, Record<string, any>>;
+                        result: any;
+                        toolCallId: string;
+                        toolName: string;
+                        type: "tool-result";
+                      }
                   >;
               providerOptions?: Record<string, Record<string, any>>;
               role: "assistant";
@@ -1266,6 +1350,20 @@ export type Mounts = {
                           toolName: string;
                           type: "tool-call";
                         }
+                      | {
+                          args?: any;
+                          experimental_content?: Array<
+                            | { text: string; type: "text" }
+                            | { data: string; mimeType?: string; type: "image" }
+                          >;
+                          isError?: boolean;
+                          providerExecuted?: boolean;
+                          providerOptions?: Record<string, Record<string, any>>;
+                          result: any;
+                          toolCallId: string;
+                          toolName: string;
+                          type: "tool-result";
+                        }
                     >;
                 providerOptions?: Record<string, Record<string, any>>;
                 role: "assistant";
@@ -1377,6 +1475,20 @@ export type Mounts = {
                         toolCallId: string;
                         toolName: string;
                         type: "tool-call";
+                      }
+                    | {
+                        args?: any;
+                        experimental_content?: Array<
+                          | { text: string; type: "text" }
+                          | { data: string; mimeType?: string; type: "image" }
+                        >;
+                        isError?: boolean;
+                        providerExecuted?: boolean;
+                        providerOptions?: Record<string, Record<string, any>>;
+                        result: any;
+                        toolCallId: string;
+                        toolName: string;
+                        type: "tool-result";
                       }
                   >;
               providerOptions?: Record<string, Record<string, any>>;
