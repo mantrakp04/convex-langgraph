@@ -2065,7 +2065,7 @@ async function willContinue(
       (stop) => !stop,
     );
   }
-  return !(await stopWhen?.({ steps }));
+  return !!stopWhen && !(await stopWhen({ steps }));
 }
 
 function errorToString(error: unknown): string {
