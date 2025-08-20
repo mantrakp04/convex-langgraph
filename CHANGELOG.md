@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.2 alpha
+## 0.2.2
 
 - Add \_creationTime to UIMessage (number) to replace v4's createdAt
 - Improves the playground debugging by enabling streaming
