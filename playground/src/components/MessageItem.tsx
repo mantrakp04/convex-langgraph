@@ -81,12 +81,13 @@ const MessageItem: React.FC<MessageItemProps> = ({
           className={
             message.message?.role === "user"
               ? "message-bubble-user"
-              : "message-bubble-agent"
+              : "message-bubble-agent" + "whitespace-pre-wrap"
           }
         >
-          {message.text.split("\n").map((line, i) => (
-            <div key={i}>{line}</div>
-          ))}
+          <SmoothText
+            text={message.text}
+            startStreaming={message.status === "pending"}
+          />
         </div>
       )}
 

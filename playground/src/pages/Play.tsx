@@ -3,6 +3,7 @@ import LeftPanel from "@/components/LeftPanel";
 import MiddlePanel from "@/components/MiddlePanel";
 import RightPanel from "@/components/RightPanel";
 import { useToast } from "@/components/ui/use-toast";
+import { Switch } from "@/components/ui/switch";
 import { useQuery, useAction } from "convex/react";
 import { usePaginatedQuery } from "convex-helpers/react";
 import { type MessageDoc, type PlaygroundAPI } from "@convex-dev/agent";
@@ -34,6 +35,7 @@ const DEFAULT_STORAGE_OPTIONS = {
 
 function Play({ apiKey, api }: PlayProps) {
   const { toast } = useToast();
+  const [stream, setStream] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | undefined>();
   const [selectedThreadId, setSelectedThreadId] = useState<
     string | undefined
@@ -73,7 +75,7 @@ function Play({ apiKey, api }: PlayProps) {
   const messages = useThreadMessages(
     api.listMessages,
     selectedThreadId ? { apiKey, threadId: selectedThreadId } : "skip",
-    { initialNumItems: 20 },
+    { initialNumItems: 20, stream },
   );
   useEffect(() => {
     if (messages.results.length > 0 && !selectedMessageId) {
@@ -214,8 +216,18 @@ function Play({ apiKey, api }: PlayProps) {
 
   return (
     <div className="h-screen flex flex-col">
-      <div className="bg-secondary p-3 border-b">
+      <div className="bg-secondary p-3 border-b flex items-center justify-between">
         <h1 className="font-bold text-lg">Playground</h1>
+        <div className="flex items-center gap-2">
+          <label htmlFor="streaming-toggle" className="text-sm font-medium">
+            Streaming
+          </label>
+          <Switch
+            id="streaming-toggle"
+            checked={stream}
+            onCheckedChange={setStream}
+          />
+        </div>
       </div>
       <div className="flex-grow flex overflow-hidden">
         <div className="w-1/5 h-full">
