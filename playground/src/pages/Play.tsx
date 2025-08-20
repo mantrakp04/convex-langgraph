@@ -73,7 +73,7 @@ function Play({ apiKey, api }: PlayProps) {
   const messages = useThreadMessages(
     api.listMessages,
     selectedThreadId ? { apiKey, threadId: selectedThreadId } : "skip",
-    { initialNumItems: 20, stream: true },
+    { initialNumItems: 20 },
   );
   useEffect(() => {
     if (messages.results.length > 0 && !selectedMessageId) {
