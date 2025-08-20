@@ -4,6 +4,7 @@ import { Textarea } from "@/components/ui/textarea";
 import CollapsibleSection from "./CollapsibleSection";
 import JsonEditor from "./JsonEditor";
 import {
+  MessageDoc,
   ContextOptions,
   StorageOptions,
   vContextOptions,
@@ -18,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Agent } from "@/types";
+import MessageList from "./MessageList";
 
 interface MessageComposerProps {
   agents: Agent[] | undefined;
@@ -33,7 +35,7 @@ interface MessageComposerProps {
     context: ContextOptions | undefined,
     storage: StorageOptions | undefined,
     systemPrompt?: string,
-  ) => Promise<string | undefined>;
+  ) => Promise<{ text: string; messages: MessageDoc[] } | undefined>;
 }
 
 const MessageComposer: React.FC<MessageComposerProps> = ({
@@ -47,7 +49,7 @@ const MessageComposer: React.FC<MessageComposerProps> = ({
   onSendMessage,
 }) => {
   const [message, setMessage] = useState("");
-  const [response, setResponse] = useState<string | null>(null);
+  const [response, setResponse] = useState<string | null | MessageDoc[]>(null);
   const [isSendingMessage, setIsSendingMessage] = useState(false);
   // System prompt state
   const [systemPrompt, setSystemPrompt] = useState<string | undefined>(
@@ -76,16 +78,25 @@ const MessageComposer: React.FC<MessageComposerProps> = ({
     setIsSendingMessage(true);
     setResponse("Sending...");
     try {
-      const text = await onSendMessage(
+      const response = await onSendMessage(
         message,
         selectedAgent.name,
         contextOptions,
         storageOptions,
         isSystemPromptDirty ? systemPrompt : undefined,
       );
-      return setResponse(
-        storageOptions.saveMessages === "none" ? null : text ?? null,
-      );
+      if (!response || storageOptions.saveMessages !== "none") {
+        setResponse(null);
+      } else if (!response.messages?.length) {
+        setResponse(response.text);
+      } else {
+        setResponse(response.messages);
+      }
+    } catch (e) {
+      console.error(e);
+      const error = e instanceof Error ? e.message : (e as object).toString();
+      toast.error("Error sending message", { description: error });
+      setResponse("Error: " + error);
     } finally {
       setIsSendingMessage(false);
     }
@@ -96,7 +107,16 @@ const MessageComposer: React.FC<MessageComposerProps> = ({
       {response && (
         <div className="border rounded-md p-3 bg-muted/50">
           <h3 className="font-medium mb-2 text-sm">Response:</h3>
-          <p className="text-sm">{response}</p>
+          {Array.isArray(response) ? (
+            <MessageList
+              messages={response}
+              users={[]}
+              selectedMessageId={undefined}
+              onSelectMessage={() => {}}
+            />
+          ) : (
+            <p className="text-sm">{response}</p>
+          )}
         </div>
       )}
       <div className="flex flex-row gap-4 p-4 bg-muted/30 rounded-lg items-start">

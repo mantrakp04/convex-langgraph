@@ -58,7 +58,6 @@ describe("users", () => {
 
     expect(secondPage.page).toHaveLength(2);
     // Should not have duplicate users
-    console.log(firstPage.page, secondPage.page);
     expect(
       firstPage.page.every((user) => !secondPage.page.includes(user)),
     ).toBe(true);

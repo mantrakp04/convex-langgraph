@@ -5,7 +5,7 @@ import RightPanel from "@/components/RightPanel";
 import { useToast } from "@/components/ui/use-toast";
 import { useQuery, useAction } from "convex/react";
 import { usePaginatedQuery } from "convex-helpers/react";
-import { type PlaygroundAPI } from "@convex-dev/agent";
+import { type MessageDoc, type PlaygroundAPI } from "@convex-dev/agent";
 import { ContextMessage, Thread, Agent } from "@/types";
 import { ContextOptions, StorageOptions } from "@convex-dev/agent";
 import { useThreadMessages } from "@convex-dev/agent/react";
@@ -189,13 +189,13 @@ function Play({ apiKey, api }: PlayProps) {
     context: ContextOptions | undefined,
     storage: StorageOptions | undefined,
     system?: string,
-  ) => {
+  ): Promise<{ text: string; messages: MessageDoc[] } | undefined> => {
     if (!selectedThreadId || !selectedUserId) {
       toast({ title: "Select a thread and user first" });
       return;
     }
     try {
-      const { text } = await generateText({
+      const { text, messages } = await generateText({
         apiKey,
         agentName,
         threadId: selectedThreadId,
@@ -205,7 +205,7 @@ function Play({ apiKey, api }: PlayProps) {
         storageOptions: storage,
         system,
       });
-      return text;
+      return { text, messages };
       // Optionally, refresh messages or update UI here
     } catch (err) {
       toast({ title: "Failed to send message", description: String(err) });

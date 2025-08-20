@@ -24,7 +24,12 @@ import {
   vStreamArgs,
   syncStreams,
   vStreamMessagesReturnValue,
+  isTool,
+  extractText,
+  type MessageDoc,
 } from "./index.js";
+import { serializeNewMessagesInStep } from "../mapping.js";
+import { getModelName, getProviderName } from "./search.js";
 
 export type PlaygroundAPI = ApiFromModules<{
   playground: ReturnType<typeof definePlaygroundAPI>;
@@ -261,7 +266,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
       const namedAgent = agents.find(({ name }) => name === agentName);
       if (!namedAgent) throw new Error(`Unknown agent: ${agentName}`);
       const { agent } = namedAgent;
-      const { text } = await agent.streamText(
+      const { text, steps } = await agent.streamText(
         ctx,
         { threadId, userId },
         {
@@ -269,11 +274,38 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
           ...(system ? { system } : {}),
           ...(messages ? { messages: messages.map(deserializeMessage) } : {}),
         },
-        { contextOptions, storageOptions },
+        { contextOptions, storageOptions, saveStreamDeltas: true },
       );
-      return { text: await text };
+      const outputMessages = await Promise.all(
+        (await steps).map(async (step) => {
+          const { messages } = await serializeNewMessagesInStep(
+            ctx,
+            component,
+            step,
+            {
+              model: getModelName(agent.options.languageModel),
+              provider: getProviderName(agent.options.languageModel),
+            },
+          );
+          return messages.map((messageWithMetadata, i) => {
+            return {
+              ...messageWithMetadata,
+              tool: isTool(messageWithMetadata.message),
+              text: extractText(messageWithMetadata.message),
+              status: "success",
+              providerMetadata: {},
+              threadId,
+              _id: crypto.randomUUID(),
+              _creationTime: Date.now(),
+              order: 0,
+              stepOrder: i + 1,
+            } satisfies MessageDoc;
+          });
+        }),
+      );
+      return { text: await text, messages: outputMessages.flat() };
     },
-    returns: v.object({ text: v.string() }),
+    returns: v.object({ text: v.string(), messages: v.array(vMessageDoc) }),
   });
 
   // Fetch prompt context (action)

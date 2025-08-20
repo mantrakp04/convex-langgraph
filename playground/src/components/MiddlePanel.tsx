@@ -2,7 +2,7 @@ import React from "react";
 import MessageList from "./MessageList";
 import { Agent, Message, User } from "../types";
 import MessageComposer from "./MessageComposer";
-import { ContextOptions, StorageOptions } from "@convex-dev/agent";
+import { ContextOptions, MessageDoc, StorageOptions } from "@convex-dev/agent";
 
 interface MiddlePanelProps {
   agents: Agent[] | undefined;
@@ -22,7 +22,7 @@ interface MiddlePanelProps {
     context: ContextOptions | undefined,
     storage: StorageOptions | undefined,
     systemPrompt?: string,
-  ) => Promise<string | undefined>;
+  ) => Promise<{ text: string; messages: MessageDoc[] } | undefined>;
   selectedThreadTitle?: string;
 }
 
