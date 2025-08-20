@@ -167,14 +167,14 @@ describe("toUIMessages", () => {
     expect(uiMessages[0].text).toBe("Here's one idea. Here's another idea.");
     expect(uiMessages[0].parts.filter((p) => p.type === "reasoning")).toEqual([
       {
-        providerMetadata: undefined,
-        state: undefined,
+        providerOptions: undefined,
+        state: "done",
         text: "I'm thinking...",
         type: "reasoning",
       },
       {
-        providerMetadata: undefined,
-        state: undefined,
+        providerOptions: undefined,
+        state: "done",
         text: "I'm thinking...",
         type: "reasoning",
       },
