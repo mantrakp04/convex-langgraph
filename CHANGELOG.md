@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.3 alpha
+
+- Reintroduces the `maxSteps` config for Agents / global config.
+  This becomes the default when `stopWhen` is not provided.
+- Supports a tool response in an assistant message
+- Correctly handles providerOptions vs. providerMetadata in ser/de
+- Fix up reasoning state (breaking but shouldn't be present anywhere)
+- You can now pass `args` directly to `listMessages` instead of passing
+  threadId & paginationOpts manually.
+
 ## 0.2.2
 
 - Add \_creationTime to UIMessage (number) to replace v4's createdAt
