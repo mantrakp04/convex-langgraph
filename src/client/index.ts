@@ -227,6 +227,22 @@ export type Config = {
    * basis. To clear a default setting, you'll need to pass `undefined`.
    */
   callSettings?: CallSettings;
+  /**
+   * The maximum number of steps to allow for a single generation.
+   *
+   * For example, if an agent wants to call a tool, that call and tool response
+   * will be one step. Generating a response based on the tool call & response
+   * will be a second step.
+   * If it runs out of steps, it will return the last step result, which may
+   * not be an assistant message.
+
+   * This becomes the default value when `stopWhen` is not specified in the
+   * Agent or generation callsite.
+   * AI SDK v5 removed the `maxSteps` argument, but this is kept here for
+   * convenience and backwards compatibility.
+   * Defaults to 1.
+   */
+  maxSteps?: number;
 };
 
 export class Agent<
@@ -541,7 +557,10 @@ export class Agent<
     }
     return {
       args: {
-        stopWhen: args.stopWhen ?? this.options.stopWhen,
+        stopWhen:
+          args.stopWhen ??
+          this.options.stopWhen ??
+          stepCountIs(this.options.maxSteps ?? 1),
         ...aiArgs,
         tools,
         // abortSignal: abortController.signal,
