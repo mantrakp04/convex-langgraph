@@ -5,6 +5,7 @@
 - Add \_creationTime to UIMessage (number) to replace v4's createdAt
 - Improves the playground debugging by enabling streaming
 - Fixes .text in UIMessages when `text` wasn't set already
+- Fixes skipping failed agent tool calls in toUIMessages
 
 ## 0.2.1
 
