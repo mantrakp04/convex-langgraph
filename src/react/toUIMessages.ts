@@ -241,11 +241,7 @@ export function toUIMessages<
         }
       }
     }
-    if (
-      !message.tool &&
-      assistantMessage &&
-      assistantMessage.parts.length > 0
-    ) {
+    if (!message.tool && assistantMessage) {
       // Reset it so the next set of tool calls will create a new assistant message
       assistantMessage = undefined;
     }
