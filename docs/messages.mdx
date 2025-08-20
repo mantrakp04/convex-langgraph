@@ -215,13 +215,10 @@ import { components } from "./_generated/api";
 
 export const listThreadMessages = query({
   args: { threadId: v.string(), paginationOpts: paginationOptsValidator },
-  handler: async (ctx, { threadId, paginationOpts }) => {
-    // await authorizeThreadAccess(ctx, threadId);
+  handler: async (ctx, args) => {
+    await authorizeThreadAccess(ctx, threadId);
 
-    const paginated = await listMessages(ctx, components.agent, {
-      threadId,
-      paginationOpts,
-    });
+    const paginated = await listMessages(ctx, components.agent, args);
 
     // Here you could filter out / modify the documents
     return paginated;
@@ -246,13 +243,10 @@ export const listThreadMessages = query({
     // highlight-next-line
     streamArgs: vStreamArgs,
    },
-   handler: async (ctx, { threadId, paginationOpts, streamArgs }) => {
-     // await authorizeThreadAccess(ctx, threadId);
+   handler: async (ctx, args) => {
+     await authorizeThreadAccess(ctx, threadId);
 
-     const paginated = await listMessages(ctx, components.agent, {
-       threadId,
-       paginationOpts
-     });
+     const paginated = await listMessages(ctx, components.agent, args);
 
      // highlight-next-line
      const streams = await syncStreams(ctx, components.agent, args);

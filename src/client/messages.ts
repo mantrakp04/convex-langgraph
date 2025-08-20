@@ -28,23 +28,31 @@ import { parse } from "convex-helpers/validators";
 export async function listMessages(
   ctx: RunQueryCtx,
   component: AgentComponent,
-  args: {
+  {
+    threadId,
+    paginationOpts,
+    excludeToolMessages,
+    statuses,
+  }: {
     threadId: string;
     paginationOpts: PaginationOptions;
     excludeToolMessages?: boolean;
     statuses?: MessageStatus[];
   },
 ): Promise<PaginationResult<MessageDoc>> {
-  if (args.paginationOpts.numItems === 0) {
+  if (paginationOpts.numItems === 0) {
     return {
       page: [],
       isDone: true,
-      continueCursor: args.paginationOpts.cursor ?? "",
+      continueCursor: paginationOpts.cursor ?? "",
     };
   }
   return ctx.runQuery(component.messages.listMessagesByThreadId, {
     order: "desc",
-    ...args,
+    threadId,
+    paginationOpts,
+    excludeToolMessages,
+    statuses,
   });
 }
 
