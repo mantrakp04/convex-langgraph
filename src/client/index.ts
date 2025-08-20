@@ -514,7 +514,9 @@ export class Agent<
     const saveOutput = opts.storageOptions?.saveMessages !== "none";
     const fail = async (reason: string) => {
       if (threadId && promptMessageId) {
-        console.error("RollbackMessage", promptMessageId, reason);
+        console.error(
+          `Message failed in thread ${threadId} with promptMessageId ${promptMessageId}: ${reason}`,
+        );
       }
       if (pendingMessageId) {
         await ctx.runMutation(this.component.messages.finalizeMessage, {
