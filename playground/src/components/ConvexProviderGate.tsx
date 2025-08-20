@@ -1,4 +1,4 @@
-import { useState, useEffect, ReactNode, useMemo } from "react";
+import { useState, useEffect, ReactNode, useMemo, useCallback } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { ConvexProvider, ConvexReactClient } from "convex/react";
 
@@ -48,46 +48,49 @@ function ConvexProviderGate({ children }: { children: ReactNode }) {
   const [isValidating, setIsValidating] = useState(false);
 
   // Extracted validation logic for reuse
-  const validateDeploymentUrl = async (url: string) => {
-    if (isValidating) return;
-    setIsValidating(true);
-    if (!url) {
-      setIsValid(false);
+  const validateDeploymentUrl = useCallback(
+    async (url: string) => {
+      if (isValidating) return;
+      setIsValidating(true);
+      if (!url) {
+        setIsValid(false);
+        setInstanceName(null);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+      if (!isValidHttpUrl(url)) {
+        setIsValid(false);
+        setInstanceName(null);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+      setLoading(true);
       setInstanceName(null);
       setError(null);
-      setLoading(false);
-      return;
-    }
-    if (!isValidHttpUrl(url)) {
-      setIsValid(false);
-      setInstanceName(null);
-      setError(null);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    setInstanceName(null);
-    setError(null);
-    try {
-      const res = await fetch(url + "/instance_name");
-      if (!res.ok) throw new Error("Invalid response");
-      const name = await res.text();
-      setInstanceName(name);
-      setError(null);
-      setLoading(false);
-      setIsValid(true);
-      localStorage.setItem(DEPLOYMENT_URL_STORAGE_KEY, url);
-    } catch {
-      setInstanceName(null);
-      setError(
-        "Could not validate deployment URL. Please check the URL and try again.",
-      );
-      setLoading(false);
-      setIsValid(false);
-    } finally {
-      setIsValidating(false);
-    }
-  };
+      try {
+        const res = await fetch(url + "/instance_name");
+        if (!res.ok) throw new Error("Invalid response");
+        const name = await res.text();
+        setInstanceName(name);
+        setError(null);
+        setLoading(false);
+        setIsValid(true);
+        localStorage.setItem(DEPLOYMENT_URL_STORAGE_KEY, url);
+      } catch {
+        setInstanceName(null);
+        setError(
+          "Could not validate deployment URL. Please check the URL and try again.",
+        );
+        setLoading(false);
+        setIsValid(false);
+      } finally {
+        setIsValidating(false);
+      }
+    },
+    [isValidating],
+  );
 
   // 2. Validate deployment URL when it changes
   useEffect(() => {
@@ -96,7 +99,7 @@ function ConvexProviderGate({ children }: { children: ReactNode }) {
       return;
     }
     validateDeploymentUrl(deploymentUrl);
-  }, [deploymentUrl]);
+  }, [deploymentUrl, validateDeploymentUrl]);
 
   // Polling effect: If deploymentUrl is set but not valid, poll every 3 seconds
   useEffect(() => {
@@ -106,7 +109,7 @@ function ConvexProviderGate({ children }: { children: ReactNode }) {
       validateDeploymentUrl(deploymentUrl);
     }, 3000);
     return () => clearInterval(interval);
-  }, [deploymentUrl, isValid]);
+  }, [deploymentUrl, isValid, validateDeploymentUrl]);
 
   // 4. When user enters a new URL, update the path (which will trigger validation)
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
