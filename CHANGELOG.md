@@ -6,6 +6,7 @@
 - Improves the playground debugging by enabling streaming
 - Fixes .text in UIMessages when `text` wasn't set already
 - Fixes skipping failed agent tool calls in toUIMessages
+- Assume no stop when means only one step
 
 ## 0.2.1
 
