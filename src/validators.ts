@@ -63,7 +63,6 @@ export const vReasoningPart = v.object({
   text: v.string(),
   signature: v.optional(v.string()),
   providerOptions,
-  state: v.optional(v.union(v.literal("streaming"), v.literal("done"))),
 });
 
 export const vRedactedReasoningPart = v.object({
@@ -89,8 +88,8 @@ export const vToolCallPart = v.object({
   toolCallId: v.string(),
   toolName: v.string(),
   args: v.any(),
-  providerOptions,
   providerExecuted: v.optional(v.boolean()),
+  providerOptions,
 });
 
 const vToolResultContent = v.array(

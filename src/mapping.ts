@@ -35,7 +35,10 @@ import type { ActionCtx, AgentComponent } from "./client/types.js";
 import type { RunMutationCtx } from "./client/types.js";
 import { MAX_FILE_SIZE, storeFile } from "./client/files.js";
 import type { Infer } from "convex/values";
-import { convertUint8ArrayToBase64 } from "@ai-sdk/provider-utils";
+import {
+  convertUint8ArrayToBase64,
+  type ReasoningPart,
+} from "@ai-sdk/provider-utils";
 export type AIMessageWithoutId = Omit<AIMessage, "id">;
 
 export type SerializeUrlsAndUint8Arrays<T> = T extends URL
@@ -375,16 +378,15 @@ export function deserializeContent(content: SerializedContent): Content {
         return {
           type: part.type,
           text: part.text,
-          providerMetadata: part.providerOptions,
-          state: part.state,
-        } satisfies ReasoningUIPart;
+          providerOptions: part.providerOptions,
+        } satisfies ReasoningPart;
       case "redacted-reasoning":
         // TODO: should we just drop this?
         return {
           type: "reasoning",
           text: part.data,
-          providerMetadata: part.providerOptions,
-        } satisfies ReasoningUIPart;
+          providerOptions: part.providerOptions,
+        } satisfies ReasoningPart;
       default:
         return part satisfies Content;
     }
