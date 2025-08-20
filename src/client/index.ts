@@ -460,6 +460,9 @@ export class Agent<
       // We optimistically override the generateId function to use the pending
       // message id.
       _internal?: { generateId?: IdGenerator };
+      stopWhen?:
+        | StopCondition<TOOLS extends undefined ? AgentTools : TOOLS>
+        | Array<StopCondition<TOOLS extends undefined ? AgentTools : TOOLS>>;
     },
     options?: Options & { userId?: string | null; threadId?: string },
   ): Promise<{
@@ -538,8 +541,7 @@ export class Agent<
     }
     return {
       args: {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        stopWhen: (args as any).stopWhen ?? this.options.stopWhen,
+        stopWhen: args.stopWhen ?? this.options.stopWhen,
         ...aiArgs,
         tools,
         // abortSignal: abortController.signal,
