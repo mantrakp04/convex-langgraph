@@ -461,4 +461,99 @@ describe("toUIMessages", () => {
     );
     expect(toolCallParts).toHaveLength(0);
   });
+  it("sets text field correctly when message has many parts with text part as final part", () => {
+    const messages = [
+      baseMessageDoc({
+        text: "what time is it in paris?",
+        message: {
+          role: "user",
+          content: "what time is it in paris?",
+        },
+      }),
+      baseMessageDoc({
+        tool: true,
+        finishReason: "tool-calls",
+        text: "",
+        stepOrder: 1,
+        message: {
+          role: "assistant",
+          content: [
+            {
+              type: "reasoning",
+              text: "**Finding the Time**\n\nI've pinpointed the core task: obtaining the current time in Paris. It involves using the `dateTime` tool. I've identified \"Europe/Paris\" as the necessary timezone identifier to provide to the tool. My next step is to test the tool.\n\n\n",
+            },
+            {
+              args: {
+                timezone: "Europe/Paris",
+              },
+              type: "tool-call",
+              toolName: "dateTime",
+              toolCallId: "tool_0_dateTime",
+            },
+          ],
+        },
+        reasoning:
+          "**Finding the Time**\n\nI've pinpointed the core task: obtaining the current time in Paris. It involves using the `dateTime` tool. I've identified \"Europe/Paris\" as the necessary timezone identifier to provide to the tool. My next step is to test the tool.\n\n\n",
+        reasoningDetails: [
+          {
+            text: "**Finding the Time**\n\nI've pinpointed the core task: obtaining the current time in Paris. It involves using the `dateTime` tool. I've identified \"Europe/Paris\" as the necessary timezone identifier to provide to the tool. My next step is to test the tool.\n\n\n",
+            type: "reasoning",
+          },
+        ],
+        warnings: [],
+      }),
+      baseMessageDoc({
+        tool: true,
+        stepOrder: 2,
+        message: {
+          role: "tool",
+          content: [
+            {
+              type: "tool-result",
+              toolCallId: "tool_0_dateTime",
+              toolName: "dateTime",
+              result: {
+                type: "json",
+                value: {
+                  day: "20",
+                  hours: 16,
+                  minutes: 3,
+                  month: "August",
+                  year: "2025",
+                },
+              },
+            },
+          ],
+        },
+        sources: [],
+      }),
+      baseMessageDoc({
+        finishReason: "stop",
+        text: "The time in Paris, France is 4:03 PM on August 20, 2025.",
+        stepOrder: 3,
+        message: {
+          role: "assistant",
+          content: [
+            {
+              type: "text",
+              text: "The time in Paris, France is 4:03 PM on August 20, 2025.",
+            },
+          ],
+        },
+        reasoningDetails: [],
+        sources: [],
+        warnings: [],
+      }),
+    ];
+
+    const uiMessages = toUIMessages(messages);
+
+    expect(uiMessages).toHaveLength(2);
+    expect(uiMessages[0].role).toBe("user");
+    expect(uiMessages[0].text).toBe("what time is it in paris?");
+    expect(uiMessages[1].role).toBe("assistant");
+    expect(uiMessages[1].text).toBe(
+      "The time in Paris, France is 4:03 PM on August 20, 2025.",
+    );
+  });
 });
