@@ -8,7 +8,7 @@ import {
   useThreadMessages,
   type UIMessage,
 } from "@convex-dev/agent/react";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 function getThreadIdFromHash() {
@@ -48,23 +48,19 @@ export default function ChatStreaming() {
 
   return (
     <>
-      <div className="h-full flex flex-col bg-gray-50">
-        <header className="sticky top-0 z-10 bg-white/80 backdrop-blur-sm p-4 flex justify-between items-center border-b">
-          <h1 className="text-xl font-semibold accent-text">
-            Streaming Chat Example
-          </h1>
-        </header>
-        <main className="flex-1 flex flex-col">
-          {threadId ? (
-            <>
-              <Story threadId={threadId} reset={resetThread} />
-            </>
-          ) : (
-            <div className="flex-1 flex items-center justify-center text-gray-500">
-              Loading...
-            </div>
-          )}
-        </main>
+      <header className="sticky top-0 h-16 z-10 bg-white/80 backdrop-blur-sm p-4 flex justify-between items-center border-b">
+        <h1 className="text-xl font-semibold accent-text">
+          Streaming Chat Example
+        </h1>
+      </header>
+      <div className="h-[calc(100vh-8rem)] flex flex-col bg-gray-50">
+        {threadId ? (
+          <Story threadId={threadId} reset={resetThread} />
+        ) : (
+          <div className="flex-1 flex items-center justify-center text-gray-500">
+            Loading...
+          </div>
+        )}
         <Toaster />
       </div>
     </>
@@ -86,6 +82,15 @@ function Story({ threadId, reset }: { threadId: string; reset: () => void }) {
     api.chat.streamAbort.abortStreamByOrder,
   );
   const [prompt, setPrompt] = useState("Tell me a story");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages.results]);
 
   function onSendClicked() {
     if (prompt.trim() === "") return;
@@ -95,7 +100,7 @@ function Story({ threadId, reset }: { threadId: string; reset: () => void }) {
 
   return (
     <>
-      <div className="flex-1 flex flex-col h-full max-w-4xl mx-auto w-full">
+      <div className="h-full flex flex-col max-w-4xl mx-auto w-full">
         {/* Messages area - scrollable */}
         <div className="flex-1 overflow-y-auto p-6">
           {messages.results?.length > 0 ? (
@@ -103,6 +108,7 @@ function Story({ threadId, reset }: { threadId: string; reset: () => void }) {
               {toUIMessages(messages.results ?? []).map((m) => (
                 <Message key={m.key} message={m} />
               ))}
+              <div ref={messagesEndRef} />
             </div>
           ) : (
             <div className="flex items-center justify-center h-full text-gray-500">
