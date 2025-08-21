@@ -51,9 +51,9 @@ export function useSmoothText(
       smoothState.current.cursor === 0 &&
       smoothState.current.initialLength === 0
     ) {
-      smoothState.current.cursor = visibleText.length;
+      smoothState.current.cursor = text.length;
       smoothState.current.start = Date.now();
-      smoothState.current.initialLength = visibleText.length;
+      smoothState.current.initialLength = text.length;
       smoothState.current.charsPerMs = charsPerSec / 1000;
     } else {
       const latestCharsPerMs =
