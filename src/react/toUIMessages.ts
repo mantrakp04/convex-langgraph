@@ -72,9 +72,14 @@ function groupAssistantMessages(
   messages: (MessageDoc & { streaming?: boolean })[],
 ): Group[] {
   const groups: Group[] = [];
-  let currentAssistantGroup: (MessageDoc & { streaming?: boolean })[] = [];
 
-  for (const message of messages) {
+  // Sort messages by order and stepOrder first to handle out-of-order arrivals
+  const sortedMessages = sorted(messages);
+
+  let currentAssistantGroup: (MessageDoc & { streaming?: boolean })[] = [];
+  let currentOrder: number | undefined;
+
+  for (const message of sortedMessages) {
     const coreMessage = message.message && deserializeMessage(message.message);
     if (!coreMessage) continue;
 
@@ -86,6 +91,7 @@ function groupAssistantMessages(
           messages: currentAssistantGroup,
         });
         currentAssistantGroup = [];
+        currentOrder = undefined;
       }
       // Add singleton group
       groups.push({
@@ -93,15 +99,31 @@ function groupAssistantMessages(
         message,
       });
     } else {
+      // Assistant or tool message
+
+      // Start new group if order changes or this is the first assistant/tool message
+      if (currentOrder !== undefined && message.order !== currentOrder) {
+        if (currentAssistantGroup.length > 0) {
+          groups.push({
+            role: "assistant",
+            messages: currentAssistantGroup,
+          });
+          currentAssistantGroup = [];
+        }
+      }
+
+      currentOrder = message.order;
       currentAssistantGroup.push(message);
 
       // End group if this is an assistant message without tool calls
+      // But only if we're processing messages in order (which we are now due to sorting)
       if (coreMessage.role === "assistant" && !message.tool) {
         groups.push({
           role: "assistant",
           messages: currentAssistantGroup,
         });
         currentAssistantGroup = [];
+        currentOrder = undefined;
       }
     }
   }

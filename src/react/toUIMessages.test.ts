@@ -556,4 +556,95 @@ describe("toUIMessages", () => {
       "The time in Paris, France is 4:03 PM on August 20, 2025.",
     );
   });
+
+  it("handles messages in reverse order (assistant response, then tool response, then tool call)", () => {
+    const messages = [
+      // Final assistant response comes first (stepOrder 3) - no tool flag since it's the final message
+      baseMessageDoc({
+        _id: "msg3",
+        order: 1,
+        stepOrder: 3,
+        finishReason: "stop",
+        text: "The result is 42.",
+        tool: false, // This is the final message without tool calls
+        message: {
+          role: "assistant",
+          content: [
+            {
+              type: "text",
+              text: "The result is 42.",
+            },
+          ],
+        },
+      }),
+      // Tool result comes second (stepOrder 2)
+      baseMessageDoc({
+        _id: "msg2",
+        order: 1,
+        stepOrder: 2,
+        tool: true,
+        message: {
+          role: "tool",
+          content: [
+            {
+              type: "tool-result",
+              toolCallId: "call1",
+              toolName: "calculator",
+              result: "42",
+            },
+          ],
+        },
+      }),
+      // Tool call comes last (stepOrder 1)
+      baseMessageDoc({
+        _id: "msg1",
+        order: 1,
+        stepOrder: 1,
+        tool: true,
+        text: "",
+        message: {
+          role: "assistant",
+          content: [
+            {
+              type: "tool-call",
+              toolName: "calculator",
+              toolCallId: "call1",
+              args: { operation: "add", a: 40, b: 2 },
+            },
+          ],
+        },
+      }),
+    ];
+
+    const uiMessages = toUIMessages(messages);
+
+    expect(uiMessages).toHaveLength(1);
+    expect(uiMessages[0].role).toBe("assistant");
+
+    // Should concatenate text from all messages (only the final response has text)
+    expect(uiMessages[0].text).toBe("The result is 42.");
+
+    // Should use first message's fields (msg1 with stepOrder 1)
+    expect(uiMessages[0].id).toBe("msg1");
+    expect(uiMessages[0].order).toBe(1);
+    expect(uiMessages[0].stepOrder).toBe(1);
+
+    // Should have both tool call and result parts
+    const toolParts = uiMessages[0].parts.filter(
+      (p) => p.type === "tool-calculator",
+    );
+    expect(toolParts).toHaveLength(1);
+    expect(toolParts[0]).toMatchObject({
+      type: "tool-calculator",
+      toolCallId: "call1",
+      state: "output-available",
+      input: { operation: "add", a: 40, b: 2 },
+      output: "42",
+    });
+
+    // Should also have text part
+    const textParts = uiMessages[0].parts.filter((p) => p.type === "text");
+    expect(textParts).toHaveLength(1);
+    expect(textParts[0].text).toBe("The result is 42.");
+  });
 });
