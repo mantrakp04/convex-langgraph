@@ -112,6 +112,8 @@ export {
   deserializeMessage,
   serializeDataOrUrl,
   serializeMessage,
+  guessMimeType,
+  toUIFilePart,
 } from "../mapping.js";
 // NOTE: these are also exported via @convex-dev/agent/validators
 // a future version may put them all here or move these over there
@@ -127,6 +129,11 @@ export {
   vToolMessage,
   vUsage,
   vUserMessage,
+  vSource,
+  vContent,
+  type SourcePart,
+  type Message,
+  type Usage,
 } from "../validators.js";
 export type { ToolCtx } from "./createTool.js";
 export {
@@ -170,7 +177,6 @@ export type {
   SyncStreamsReturnValue,
   Thread,
   ThreadDoc,
-  Usage,
   UsageHandler,
 };
 

@@ -12,8 +12,9 @@ import type {
 } from "ai";
 import { extractText, type MessageDoc } from "../client/index.js";
 import { deserializeMessage, toUIFilePart } from "../mapping.js";
-import type { MessageStatus } from "../validators.js";
+import type { MessageStatus, SourcePart, vSource } from "../validators.js";
 import { sorted } from "../shared.js";
+import type { Infer } from "convex/values";
 
 export type UIMessage<
   METADATA = unknown,
@@ -388,29 +389,23 @@ function createAssistantUIMessage<
           }
           break;
         }
+        default: {
+          const maybeSource = contentPart as SourcePart;
+          if (maybeSource.type === "source") {
+            allParts.push(toSourcePart(maybeSource));
+          } else {
+            console.warn(
+              "Unknown content part type for assistant",
+              contentPart,
+            );
+          }
+        }
       }
     }
 
     // Add source parts
     for (const source of message.sources ?? []) {
-      if (source.sourceType === "url") {
-        allParts.push({
-          type: "source-url",
-          url: source.url!,
-          sourceId: source.id,
-          providerMetadata: message.providerMetadata,
-          title: source.title,
-        } satisfies SourceUrlUIPart);
-      } else {
-        allParts.push({
-          type: "source-document",
-          mediaType: source.mediaType,
-          sourceId: source.id,
-          title: source.title,
-          filename: source.filename,
-          providerMetadata: message.providerMetadata,
-        } satisfies SourceDocumentUIPart);
-      }
+      allParts.push(toSourcePart(source));
     }
   }
 
@@ -421,4 +416,26 @@ function createAssistantUIMessage<
     status,
     parts: allParts,
   };
+}
+
+function toSourcePart(
+  part: SourcePart | Infer<typeof vSource>,
+): SourceUrlUIPart | SourceDocumentUIPart {
+  if (part.sourceType === "url") {
+    return {
+      type: "source-url",
+      url: part.url,
+      sourceId: part.id,
+      providerMetadata: part.providerMetadata,
+      title: part.title,
+    } satisfies SourceUrlUIPart;
+  }
+  return {
+    type: "source-document",
+    mediaType: part.mediaType,
+    sourceId: part.id,
+    title: part.title,
+    filename: part.filename,
+    providerMetadata: part.providerMetadata,
+  } satisfies SourceDocumentUIPart;
 }

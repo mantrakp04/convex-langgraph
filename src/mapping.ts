@@ -32,6 +32,7 @@ import {
   type vTextPart,
   type vToolCallPart,
   type vToolResultPart,
+  type SourcePart,
 } from "./validators.js";
 import type { ActionCtx, AgentComponent } from "./client/types.js";
 import type { RunMutationCtx } from "./client/types.js";
@@ -436,7 +437,7 @@ export function deserializeContent(
             : undefined,
         } satisfies ReasoningPart;
       case "source":
-        return part;
+        return part satisfies SourcePart;
       default:
         return part satisfies Content;
     }

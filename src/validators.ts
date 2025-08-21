@@ -108,6 +108,7 @@ export const vSourcePart = v.union(
     providerMetadata,
   }),
 );
+export type SourcePart = Infer<typeof vSourcePart>;
 
 export const vToolCallPart = v.object({
   type: v.literal("tool-call"),
