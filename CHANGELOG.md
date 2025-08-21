@@ -2,17 +2,19 @@
 
 ## 0.2.4 alpha
 
+- No longer fails previous messages by default when generating without a
+  promptMessageId
 - Fixes double-submitting the user prompt when using promptMessageId
 
 ## 0.2.3
 
-- Reintroduces the `maxSteps` config for Agents / global config.
-  This becomes the default when `stopWhen` is not provided.
+- Reintroduces the `maxSteps` config for Agents / global config. This becomes
+  the default when `stopWhen` is not provided.
 - Supports a tool response in an assistant message
 - Correctly handles providerOptions vs. providerMetadata in ser/de
 - Fix up reasoning state (breaking but shouldn't be present anywhere)
-- You can now pass `args` directly to `listMessages` instead of passing
-  threadId & paginationOpts manually.
+- You can now pass `args` directly to `listMessages` instead of passing threadId
+  & paginationOpts manually.
 - useSmoothText is even smoother
 - toUIMessage is much better - works in both directions with any ordering
 - Only embeds the first 10k of characters for vector search.
@@ -27,9 +29,9 @@
 
 ## 0.2.1
 
-- Defaults to consuming the stream when saving deltas, so you don't have to
-  do `result.consumeStream()`. You can pass `returnImmediately: true` if you
-  want to save deltas and also process the stream yourself.
+- Defaults to consuming the stream when saving deltas, so you don't have to do
+  `result.consumeStream()`. You can pass `returnImmediately: true` if you want
+  to save deltas and also process the stream yourself.
 - Agent name is now required.
 - You can specify default `providerOption`s at the Agent level.
 - The `agent` param in `ToolCtx` is now optional to make it easier to manually
@@ -37,9 +39,9 @@
 
 ## 0.2.0 AI SDK v5 support
 
-Adds support for the AI SDK v5, and associated versions of LLM providers.
-This involves some breaking changes associated with the changes to the UI,
-but the data at rest is backwards compatible.
+Adds support for the AI SDK v5, and associated versions of LLM providers. This
+involves some breaking changes associated with the changes to the UI, but the
+data at rest is backwards compatible.
 
 - Supports LanguageModel: a string for gateway or LanguageModelV2.
 - No longer returns lastMessageId when saving message, instead it returns all
@@ -53,17 +55,16 @@ but the data at rest is backwards compatible.
 - There's a `.start` function you can use to call the AI SDK directly and still
   get all the message management benefits.
 - More functions are supported without using an Agent class.
-- The UIMessage is now based on the v5 UIMessage, and the MessageDoc is
-  based on the ModelMessage. The data at rest has not changed - backwards
-  compatible.
-- Add a `.text` field to the toUIMessages return value (this is the
-  UIMessage exported by the Agent library) to replace the `content` field.
-- The `id` is no longer used / configurable when saving messages.
-  Reach out if you were using it - the normal message ID should suffice.
+- The UIMessage is now based on the v5 UIMessage, and the MessageDoc is based on
+  the ModelMessage. The data at rest has not changed - backwards compatible.
+- Add a `.text` field to the toUIMessages return value (this is the UIMessage
+  exported by the Agent library) to replace the `content` field.
+- The `id` is no longer used / configurable when saving messages. Reach out if
+  you were using it - the normal message ID should suffice.
 - `maxRetries` option has been moved into a general `callSettings` config on
   Agent, and in general has been renamed to `stopWhen` in v5.
-- Saving pending messages now requires passing status: "pending" instead of
-  a top-level pending: true. Most people don't use this feature currently.
+- Saving pending messages now requires passing status: "pending" instead of a
+  top-level pending: true. Most people don't use this feature currently.
 - A pending message is now created by default when generating / streaming text /
   objects, representing the message that is being generated. It will attempt to
   only create pending messages when it anticipates generating a response.
@@ -77,7 +78,8 @@ but the data at rest is backwards compatible.
 - definePlaygroundAPI uses the new interface functions
 - Add generic types on UIMessages (credit: ethan-huo)
 - Deleting returns the order range (credit: ethan-huo)
-- Allow specifying a custom `ctx` type for use in tools created with `createTool`
+- Allow specifying a custom `ctx` type for use in tools created with
+  `createTool`
 - Fix resolution of `definePlaygroundApi`
 - Fix: ReactNative can do optimistic updates even if it has crypto defined
 - Fix: getMessageByIds correctly serializes non-user messages
@@ -185,8 +187,8 @@ but the data at rest is backwards compatible.
 - Image and file handling! It now auto-saves large input messages, and has an
   API to save and get metadata about files, as well as automatic reference
   counting for files being used in messages, so you can vacuum unused files.
-  Check out [examples/files-images](./example/convex/files), which also
-  includes an example generating an image and saving it in messages one-shot.
+  Check out [examples/files-images](./example/convex/files), which also includes
+  an example generating an image and saving it in messages one-shot.
 - Adds a `rawRequestResponseHandler` argument to the Agent that is a good spot
   to log or save all raw request/responses if you're trying to debug model
   behavior, headers, etc.
