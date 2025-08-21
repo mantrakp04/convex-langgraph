@@ -58,7 +58,6 @@ import {
   type MessageWithMetadata,
   type ProviderMetadata,
   type StreamArgs,
-  type Usage,
 } from "../validators.js";
 import { createTool, wrapTools, type ToolCtx } from "./createTool.js";
 import {

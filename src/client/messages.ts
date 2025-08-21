@@ -126,7 +126,7 @@ export async function saveMessages(
         const base = args.metadata?.[i];
         const allFileIds = [...(base?.fileIds ?? [])];
         if (fileIds) allFileIds.push(...fileIds);
-    
+
         return parse(vMessageWithMetadata, {
           ...base,
           message,
