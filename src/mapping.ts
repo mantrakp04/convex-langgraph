@@ -348,19 +348,29 @@ export function deserializeContent(content: SerializedContent): Content {
     return content;
   }
   return content.map((part) => {
+    const metadata: {
+      providerOptions?: ProviderOptions;
+      providerMetadata?: ProviderMetadata;
+    } = {};
+    if ("providerOptions" in part) {
+      metadata.providerOptions = part.providerOptions;
+    }
+    if ("providerMetadata" in part) {
+      metadata.providerMetadata = part.providerMetadata;
+    }
     switch (part.type) {
       case "text":
         return {
           type: part.type,
           text: part.text,
-          providerOptions: part.providerOptions,
+          ...metadata,
         } satisfies TextPart;
       case "image":
         return {
           type: part.type,
           image: deserializeUrl(part.image),
           mediaType: part.mimeType,
-          providerOptions: part.providerOptions,
+          ...metadata,
         } satisfies ImagePart;
       case "file":
         return {
@@ -368,7 +378,7 @@ export function deserializeContent(content: SerializedContent): Content {
           data: deserializeUrl(part.data),
           filename: part.filename,
           mediaType: part.mimeType,
-          providerOptions: part.providerOptions,
+          ...metadata,
         } satisfies FilePart;
       case "tool-call":
         return {
@@ -377,7 +387,7 @@ export function deserializeContent(content: SerializedContent): Content {
           providerExecuted: part.providerExecuted,
           toolCallId: part.toolCallId,
           toolName: part.toolName,
-          providerOptions: part.providerOptions,
+          ...metadata,
         } satisfies ToolCallPart;
       case "tool-result":
         return {
@@ -385,20 +395,20 @@ export function deserializeContent(content: SerializedContent): Content {
           output: part.result ?? null,
           toolCallId: part.toolCallId,
           toolName: part.toolName,
-          providerOptions: part.providerOptions,
+          ...metadata,
         } satisfies ToolResultPart;
       case "reasoning":
         return {
           type: part.type,
           text: part.text,
-          providerOptions: part.providerOptions,
+          ...metadata,
         } satisfies ReasoningPart;
       case "redacted-reasoning":
         // TODO: should we just drop this?
         return {
           type: "reasoning",
           text: part.data,
-          providerOptions: part.providerOptions,
+          ...metadata,
         } satisfies ReasoningPart;
       default:
         return part satisfies Content;
