@@ -36,215 +36,346 @@ export function toUIMessages<
   messages: (MessageDoc & { streaming?: boolean })[],
 ): UIMessage<METADATA, DATA_PARTS, TOOLS>[] {
   const uiMessages: UIMessage<METADATA, DATA_PARTS, TOOLS>[] = [];
-  let assistantMessage: UIMessage<METADATA, DATA_PARTS, TOOLS> | undefined;
+
+  // Group assistant and tool messages together
+  const assistantGroups = groupAssistantMessages(messages);
+
+  for (const group of assistantGroups) {
+    const message = group[0];
+    const coreMessage = message.message && deserializeMessage(message.message);
+    if (!coreMessage) continue;
+
+    if (coreMessage.role === "system") {
+      uiMessages.push(createSystemUIMessage(message));
+    } else if (coreMessage.role === "user") {
+      uiMessages.push(createUserUIMessage(message));
+    } else {
+      // Assistant/tool group
+      uiMessages.push(createAssistantUIMessage(group));
+    }
+  }
+
+  return uiMessages;
+}
+
+function groupAssistantMessages(
+  messages: (MessageDoc & { streaming?: boolean })[],
+) {
+  const groups: (MessageDoc & { streaming?: boolean })[][] = [];
+  let currentAssistantGroup: (MessageDoc & { streaming?: boolean })[] = [];
+
   for (const message of messages) {
     const coreMessage = message.message && deserializeMessage(message.message);
-    const text =
-      message.text || ((message.message && extractText(message.message)) ?? "");
-    const content = coreMessage?.content;
-    const nonStringContent =
-      content && typeof content !== "string" ? content : [];
     if (!coreMessage) continue;
-    const common = {
-      id: message._id,
-      _creationTime: message._creationTime,
-      order: message.order,
-      stepOrder: message.stepOrder,
-      status: message.streaming ? ("streaming" as const) : message.status,
-      key: `${message.threadId}-${message.order}-${message.stepOrder}`,
-      text,
-    } satisfies Partial<UIMessage<METADATA, DATA_PARTS, TOOLS>>;
-    const partCommon = {
-      state: message.streaming ? ("streaming" as const) : ("done" as const),
-      ...(message.providerMetadata
-        ? { providerMetadata: message.providerMetadata }
-        : {}),
-    };
-    if (coreMessage.role === "system") {
-      uiMessages.push({
-        ...common,
-        role: "system",
-        agentName: message.agentName,
-        parts: [{ type: "text", text, ...partCommon } satisfies TextUIPart],
-      });
-    } else if (coreMessage.role === "user") {
-      const parts: UIMessage<METADATA, DATA_PARTS, TOOLS>["parts"] = [];
-      if (text && !nonStringContent.length) {
-        parts.push({ type: "text", text });
+
+    if (coreMessage.role === "user" || coreMessage.role === "system") {
+      // Finish any current assistant group
+      if (currentAssistantGroup.length > 0) {
+        groups.push(currentAssistantGroup);
+        currentAssistantGroup = [];
       }
-      nonStringContent.forEach((contentPart) => {
-        switch (contentPart.type) {
-          case "text":
-            parts.push({ type: "text", text: contentPart.text, ...partCommon });
-            break;
-          case "file":
-          case "image":
-            parts.push(toUIFilePart(contentPart));
-            break;
-        }
-      });
-      uiMessages.push({ ...common, role: "user", parts });
+      // Add singleton group
+      groups.push([message]);
     } else {
-      if (coreMessage.role === "tool" && !assistantMessage) {
+      // Assistant or tool message
+      if (coreMessage.role === "tool" && currentAssistantGroup.length === 0) {
         console.warn(
           "Tool message without preceding assistant message.. skipping",
           message,
         );
         continue;
       }
-      if (!assistantMessage) {
-        assistantMessage = {
-          ...common,
-          role: "assistant",
-          agentName: message.agentName,
-          parts: [],
-        };
-        uiMessages.push(assistantMessage);
-      } else {
-        assistantMessage.status = message.streaming
-          ? "streaming"
-          : message.status;
+
+      currentAssistantGroup.push(message);
+
+      // End group if this is an assistant message without tool calls
+      if (coreMessage.role === "assistant" && !message.tool) {
+        groups.push(currentAssistantGroup);
+        currentAssistantGroup = [];
       }
-      // update it to the last message's id
-      assistantMessage.id = message._id;
-      if (
-        message.reasoning &&
-        !nonStringContent.some((c) => c.type === "reasoning")
-      ) {
-        assistantMessage.parts.push({
-          type: "reasoning",
-          text: message.reasoning,
-          ...partCommon,
-        } satisfies ReasoningUIPart);
-      }
-      if (message.text && !nonStringContent.length) {
-        assistantMessage.parts.push({
-          type: "text",
-          text: message.text,
-          ...partCommon,
-        } satisfies TextUIPart);
-      }
-      for (const contentPart of nonStringContent) {
-        switch (contentPart.type) {
-          case "text":
-            assistantMessage.parts.push({
-              ...partCommon,
-              ...contentPart,
-            } satisfies TextUIPart);
-            break;
-          case "reasoning":
-            assistantMessage.parts.push({
-              ...partCommon,
-              ...contentPart,
-            } satisfies ReasoningUIPart);
-            break;
-          case "file":
-          case "image":
-            assistantMessage.parts.push(toUIFilePart(contentPart));
-            break;
-          case "tool-call": {
-            assistantMessage.parts.push({
-              type: "step-start",
-            } satisfies StepStartUIPart);
-            const toolPart: ToolUIPart<TOOLS> = {
-              type: `tool-${contentPart.toolName as keyof TOOLS & string}`,
-              toolCallId: contentPart.toolCallId,
-              input: contentPart.input as DeepPartial<
-                TOOLS[keyof TOOLS & string]["input"]
-              >,
-              providerExecuted: contentPart.providerExecuted,
-              ...(message.streaming
-                ? { state: "input-streaming" }
-                : {
-                    state: "input-available",
-                    callProviderMetadata: message.providerMetadata,
-                  }),
-            };
-            assistantMessage.parts.push(toolPart);
-            break;
-          }
-          case "tool-result": {
-            const call = assistantMessage.parts.find(
-              (part) =>
-                part.type === `tool-${contentPart.toolName}` &&
-                "toolCallId" in part &&
-                part.toolCallId === contentPart.toolCallId,
-            ) as ToolUIPart | undefined;
-            if (call) {
-              if (message.error) {
-                call.state = "output-error";
-                call.errorText = message.error;
-                call.output = contentPart.output;
-              } else {
-                call.state = "output-available";
-                call.output =
-                  contentPart.output?.type === "json"
-                    ? contentPart.output.value
-                    : contentPart.output;
-                // Technically we could pull this from the doc.message
-                // but the ModelMessage doesn't have it
-                // call.providerExecuted = contentPart.providerExecuted;
-              }
-            } else {
-              console.warn(
-                "Tool result without preceding tool call.. adding anyways",
-                contentPart,
-              );
-              if (message.error) {
-                assistantMessage.parts.push({
-                  type: `tool-${contentPart.toolName}`,
-                  toolCallId: contentPart.toolCallId,
-                  state: "output-error",
-                  input: undefined,
-                  errorText: message.error,
-                  // Technically we could pull this from the doc.message
-                  // but the ModelMessage doesn't have it
-                  // providerExecuted: contentPart.providerExecuted,
-                  callProviderMetadata: message.providerMetadata,
-                } satisfies ToolUIPart<TOOLS>);
-              } else {
-                assistantMessage.parts.push({
-                  type: `tool-${contentPart.toolName}`,
-                  toolCallId: contentPart.toolCallId,
-                  state: "output-available",
-                  input: undefined,
-                  output:
-                    contentPart.output?.type === "json"
-                      ? contentPart.output.value
-                      : contentPart.output,
-                  callProviderMetadata: message.providerMetadata,
-                } satisfies ToolUIPart<TOOLS>);
-              }
-            }
-            break;
-          }
-        }
-      }
-      for (const source of message.sources ?? []) {
-        if (source.sourceType === "url") {
-          assistantMessage.parts.push({
-            type: "source-url",
-            url: source.url!,
-            sourceId: source.id,
-            providerMetadata: message.providerMetadata,
-            title: source.title,
-          } satisfies SourceUrlUIPart);
-        } else {
-          assistantMessage.parts.push({
-            type: "source-document",
-            mediaType: source.mediaType,
-            sourceId: source.id,
-            title: source.title,
-            filename: source.filename,
-            providerMetadata: message.providerMetadata,
-          } satisfies SourceDocumentUIPart);
-        }
-      }
-    }
-    if (!message.tool && assistantMessage) {
-      // Reset it so the next set of tool calls will create a new assistant message
-      assistantMessage = undefined;
     }
   }
-  return uiMessages;
+
+  // Add any remaining assistant group
+  if (currentAssistantGroup.length > 0) {
+    groups.push(currentAssistantGroup);
+  }
+
+  return groups;
+}
+
+function createSystemUIMessage<
+  METADATA = unknown,
+  DATA_PARTS extends UIDataTypes = UIDataTypes,
+  TOOLS extends UITools = UITools,
+>(
+  message: MessageDoc & { streaming?: boolean },
+): UIMessage<METADATA, DATA_PARTS, TOOLS> {
+  const text =
+    message.text || ((message.message && extractText(message.message)) ?? "");
+  const partCommon = {
+    state: message.streaming ? ("streaming" as const) : ("done" as const),
+    ...(message.providerMetadata
+      ? { providerMetadata: message.providerMetadata }
+      : {}),
+  };
+
+  return {
+    id: message._id,
+    _creationTime: message._creationTime,
+    order: message.order,
+    stepOrder: message.stepOrder,
+    status: message.streaming ? ("streaming" as const) : message.status,
+    key: `${message.threadId}-${message.order}-${message.stepOrder}`,
+    text,
+    role: "system",
+    agentName: message.agentName,
+    parts: [{ type: "text", text, ...partCommon } satisfies TextUIPart],
+  };
+}
+
+function createUserUIMessage<
+  METADATA = unknown,
+  DATA_PARTS extends UIDataTypes = UIDataTypes,
+  TOOLS extends UITools = UITools,
+>(
+  message: MessageDoc & { streaming?: boolean },
+): UIMessage<METADATA, DATA_PARTS, TOOLS> {
+  const coreMessage = deserializeMessage(message.message!);
+  const text =
+    message.text || ((message.message && extractText(message.message)) ?? "");
+  const content = coreMessage.content;
+  const nonStringContent =
+    content && typeof content !== "string" ? content : [];
+
+  const partCommon = {
+    state: message.streaming ? ("streaming" as const) : ("done" as const),
+    ...(message.providerMetadata
+      ? { providerMetadata: message.providerMetadata }
+      : {}),
+  };
+
+  const parts: UIMessage<METADATA, DATA_PARTS, TOOLS>["parts"] = [];
+  if (text && !nonStringContent.length) {
+    parts.push({ type: "text", text });
+  }
+  nonStringContent.forEach((contentPart) => {
+    switch (contentPart.type) {
+      case "text":
+        parts.push({ type: "text", text: contentPart.text, ...partCommon });
+        break;
+      case "file":
+      case "image":
+        parts.push(toUIFilePart(contentPart));
+        break;
+    }
+  });
+
+  return {
+    id: message._id,
+    _creationTime: message._creationTime,
+    order: message.order,
+    stepOrder: message.stepOrder,
+    status: message.streaming ? ("streaming" as const) : message.status,
+    key: `${message.threadId}-${message.order}-${message.stepOrder}`,
+    text,
+    role: "user",
+    parts,
+  };
+}
+
+function createAssistantUIMessage<
+  METADATA = unknown,
+  DATA_PARTS extends UIDataTypes = UIDataTypes,
+  TOOLS extends UITools = UITools,
+>(
+  group: (MessageDoc & { streaming?: boolean })[],
+): UIMessage<METADATA, DATA_PARTS, TOOLS> {
+  const firstMessage = group[0];
+
+  // Use first message for special fields
+  const common = {
+    id: firstMessage._id,
+    _creationTime: firstMessage._creationTime,
+    order: firstMessage.order,
+    stepOrder: firstMessage.stepOrder,
+    key: `${firstMessage.threadId}-${firstMessage.order}-${firstMessage.stepOrder}`,
+    agentName: firstMessage.agentName,
+  };
+
+  // Concatenate text from all messages in group
+  const allText = group
+    .map((msg) => msg.text || ((msg.message && extractText(msg.message)) ?? ""))
+    .filter(Boolean)
+    .join("");
+
+  // Get status from last message
+  const lastMessage = group[group.length - 1];
+  const status = lastMessage.streaming
+    ? ("streaming" as const)
+    : lastMessage.status;
+
+  // Collect all parts from all messages
+  const allParts: UIMessage<METADATA, DATA_PARTS, TOOLS>["parts"] = [];
+
+  for (const message of group) {
+    const coreMessage = message.message && deserializeMessage(message.message);
+    if (!coreMessage) continue;
+
+    const content = coreMessage.content;
+    const nonStringContent =
+      content && typeof content !== "string" ? content : [];
+    const text =
+      message.text || ((message.message && extractText(message.message)) ?? "");
+
+    const partCommon = {
+      state: message.streaming ? ("streaming" as const) : ("done" as const),
+      ...(message.providerMetadata
+        ? { providerMetadata: message.providerMetadata }
+        : {}),
+    };
+
+    // Add reasoning parts
+    if (
+      message.reasoning &&
+      !nonStringContent.some((c) => c.type === "reasoning")
+    ) {
+      allParts.push({
+        type: "reasoning",
+        text: message.reasoning,
+        ...partCommon,
+      } satisfies ReasoningUIPart);
+    }
+
+    // Add text parts if no structured content
+    if (text && !nonStringContent.length) {
+      allParts.push({
+        type: "text",
+        text: text,
+        ...partCommon,
+      } satisfies TextUIPart);
+    }
+
+    // Add all structured content parts
+    for (const contentPart of nonStringContent) {
+      switch (contentPart.type) {
+        case "text":
+          allParts.push({
+            ...partCommon,
+            ...contentPart,
+          } satisfies TextUIPart);
+          break;
+        case "reasoning":
+          allParts.push({
+            ...partCommon,
+            ...contentPart,
+          } satisfies ReasoningUIPart);
+          break;
+        case "file":
+        case "image":
+          allParts.push(toUIFilePart(contentPart));
+          break;
+        case "tool-call": {
+          allParts.push({
+            type: "step-start",
+          } satisfies StepStartUIPart);
+          const toolPart: ToolUIPart<TOOLS> = {
+            type: `tool-${contentPart.toolName as keyof TOOLS & string}`,
+            toolCallId: contentPart.toolCallId,
+            input: contentPart.input as DeepPartial<
+              TOOLS[keyof TOOLS & string]["input"]
+            >,
+            providerExecuted: contentPart.providerExecuted,
+            ...(message.streaming
+              ? { state: "input-streaming" }
+              : {
+                  state: "input-available",
+                  callProviderMetadata: message.providerMetadata,
+                }),
+          };
+          allParts.push(toolPart);
+          break;
+        }
+        case "tool-result": {
+          const call = allParts.find(
+            (part) =>
+              part.type === `tool-${contentPart.toolName}` &&
+              "toolCallId" in part &&
+              part.toolCallId === contentPart.toolCallId,
+          ) as ToolUIPart | undefined;
+          if (call) {
+            if (message.error) {
+              call.state = "output-error";
+              call.errorText = message.error;
+              call.output = contentPart.output;
+            } else {
+              call.state = "output-available";
+              call.output =
+                contentPart.output?.type === "json"
+                  ? contentPart.output.value
+                  : contentPart.output;
+            }
+          } else {
+            console.warn(
+              "Tool result without preceding tool call.. adding anyways",
+              contentPart,
+            );
+            if (message.error) {
+              allParts.push({
+                type: `tool-${contentPart.toolName}`,
+                toolCallId: contentPart.toolCallId,
+                state: "output-error",
+                input: undefined,
+                errorText: message.error,
+                callProviderMetadata: message.providerMetadata,
+              } satisfies ToolUIPart<TOOLS>);
+            } else {
+              allParts.push({
+                type: `tool-${contentPart.toolName}`,
+                toolCallId: contentPart.toolCallId,
+                state: "output-available",
+                input: undefined,
+                output:
+                  contentPart.output?.type === "json"
+                    ? contentPart.output.value
+                    : contentPart.output,
+                callProviderMetadata: message.providerMetadata,
+              } satisfies ToolUIPart<TOOLS>);
+            }
+          }
+          break;
+        }
+      }
+    }
+
+    // Add source parts
+    for (const source of message.sources ?? []) {
+      if (source.sourceType === "url") {
+        allParts.push({
+          type: "source-url",
+          url: source.url!,
+          sourceId: source.id,
+          providerMetadata: message.providerMetadata,
+          title: source.title,
+        } satisfies SourceUrlUIPart);
+      } else {
+        allParts.push({
+          type: "source-document",
+          mediaType: source.mediaType,
+          sourceId: source.id,
+          title: source.title,
+          filename: source.filename,
+          providerMetadata: message.providerMetadata,
+        } satisfies SourceDocumentUIPart);
+      }
+    }
+  }
+
+  return {
+    ...common,
+    role: "assistant",
+    text: allText,
+    status,
+    parts: allParts,
+  };
 }
