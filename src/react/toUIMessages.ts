@@ -35,33 +35,42 @@ export function toUIMessages<
 >(
   messages: (MessageDoc & { streaming?: boolean })[],
 ): UIMessage<METADATA, DATA_PARTS, TOOLS>[] {
-  const uiMessages: UIMessage<METADATA, DATA_PARTS, TOOLS>[] = [];
-
   // Group assistant and tool messages together
   const assistantGroups = groupAssistantMessages(messages);
 
+  const uiMessages: UIMessage<METADATA, DATA_PARTS, TOOLS>[] = [];
   for (const group of assistantGroups) {
-    const message = group[0];
-    const coreMessage = message.message && deserializeMessage(message.message);
-    if (!coreMessage) continue;
-
-    if (coreMessage.role === "system") {
-      uiMessages.push(createSystemUIMessage(message));
-    } else if (coreMessage.role === "user") {
-      uiMessages.push(createUserUIMessage(message));
+    if (group.role === "system") {
+      uiMessages.push(createSystemUIMessage(group.message));
+    } else if (group.role === "user") {
+      uiMessages.push(createUserUIMessage(group.message));
     } else {
       // Assistant/tool group
-      uiMessages.push(createAssistantUIMessage(group));
+      uiMessages.push(createAssistantUIMessage(group.messages));
     }
   }
 
   return uiMessages;
 }
 
+type Group =
+  | {
+      role: "user";
+      message: MessageDoc & { streaming?: boolean };
+    }
+  | {
+      role: "system";
+      message: MessageDoc & { streaming?: boolean };
+    }
+  | {
+      role: "assistant";
+      messages: (MessageDoc & { streaming?: boolean })[];
+    };
+
 function groupAssistantMessages(
   messages: (MessageDoc & { streaming?: boolean })[],
-) {
-  const groups: (MessageDoc & { streaming?: boolean })[][] = [];
+): Group[] {
+  const groups: Group[] = [];
   let currentAssistantGroup: (MessageDoc & { streaming?: boolean })[] = [];
 
   for (const message of messages) {
@@ -71,11 +80,17 @@ function groupAssistantMessages(
     if (coreMessage.role === "user" || coreMessage.role === "system") {
       // Finish any current assistant group
       if (currentAssistantGroup.length > 0) {
-        groups.push(currentAssistantGroup);
+        groups.push({
+          role: "assistant",
+          messages: currentAssistantGroup,
+        });
         currentAssistantGroup = [];
       }
       // Add singleton group
-      groups.push([message]);
+      groups.push({
+        role: coreMessage.role,
+        message,
+      });
     } else {
       // Assistant or tool message
       if (coreMessage.role === "tool" && currentAssistantGroup.length === 0) {
@@ -90,7 +105,10 @@ function groupAssistantMessages(
 
       // End group if this is an assistant message without tool calls
       if (coreMessage.role === "assistant" && !message.tool) {
-        groups.push(currentAssistantGroup);
+        groups.push({
+          role: "assistant",
+          messages: currentAssistantGroup,
+        });
         currentAssistantGroup = [];
       }
     }
@@ -98,7 +116,10 @@ function groupAssistantMessages(
 
   // Add any remaining assistant group
   if (currentAssistantGroup.length > 0) {
-    groups.push(currentAssistantGroup);
+    groups.push({
+      role: "assistant",
+      messages: currentAssistantGroup,
+    });
   }
 
   return groups;
