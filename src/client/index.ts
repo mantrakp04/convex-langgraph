@@ -1780,12 +1780,6 @@ export class Agent<
       ...prompt,
       ...existingResponses,
     ].map((m) => deserializeMessage(m));
-    if (promptMessageIndex === -1) {
-      processedMessages.push(...prompt);
-    } else {
-      // We add the prompt where the prompt message was
-      processedMessages.splice(promptMessageIndex, 0, ...prompt);
-    }
 
     // Process messages to inline localhost files (if not, file urls pointing to localhost will be sent to LLM providers)
     if (process.env.CONVEX_CLOUD_URL?.startsWith("http://127.0.0.1")) {
