@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.3 alpha
+## 0.2.3
 
 - Reintroduces the `maxSteps` config for Agents / global config.
   This becomes the default when `stopWhen` is not provided.
@@ -9,6 +9,9 @@
 - Fix up reasoning state (breaking but shouldn't be present anywhere)
 - You can now pass `args` directly to `listMessages` instead of passing
   threadId & paginationOpts manually.
+- useSmoothText is even smoother
+- toUIMessage is much better - works in both directions with any ordering
+- Only embeds the first 10k of characters for vector search.
 
 ## 0.2.2
 
