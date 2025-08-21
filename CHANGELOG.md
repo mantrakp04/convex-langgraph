@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.4 alpha
+
+- Fixes double-submitting the user prompt when using promptMessageId
+
 ## 0.2.3
 
 - Reintroduces the `maxSteps` config for Agents / global config.
