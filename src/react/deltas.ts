@@ -5,19 +5,21 @@ import type {
   UIMessageChunk,
 } from "ai";
 import type { MessageDoc } from "../client/index.js";
-import type {
-  Message,
-  MessageStatus,
-  StreamDelta,
-  StreamMessage,
-  vFilePart,
-  vReasoningPart,
-  vTextPart,
-  vToolCallPart,
-  vToolResultPart,
+import {
+  vSource,
+  type Message,
+  type MessageStatus,
+  type StreamDelta,
+  type StreamMessage,
+  type vFilePart,
+  type vReasoningPart,
+  type vTextPart,
+  type vToolCallPart,
+  type vToolResultPart,
 } from "../validators.js";
 import type { Infer } from "convex/values";
 import { serializeWarnings } from "../mapping.js";
+import { parse } from "convex-helpers/validators";
 
 export function mergeDeltas(
   threadId: string,
@@ -176,10 +178,16 @@ export function applyDeltasToStreamMessage(
         currentMessage.text = (currentMessage.text ?? "") + text;
         if (lastContent?.type === "text") {
           lastContent.text = (lastContent.text ?? "") + text;
+          lastContent.providerMetadata = mergeProviderMetadata(
+            lastContent.providerMetadata,
+            part.providerMetadata,
+          );
         } else {
-          contentToAdd = { type: "text", text } satisfies Infer<
-            typeof vTextPart
-          >;
+          contentToAdd = {
+            type: "text",
+            providerMetadata: part.providerMetadata,
+            text,
+          } satisfies Infer<typeof vTextPart>;
         }
         break;
       }
@@ -190,6 +198,10 @@ export function applyDeltasToStreamMessage(
         ) {
           lastContent.args = part.input;
           lastContent.providerExecuted ??= part.providerExecuted;
+          lastContent.providerMetadata = mergeProviderMetadata(
+            lastContent.providerMetadata,
+            part.providerMetadata,
+          );
         } else {
           contentToAdd = toolCallContent(part);
         }
@@ -203,6 +215,8 @@ export function applyDeltasToStreamMessage(
           toolCallId,
           toolName: part.toolName,
           args: "",
+          providerMetadata:
+            "providerMetadata" in part ? part.providerMetadata : undefined,
           providerExecuted:
             "providerExecuted" in part ? part.providerExecuted : undefined,
         } satisfies Infer<typeof vToolCallPart>;
@@ -218,12 +232,19 @@ export function applyDeltasToStreamMessage(
             lastContent.args = lastContent.args?.toString() ?? "";
           }
           const delta =
-            "argsTextDelta" in part
-              ? part.argsTextDelta
+            "inputTextDelta" in part
+              ? part.inputTextDelta
               : "delta" in part
                 ? part.delta
                 : "";
           lastContent.args = lastContent.args + delta;
+          lastContent.providerMetadata =
+            "providerMetadata" in part
+              ? mergeProviderMetadata(
+                  lastContent.providerMetadata,
+                  part.providerMetadata,
+                )
+              : undefined;
         }
         break;
       case "tool-call": {
@@ -266,10 +287,15 @@ export function applyDeltasToStreamMessage(
         currentMessage.reasoning = (currentMessage.reasoning ?? "") + text;
         if (lastContent?.type === "reasoning") {
           lastContent.text = (lastContent.text ?? "") + text;
+          lastContent.providerMetadata = mergeProviderMetadata(
+            lastContent.providerMetadata,
+            part.providerMetadata,
+          );
         } else {
           contentToAdd = {
             type: "reasoning",
             text,
+            providerMetadata: part.providerMetadata,
           } satisfies Infer<typeof vReasoningPart>;
         }
         break;
@@ -278,7 +304,8 @@ export function applyDeltasToStreamMessage(
         if (!currentMessage.sources) {
           currentMessage.sources = [];
         }
-        currentMessage.sources.push(part);
+        currentMessage.sources.push(parse(vSource, part));
+        console.warn("Got source part with unknown source type", part);
         break;
       case "abort":
         currentMessage.status = "failed";
@@ -290,8 +317,12 @@ export function applyDeltasToStreamMessage(
           "error" in part ? part.error?.toString() : part.errorText;
         break;
       case "message-metadata":
+        currentMessage.providerMetadata ??= {};
+        currentMessage.providerMetadata["metadata"] = {
+          parts: [part.messageMetadata],
+        };
         console.warn(
-          "Skipping message metadata part. Use useUIMessages or useStreamingUIMessages instead.",
+          "Putting message metadata part in providerMetadata. Use useUIMessages or useStreamingUIMessages instead.",
           part,
         );
         break;
@@ -301,6 +332,7 @@ export function applyDeltasToStreamMessage(
           data: part.sourceId,
           mimeType: part.mediaType,
           filename: part.title ?? part.filename,
+          providerMetadata: part.providerMetadata,
         } satisfies Infer<typeof vFilePart>;
         break;
       case "source-url":
@@ -309,6 +341,7 @@ export function applyDeltasToStreamMessage(
           data: part.url,
           filename: part.title,
           mimeType: "text/plain", // What do we do here?
+          providerMetadata: part.providerMetadata,
         } satisfies Infer<typeof vFilePart>;
         break;
       case "tool-input-error":
@@ -318,6 +351,10 @@ export function applyDeltasToStreamMessage(
         ) {
           lastContent.args ||= part.input;
           lastContent.providerExecuted ??= part.providerExecuted;
+          lastContent.providerMetadata = mergeProviderMetadata(
+            lastContent.providerMetadata,
+            part.providerMetadata,
+          );
         } else {
           if (
             lastContent?.type === "tool-result" &&
@@ -325,6 +362,10 @@ export function applyDeltasToStreamMessage(
           ) {
             lastContent.isError = true;
             lastContent.providerExecuted ??= part.providerExecuted;
+            lastContent.providerMetadata = mergeProviderMetadata(
+              lastContent.providerMetadata,
+              part.providerMetadata,
+            );
           } else {
             contentToAdd = toolCallContent(part);
           }
@@ -416,12 +457,6 @@ export function applyDeltasToStreamMessage(
         break;
       }
     }
-    if ("providerMetadata" in part) {
-      currentMessage.providerMetadata = mergeProviderMetadata(
-        currentMessage.providerMetadata,
-        part.providerMetadata,
-      );
-    }
     if (contentToAdd) {
       if (!currentMessage.message!.content) {
         currentMessage.message!.content = [];
@@ -472,6 +507,7 @@ function toolCallContent(
     toolCallId: part.toolCallId,
     toolName: part.toolName,
     args,
+    providerMetadata: part.providerMetadata,
     providerExecuted: part.providerExecuted,
   } satisfies Infer<typeof vToolCallPart>;
 }
@@ -540,15 +576,19 @@ export function createStreamingMessage(
     threadId,
     tool: false,
   };
-  if ("providerMetadata" in part) {
-    metadata.providerMetadata = part.providerMetadata;
-  }
+  const providerMetadata =
+    "providerMetadata" in part ? part.providerMetadata : undefined;
+  metadata.providerMetadata = providerMetadata;
+
   switch (part.type) {
     case "text-delta": {
       const text = "text" in part ? part.text : part.delta;
       return {
         ...metadata,
-        message: { role: "assistant", content: [{ type: "text", text }] },
+        message: {
+          role: "assistant",
+          content: [{ type: "text", text, providerMetadata }],
+        },
         text,
       };
     }
@@ -566,6 +606,7 @@ export function createStreamingMessage(
               args: "", // when it's a string, it's a partial call
               providerExecuted:
                 "providerExecuted" in part ? part.providerExecuted : undefined,
+              providerMetadata,
             },
           ],
         },
@@ -581,7 +622,15 @@ export function createStreamingMessage(
         tool: true,
         message: {
           role: "assistant",
-          content: [{ type: "tool-call", toolCallId, toolName, args: delta }],
+          content: [
+            {
+              type: "tool-call",
+              toolCallId,
+              toolName,
+              args: delta,
+              providerMetadata,
+            },
+          ],
         },
       };
     }
@@ -604,7 +653,13 @@ export function createStreamingMessage(
         ...metadata,
         message: {
           role: "assistant",
-          content: [{ type: "reasoning", text }],
+          content: [
+            {
+              type: "reasoning",
+              text,
+              providerMetadata,
+            },
+          ],
         },
         reasoning: text,
       };
@@ -657,6 +712,7 @@ export function createStreamingMessage(
               args: part.input,
               toolName: part.toolName,
               providerExecuted: part.providerExecuted,
+              providerMetadata,
             },
             {
               type: "tool-result",
@@ -675,7 +731,7 @@ export function createStreamingMessage(
       return {
         ...metadata,
         message: { role: "assistant", content: [] },
-        providerMetadata: part.providerMetadata,
+        providerMetadata,
         id: part.id,
         _id: part.id,
       };

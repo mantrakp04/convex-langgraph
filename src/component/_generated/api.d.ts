@@ -158,6 +158,10 @@ export type Mounts = {
                   | string
                   | Array<
                       | {
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           text: string;
                           type: "text";
@@ -172,6 +176,10 @@ export type Mounts = {
                           data: string | ArrayBuffer;
                           filename?: string;
                           mimeType: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           type: "file";
                         }
@@ -184,6 +192,10 @@ export type Mounts = {
                   | string
                   | Array<
                       | {
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           text: string;
                           type: "text";
@@ -192,10 +204,18 @@ export type Mounts = {
                           data: string | ArrayBuffer;
                           filename?: string;
                           mimeType: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           type: "file";
                         }
                       | {
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           signature?: string;
                           text: string;
@@ -203,12 +223,20 @@ export type Mounts = {
                         }
                       | {
                           data: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           type: "redacted-reasoning";
                         }
                       | {
                           args: any;
                           providerExecuted?: boolean;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           toolCallId: string;
                           toolName: string;
@@ -222,6 +250,10 @@ export type Mounts = {
                           >;
                           isError?: boolean;
                           providerExecuted?: boolean;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           result: any;
                           toolCallId: string;
@@ -241,6 +273,7 @@ export type Mounts = {
                   >;
                   isError?: boolean;
                   providerExecuted?: boolean;
+                  providerMetadata?: Record<string, Record<string, any>>;
                   providerOptions?: Record<string, Record<string, any>>;
                   result: any;
                   toolCallId: string;
@@ -261,6 +294,7 @@ export type Mounts = {
           reasoning?: string;
           reasoningDetails?: Array<
             | {
+                providerMetadata?: Record<string, Record<string, any>>;
                 providerOptions?: Record<string, Record<string, any>>;
                 signature?: string;
                 text: string;
@@ -272,6 +306,7 @@ export type Mounts = {
           sources?: Array<
             | {
                 id: string;
+                providerMetadata?: Record<string, Record<string, any>>;
                 providerOptions?: Record<string, Record<string, any>>;
                 sourceType: "url";
                 title?: string;
@@ -283,6 +318,7 @@ export type Mounts = {
                 id: string;
                 mediaType: string;
                 providerMetadata?: Record<string, Record<string, any>>;
+                providerOptions?: Record<string, Record<string, any>>;
                 sourceType: "document";
                 title: string;
                 type: "source";
@@ -331,6 +367,10 @@ export type Mounts = {
                   | string
                   | Array<
                       | {
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           text: string;
                           type: "text";
@@ -345,6 +385,10 @@ export type Mounts = {
                           data: string | ArrayBuffer;
                           filename?: string;
                           mimeType: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           type: "file";
                         }
@@ -357,6 +401,10 @@ export type Mounts = {
                   | string
                   | Array<
                       | {
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           text: string;
                           type: "text";
@@ -365,10 +413,18 @@ export type Mounts = {
                           data: string | ArrayBuffer;
                           filename?: string;
                           mimeType: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           type: "file";
                         }
                       | {
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           signature?: string;
                           text: string;
@@ -376,12 +432,20 @@ export type Mounts = {
                         }
                       | {
                           data: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           type: "redacted-reasoning";
                         }
                       | {
                           args: any;
                           providerExecuted?: boolean;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           toolCallId: string;
                           toolName: string;
@@ -395,6 +459,10 @@ export type Mounts = {
                           >;
                           isError?: boolean;
                           providerExecuted?: boolean;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           result: any;
                           toolCallId: string;
@@ -414,6 +482,7 @@ export type Mounts = {
                   >;
                   isError?: boolean;
                   providerExecuted?: boolean;
+                  providerMetadata?: Record<string, Record<string, any>>;
                   providerOptions?: Record<string, Record<string, any>>;
                   result: any;
                   toolCallId: string;
@@ -436,6 +505,7 @@ export type Mounts = {
           reasoning?: string;
           reasoningDetails?: Array<
             | {
+                providerMetadata?: Record<string, Record<string, any>>;
                 providerOptions?: Record<string, Record<string, any>>;
                 signature?: string;
                 text: string;
@@ -447,6 +517,7 @@ export type Mounts = {
           sources?: Array<
             | {
                 id: string;
+                providerMetadata?: Record<string, Record<string, any>>;
                 providerOptions?: Record<string, Record<string, any>>;
                 sourceType: "url";
                 title?: string;
@@ -458,6 +529,7 @@ export type Mounts = {
                 id: string;
                 mediaType: string;
                 providerMetadata?: Record<string, Record<string, any>>;
+                providerOptions?: Record<string, Record<string, any>>;
                 sourceType: "document";
                 title: string;
                 type: "source";
@@ -537,6 +609,7 @@ export type Mounts = {
                 | string
                 | Array<
                     | {
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         text: string;
                         type: "text";
@@ -551,6 +624,7 @@ export type Mounts = {
                         data: string | ArrayBuffer;
                         filename?: string;
                         mimeType: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         type: "file";
                       }
@@ -563,6 +637,7 @@ export type Mounts = {
                 | string
                 | Array<
                     | {
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         text: string;
                         type: "text";
@@ -571,10 +646,12 @@ export type Mounts = {
                         data: string | ArrayBuffer;
                         filename?: string;
                         mimeType: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         type: "file";
                       }
                     | {
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         signature?: string;
                         text: string;
@@ -582,12 +659,14 @@ export type Mounts = {
                       }
                     | {
                         data: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         type: "redacted-reasoning";
                       }
                     | {
                         args: any;
                         providerExecuted?: boolean;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         toolCallId: string;
                         toolName: string;
@@ -601,6 +680,7 @@ export type Mounts = {
                         >;
                         isError?: boolean;
                         providerExecuted?: boolean;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         result: any;
                         toolCallId: string;
@@ -620,6 +700,7 @@ export type Mounts = {
                 >;
                 isError?: boolean;
                 providerExecuted?: boolean;
+                providerMetadata?: Record<string, Record<string, any>>;
                 providerOptions?: Record<string, Record<string, any>>;
                 result: any;
                 toolCallId: string;
@@ -642,6 +723,7 @@ export type Mounts = {
         reasoning?: string;
         reasoningDetails?: Array<
           | {
+              providerMetadata?: Record<string, Record<string, any>>;
               providerOptions?: Record<string, Record<string, any>>;
               signature?: string;
               text: string;
@@ -653,6 +735,7 @@ export type Mounts = {
         sources?: Array<
           | {
               id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
               providerOptions?: Record<string, Record<string, any>>;
               sourceType: "url";
               title?: string;
@@ -664,6 +747,7 @@ export type Mounts = {
               id: string;
               mediaType: string;
               providerMetadata?: Record<string, Record<string, any>>;
+              providerOptions?: Record<string, Record<string, any>>;
               sourceType: "document";
               title: string;
               type: "source";
@@ -732,6 +816,10 @@ export type Mounts = {
                   | string
                   | Array<
                       | {
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           text: string;
                           type: "text";
@@ -746,6 +834,10 @@ export type Mounts = {
                           data: string | ArrayBuffer;
                           filename?: string;
                           mimeType: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           type: "file";
                         }
@@ -758,6 +850,10 @@ export type Mounts = {
                   | string
                   | Array<
                       | {
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           text: string;
                           type: "text";
@@ -766,10 +862,18 @@ export type Mounts = {
                           data: string | ArrayBuffer;
                           filename?: string;
                           mimeType: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           type: "file";
                         }
                       | {
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           signature?: string;
                           text: string;
@@ -777,12 +881,20 @@ export type Mounts = {
                         }
                       | {
                           data: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           type: "redacted-reasoning";
                         }
                       | {
                           args: any;
                           providerExecuted?: boolean;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           toolCallId: string;
                           toolName: string;
@@ -796,6 +908,10 @@ export type Mounts = {
                           >;
                           isError?: boolean;
                           providerExecuted?: boolean;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           result: any;
                           toolCallId: string;
@@ -815,6 +931,7 @@ export type Mounts = {
                   >;
                   isError?: boolean;
                   providerExecuted?: boolean;
+                  providerMetadata?: Record<string, Record<string, any>>;
                   providerOptions?: Record<string, Record<string, any>>;
                   result: any;
                   toolCallId: string;
@@ -837,6 +954,7 @@ export type Mounts = {
           reasoning?: string;
           reasoningDetails?: Array<
             | {
+                providerMetadata?: Record<string, Record<string, any>>;
                 providerOptions?: Record<string, Record<string, any>>;
                 signature?: string;
                 text: string;
@@ -848,6 +966,7 @@ export type Mounts = {
           sources?: Array<
             | {
                 id: string;
+                providerMetadata?: Record<string, Record<string, any>>;
                 providerOptions?: Record<string, Record<string, any>>;
                 sourceType: "url";
                 title?: string;
@@ -859,6 +978,7 @@ export type Mounts = {
                 id: string;
                 mediaType: string;
                 providerMetadata?: Record<string, Record<string, any>>;
+                providerOptions?: Record<string, Record<string, any>>;
                 sourceType: "document";
                 title: string;
                 type: "source";
@@ -923,6 +1043,7 @@ export type Mounts = {
                 | string
                 | Array<
                     | {
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         text: string;
                         type: "text";
@@ -937,6 +1058,7 @@ export type Mounts = {
                         data: string | ArrayBuffer;
                         filename?: string;
                         mimeType: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         type: "file";
                       }
@@ -949,6 +1071,7 @@ export type Mounts = {
                 | string
                 | Array<
                     | {
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         text: string;
                         type: "text";
@@ -957,10 +1080,12 @@ export type Mounts = {
                         data: string | ArrayBuffer;
                         filename?: string;
                         mimeType: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         type: "file";
                       }
                     | {
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         signature?: string;
                         text: string;
@@ -968,12 +1093,14 @@ export type Mounts = {
                       }
                     | {
                         data: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         type: "redacted-reasoning";
                       }
                     | {
                         args: any;
                         providerExecuted?: boolean;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         toolCallId: string;
                         toolName: string;
@@ -987,6 +1114,7 @@ export type Mounts = {
                         >;
                         isError?: boolean;
                         providerExecuted?: boolean;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         result: any;
                         toolCallId: string;
@@ -1006,6 +1134,7 @@ export type Mounts = {
                 >;
                 isError?: boolean;
                 providerExecuted?: boolean;
+                providerMetadata?: Record<string, Record<string, any>>;
                 providerOptions?: Record<string, Record<string, any>>;
                 result: any;
                 toolCallId: string;
@@ -1028,6 +1157,7 @@ export type Mounts = {
         reasoning?: string;
         reasoningDetails?: Array<
           | {
+              providerMetadata?: Record<string, Record<string, any>>;
               providerOptions?: Record<string, Record<string, any>>;
               signature?: string;
               text: string;
@@ -1039,6 +1169,7 @@ export type Mounts = {
         sources?: Array<
           | {
               id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
               providerOptions?: Record<string, Record<string, any>>;
               sourceType: "url";
               title?: string;
@@ -1050,6 +1181,7 @@ export type Mounts = {
               id: string;
               mediaType: string;
               providerMetadata?: Record<string, Record<string, any>>;
+              providerOptions?: Record<string, Record<string, any>>;
               sourceType: "document";
               title: string;
               type: "source";
@@ -1107,6 +1239,7 @@ export type Mounts = {
                 | string
                 | Array<
                     | {
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         text: string;
                         type: "text";
@@ -1121,6 +1254,7 @@ export type Mounts = {
                         data: string | ArrayBuffer;
                         filename?: string;
                         mimeType: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         type: "file";
                       }
@@ -1133,6 +1267,7 @@ export type Mounts = {
                 | string
                 | Array<
                     | {
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         text: string;
                         type: "text";
@@ -1141,10 +1276,12 @@ export type Mounts = {
                         data: string | ArrayBuffer;
                         filename?: string;
                         mimeType: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         type: "file";
                       }
                     | {
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         signature?: string;
                         text: string;
@@ -1152,12 +1289,14 @@ export type Mounts = {
                       }
                     | {
                         data: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         type: "redacted-reasoning";
                       }
                     | {
                         args: any;
                         providerExecuted?: boolean;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         toolCallId: string;
                         toolName: string;
@@ -1171,6 +1310,7 @@ export type Mounts = {
                         >;
                         isError?: boolean;
                         providerExecuted?: boolean;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         result: any;
                         toolCallId: string;
@@ -1190,6 +1330,7 @@ export type Mounts = {
                 >;
                 isError?: boolean;
                 providerExecuted?: boolean;
+                providerMetadata?: Record<string, Record<string, any>>;
                 providerOptions?: Record<string, Record<string, any>>;
                 result: any;
                 toolCallId: string;
@@ -1212,6 +1353,7 @@ export type Mounts = {
         reasoning?: string;
         reasoningDetails?: Array<
           | {
+              providerMetadata?: Record<string, Record<string, any>>;
               providerOptions?: Record<string, Record<string, any>>;
               signature?: string;
               text: string;
@@ -1223,6 +1365,7 @@ export type Mounts = {
         sources?: Array<
           | {
               id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
               providerOptions?: Record<string, Record<string, any>>;
               sourceType: "url";
               title?: string;
@@ -1234,6 +1377,7 @@ export type Mounts = {
               id: string;
               mediaType: string;
               providerMetadata?: Record<string, Record<string, any>>;
+              providerOptions?: Record<string, Record<string, any>>;
               sourceType: "document";
               title: string;
               type: "source";
@@ -1281,6 +1425,10 @@ export type Mounts = {
                   | string
                   | Array<
                       | {
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           text: string;
                           type: "text";
@@ -1295,6 +1443,10 @@ export type Mounts = {
                           data: string | ArrayBuffer;
                           filename?: string;
                           mimeType: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           type: "file";
                         }
@@ -1307,6 +1459,10 @@ export type Mounts = {
                   | string
                   | Array<
                       | {
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           text: string;
                           type: "text";
@@ -1315,10 +1471,18 @@ export type Mounts = {
                           data: string | ArrayBuffer;
                           filename?: string;
                           mimeType: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           type: "file";
                         }
                       | {
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           signature?: string;
                           text: string;
@@ -1326,12 +1490,20 @@ export type Mounts = {
                         }
                       | {
                           data: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           type: "redacted-reasoning";
                         }
                       | {
                           args: any;
                           providerExecuted?: boolean;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           toolCallId: string;
                           toolName: string;
@@ -1345,6 +1517,10 @@ export type Mounts = {
                           >;
                           isError?: boolean;
                           providerExecuted?: boolean;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
                           providerOptions?: Record<string, Record<string, any>>;
                           result: any;
                           toolCallId: string;
@@ -1364,6 +1540,7 @@ export type Mounts = {
                   >;
                   isError?: boolean;
                   providerExecuted?: boolean;
+                  providerMetadata?: Record<string, Record<string, any>>;
                   providerOptions?: Record<string, Record<string, any>>;
                   result: any;
                   toolCallId: string;
@@ -1406,6 +1583,7 @@ export type Mounts = {
                 | string
                 | Array<
                     | {
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         text: string;
                         type: "text";
@@ -1420,6 +1598,7 @@ export type Mounts = {
                         data: string | ArrayBuffer;
                         filename?: string;
                         mimeType: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         type: "file";
                       }
@@ -1432,6 +1611,7 @@ export type Mounts = {
                 | string
                 | Array<
                     | {
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         text: string;
                         type: "text";
@@ -1440,10 +1620,12 @@ export type Mounts = {
                         data: string | ArrayBuffer;
                         filename?: string;
                         mimeType: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         type: "file";
                       }
                     | {
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         signature?: string;
                         text: string;
@@ -1451,12 +1633,14 @@ export type Mounts = {
                       }
                     | {
                         data: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         type: "redacted-reasoning";
                       }
                     | {
                         args: any;
                         providerExecuted?: boolean;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         toolCallId: string;
                         toolName: string;
@@ -1470,6 +1654,7 @@ export type Mounts = {
                         >;
                         isError?: boolean;
                         providerExecuted?: boolean;
+                        providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         result: any;
                         toolCallId: string;
@@ -1489,6 +1674,7 @@ export type Mounts = {
                 >;
                 isError?: boolean;
                 providerExecuted?: boolean;
+                providerMetadata?: Record<string, Record<string, any>>;
                 providerOptions?: Record<string, Record<string, any>>;
                 result: any;
                 toolCallId: string;
@@ -1511,6 +1697,7 @@ export type Mounts = {
         reasoning?: string;
         reasoningDetails?: Array<
           | {
+              providerMetadata?: Record<string, Record<string, any>>;
               providerOptions?: Record<string, Record<string, any>>;
               signature?: string;
               text: string;
@@ -1522,6 +1709,7 @@ export type Mounts = {
         sources?: Array<
           | {
               id: string;
+              providerMetadata?: Record<string, Record<string, any>>;
               providerOptions?: Record<string, Record<string, any>>;
               sourceType: "url";
               title?: string;
@@ -1533,6 +1721,7 @@ export type Mounts = {
               id: string;
               mediaType: string;
               providerMetadata?: Record<string, Record<string, any>>;
+              providerOptions?: Record<string, Record<string, any>>;
               sourceType: "document";
               title: string;
               type: "source";

@@ -36,6 +36,7 @@ export const vTextPart = v.object({
   type: v.literal("text"),
   text: v.string(),
   providerOptions,
+  providerMetadata,
 });
 
 export const vImagePart = v.object({
@@ -51,6 +52,7 @@ export const vFilePart = v.object({
   filename: v.optional(v.string()),
   mimeType: v.string(),
   providerOptions,
+  providerMetadata,
 });
 
 export const vUserContent = v.union(
@@ -63,12 +65,14 @@ export const vReasoningPart = v.object({
   text: v.string(),
   signature: v.optional(v.string()),
   providerOptions,
+  providerMetadata,
 });
 
 export const vRedactedReasoningPart = v.object({
   type: v.literal("redacted-reasoning"),
   data: v.string(),
   providerOptions,
+  providerMetadata,
 });
 
 export const vReasoningDetails = v.array(
@@ -90,6 +94,7 @@ export const vToolCallPart = v.object({
   args: v.any(),
   providerExecuted: v.optional(v.boolean()),
   providerOptions,
+  providerMetadata,
 });
 
 const vToolResultContent = v.array(
@@ -109,6 +114,7 @@ export const vToolResultPart = v.object({
   toolName: v.string(),
   result: v.any(),
   providerOptions,
+  providerMetadata,
   providerExecuted: v.optional(v.boolean()),
 
   // Deprecated in ai v5
@@ -177,6 +183,7 @@ export const vSource = v.union(
     url: v.string(),
     title: v.optional(v.string()),
     providerOptions,
+    providerMetadata,
   }),
   v.object({
     type: v.literal("source"),
@@ -185,6 +192,7 @@ export const vSource = v.union(
     mediaType: v.string(),
     title: v.string(),
     filename: v.optional(v.string()),
+    providerOptions,
     providerMetadata,
   }),
 );
