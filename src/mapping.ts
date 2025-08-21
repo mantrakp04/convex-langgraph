@@ -20,6 +20,7 @@ import {
 } from "ai";
 import {
   vMessageWithMetadata,
+  type vSourcePart,
   type Message,
   type MessageWithMetadata,
   type Usage,
@@ -335,6 +336,9 @@ export async function serializeContent(
             ...metadata,
           } satisfies Infer<typeof vRedactedReasoningPart>;
         }
+        case "source": {
+          return part satisfies Infer<typeof vSourcePart>;
+        }
         default:
           return part satisfies Infer<typeof vContent>;
       }
@@ -431,6 +435,8 @@ export function deserializeContent(
               }
             : undefined,
         } satisfies ReasoningPart;
+      case "source":
+        return part;
       default:
         return part satisfies Content;
     }

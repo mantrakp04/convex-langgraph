@@ -260,6 +260,31 @@ export type Mounts = {
                           toolName: string;
                           type: "tool-result";
                         }
+                      | {
+                          id: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
+                          providerOptions?: Record<string, Record<string, any>>;
+                          sourceType: "url";
+                          title: string;
+                          type: "source";
+                          url: string;
+                        }
+                      | {
+                          filename?: string;
+                          id: string;
+                          mediaType: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
+                          providerOptions?: Record<string, Record<string, any>>;
+                          sourceType: "document";
+                          title: string;
+                          type: "source";
+                        }
                     >;
                 providerOptions?: Record<string, Record<string, any>>;
                 role: "assistant";
@@ -468,6 +493,31 @@ export type Mounts = {
                           toolCallId: string;
                           toolName: string;
                           type: "tool-result";
+                        }
+                      | {
+                          id: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
+                          providerOptions?: Record<string, Record<string, any>>;
+                          sourceType: "url";
+                          title: string;
+                          type: "source";
+                          url: string;
+                        }
+                      | {
+                          filename?: string;
+                          id: string;
+                          mediaType: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
+                          providerOptions?: Record<string, Record<string, any>>;
+                          sourceType: "document";
+                          title: string;
+                          type: "source";
                         }
                     >;
                 providerOptions?: Record<string, Record<string, any>>;
@@ -686,6 +736,25 @@ export type Mounts = {
                         toolCallId: string;
                         toolName: string;
                         type: "tool-result";
+                      }
+                    | {
+                        id: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
+                        providerOptions?: Record<string, Record<string, any>>;
+                        sourceType: "url";
+                        title: string;
+                        type: "source";
+                        url: string;
+                      }
+                    | {
+                        filename?: string;
+                        id: string;
+                        mediaType: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
+                        providerOptions?: Record<string, Record<string, any>>;
+                        sourceType: "document";
+                        title: string;
+                        type: "source";
                       }
                   >;
               providerOptions?: Record<string, Record<string, any>>;
@@ -918,6 +987,31 @@ export type Mounts = {
                           toolName: string;
                           type: "tool-result";
                         }
+                      | {
+                          id: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
+                          providerOptions?: Record<string, Record<string, any>>;
+                          sourceType: "url";
+                          title: string;
+                          type: "source";
+                          url: string;
+                        }
+                      | {
+                          filename?: string;
+                          id: string;
+                          mediaType: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
+                          providerOptions?: Record<string, Record<string, any>>;
+                          sourceType: "document";
+                          title: string;
+                          type: "source";
+                        }
                     >;
                 providerOptions?: Record<string, Record<string, any>>;
                 role: "assistant";
@@ -1121,6 +1215,25 @@ export type Mounts = {
                         toolName: string;
                         type: "tool-result";
                       }
+                    | {
+                        id: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
+                        providerOptions?: Record<string, Record<string, any>>;
+                        sourceType: "url";
+                        title: string;
+                        type: "source";
+                        url: string;
+                      }
+                    | {
+                        filename?: string;
+                        id: string;
+                        mediaType: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
+                        providerOptions?: Record<string, Record<string, any>>;
+                        sourceType: "document";
+                        title: string;
+                        type: "source";
+                      }
                   >;
               providerOptions?: Record<string, Record<string, any>>;
               role: "assistant";
@@ -1316,6 +1429,25 @@ export type Mounts = {
                         toolCallId: string;
                         toolName: string;
                         type: "tool-result";
+                      }
+                    | {
+                        id: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
+                        providerOptions?: Record<string, Record<string, any>>;
+                        sourceType: "url";
+                        title: string;
+                        type: "source";
+                        url: string;
+                      }
+                    | {
+                        filename?: string;
+                        id: string;
+                        mediaType: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
+                        providerOptions?: Record<string, Record<string, any>>;
+                        sourceType: "document";
+                        title: string;
+                        type: "source";
                       }
                   >;
               providerOptions?: Record<string, Record<string, any>>;
@@ -1527,6 +1659,31 @@ export type Mounts = {
                           toolName: string;
                           type: "tool-result";
                         }
+                      | {
+                          id: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
+                          providerOptions?: Record<string, Record<string, any>>;
+                          sourceType: "url";
+                          title: string;
+                          type: "source";
+                          url: string;
+                        }
+                      | {
+                          filename?: string;
+                          id: string;
+                          mediaType: string;
+                          providerMetadata?: Record<
+                            string,
+                            Record<string, any>
+                          >;
+                          providerOptions?: Record<string, Record<string, any>>;
+                          sourceType: "document";
+                          title: string;
+                          type: "source";
+                        }
                     >;
                 providerOptions?: Record<string, Record<string, any>>;
                 role: "assistant";
@@ -1660,6 +1817,25 @@ export type Mounts = {
                         toolCallId: string;
                         toolName: string;
                         type: "tool-result";
+                      }
+                    | {
+                        id: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
+                        providerOptions?: Record<string, Record<string, any>>;
+                        sourceType: "url";
+                        title: string;
+                        type: "source";
+                        url: string;
+                      }
+                    | {
+                        filename?: string;
+                        id: string;
+                        mediaType: string;
+                        providerMetadata?: Record<string, Record<string, any>>;
+                        providerOptions?: Record<string, Record<string, any>>;
+                        sourceType: "document";
+                        title: string;
+                        type: "source";
                       }
                   >;
               providerOptions?: Record<string, Record<string, any>>;

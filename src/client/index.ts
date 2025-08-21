@@ -986,6 +986,7 @@ export class Agent<
             response: result.response,
             providerMetadata: result.providerMetadata,
             toJsonResponse: stream.toTextStreamResponse,
+            reasoning: undefined,
           },
         });
         return args.onFinish?.(result);

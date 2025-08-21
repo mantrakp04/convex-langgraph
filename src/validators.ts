@@ -87,6 +87,28 @@ export const vReasoningDetails = v.array(
   ),
 );
 
+export const vSourcePart = v.union(
+  v.object({
+    type: v.literal("source"),
+    sourceType: v.literal("url"),
+    id: v.string(),
+    url: v.string(),
+    title: v.string(),
+    providerOptions,
+    providerMetadata,
+  }),
+  v.object({
+    type: v.literal("source"),
+    sourceType: v.literal("document"),
+    id: v.string(),
+    mediaType: v.string(),
+    title: v.string(),
+    filename: v.optional(v.string()),
+    providerOptions,
+    providerMetadata,
+  }),
+);
+
 export const vToolCallPart = v.object({
   type: v.literal("tool-call"),
   toolCallId: v.string(),
@@ -136,6 +158,7 @@ export const vAssistantContent = v.union(
       vRedactedReasoningPart,
       vToolCallPart,
       vToolResultPart,
+      vSourcePart,
     ),
   ),
 );

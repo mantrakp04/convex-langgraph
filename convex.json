@@ -1,1 +1,3 @@
-{ "functions": "example/convex" }
+{
+  "functions": "example/convex"
+}
