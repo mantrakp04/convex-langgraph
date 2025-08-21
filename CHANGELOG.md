@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.4 alpha
+## 0.2.4
 
 - No longer fails previous messages by default when generating without a
   promptMessageId
