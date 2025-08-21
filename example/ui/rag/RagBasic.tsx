@@ -1,6 +1,7 @@
 import { useAction, useMutation, usePaginatedQuery } from "convex/react";
 import {
   optimisticallySendMessage,
+  SmoothText,
   useSmoothText,
   useThreadMessages,
 } from "@convex-dev/agent/react";
@@ -298,10 +299,11 @@ function RagBasicUI() {
                                 : "bg-gray-200 text-gray-800"
                             }`}
                           >
-                            <MessageText
+                            <SmoothText
                               text={message.text}
-                              streaming={message.streaming}
+                              startStreaming={message.streaming}
                             />
+                            {!message.text && "..."}
                           </div>
                         </div>
 
@@ -406,17 +408,6 @@ function RagBasicUI() {
       {error && <div className="text-red-500 text-center">{error.message}</div>}
     </div>
   );
-}
-
-function MessageText({
-  text,
-  streaming,
-}: {
-  text: string;
-  streaming?: boolean;
-}) {
-  const [smoothText] = useSmoothText(text, { startStreaming: streaming });
-  return smoothText;
 }
 
 export default RagBasicUI;

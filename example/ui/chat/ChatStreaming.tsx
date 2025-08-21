@@ -199,7 +199,7 @@ function Message({ message }: { message: UIMessage }) {
           },
         )}
       >
-        {visibleText}
+        {visibleText || "..."}
       </div>
     </div>
   );
