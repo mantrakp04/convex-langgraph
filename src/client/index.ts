@@ -174,6 +174,10 @@ export type {
   UsageHandler,
 };
 
+ // 10k characters should be more than enough for most cases, and stays under
+ // the 8k token limit for some models.
+const MAX_EMBEDDING_TEXT_LENGTH = 10_000;
+
 export type Config = {
   /**
    * The LLM model to use for generating / streaming text and objects.
@@ -1247,7 +1251,9 @@ export class Agent<
     if (textIndexes.length === 0) {
       return undefined;
     }
-    const values = messageTexts.filter((t): t is string => !!t);
+    const values = messageTexts
+      .map((t) => t && t.trim().slice(0, MAX_EMBEDDING_TEXT_LENGTH))
+      .filter((t): t is string => !!t);
     // Then embed those messages.
     const textEmbeddings = await this.doEmbed(ctx, {
       userId,
