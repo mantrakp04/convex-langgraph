@@ -13,6 +13,7 @@ import type {
 import { extractText, type MessageDoc } from "../client/index.js";
 import { deserializeMessage, toUIFilePart } from "../mapping.js";
 import type { MessageStatus } from "../validators.js";
+import { sorted } from "../shared.js";
 
 export type UIMessage<
   METADATA = unknown,
@@ -158,6 +159,7 @@ function createUserUIMessage<
 >(
   message: MessageDoc & { streaming?: boolean },
 ): UIMessage<METADATA, DATA_PARTS, TOOLS> {
+  const text = extractTextFromMessageDoc(message);
   const coreMessage = deserializeMessage(message.message!);
   const content = coreMessage.content;
   const nonStringContent =
@@ -171,7 +173,6 @@ function createUserUIMessage<
   };
 
   const parts: UIMessage<METADATA, DATA_PARTS, TOOLS>["parts"] = [];
-  const text = extractTextFromMessageDoc(message);
   if (text && !nonStringContent.length) {
     parts.push({ type: "text", text });
   }
@@ -210,9 +211,7 @@ function createAssistantUIMessage<
 >(
   groupUnordered: (MessageDoc & { streaming?: boolean })[],
 ): UIMessage<METADATA, DATA_PARTS, TOOLS> {
-  const group = groupUnordered.sort(
-    (a, b) => a.order - b.order || a.stepOrder - b.stepOrder,
-  );
+  const group = sorted(groupUnordered);
   const firstMessage = group[0];
 
   // Use first message for special fields

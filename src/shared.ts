@@ -32,8 +32,20 @@ export function extractText(message: Message | ModelMessage) {
         .join("");
     case "system":
       return message.content;
+    // we don't extract text from tool messages
   }
   return undefined;
 }
 
 export const DEFAULT_MESSAGE_RANGE = { before: 2, after: 1 };
+
+export function sorted<T extends { order: number; stepOrder: number }>(
+  messages: T[],
+  order: "asc" | "desc" = "asc",
+): T[] {
+  return [...messages].sort(
+    order === "asc"
+      ? (a, b) => a.order - b.order || a.stepOrder - b.stepOrder
+      : (a, b) => b.order - a.order || b.stepOrder - a.stepOrder,
+  );
+}
