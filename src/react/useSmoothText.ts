@@ -47,18 +47,28 @@ export function useSmoothText(
     if (!isStreaming) {
       return;
     }
-    const latestCharsPerMs =
-      (text.length - smoothState.current.initialLength) /
-      (Date.now() - smoothState.current.start);
-    // Smooth out the charsPerSec by averaging it with the previous value.
-    smoothState.current.charsPerMs = Math.min(
-      (2 * latestCharsPerMs + smoothState.current.charsPerMs) / 3,
-      smoothState.current.charsPerMs * 2,
-    );
-    smoothState.current.tick = Math.max(
-      smoothState.current.tick,
-      Date.now() - 2 * MS_PER_FRAME,
-    );
+    if (
+      smoothState.current.cursor === 0 &&
+      smoothState.current.initialLength === 0
+    ) {
+      smoothState.current.cursor = visibleText.length;
+      smoothState.current.start = Date.now();
+      smoothState.current.initialLength = visibleText.length;
+      smoothState.current.charsPerMs = charsPerSec / 1000;
+    } else {
+      const latestCharsPerMs =
+        (text.length - smoothState.current.initialLength) /
+        (Date.now() - smoothState.current.start);
+      // Smooth out the charsPerSec by averaging it with the previous value.
+      smoothState.current.charsPerMs = Math.min(
+        (2 * latestCharsPerMs + smoothState.current.charsPerMs) / 3,
+        smoothState.current.charsPerMs * 2,
+      );
+      smoothState.current.tick = Math.max(
+        smoothState.current.tick,
+        Date.now() - 2 * MS_PER_FRAME,
+      );
+    }
 
     function update() {
       if (smoothState.current.cursor >= text.length) {
