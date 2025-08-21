@@ -1732,7 +1732,7 @@ export class Agent<
           userId,
           messages: [...toSave, { role: "assistant", content: [] }],
           metadata: [...metadata, { status: "pending" }],
-          failPendingSteps: true,
+          failPendingSteps: !!args.pendingMessageId,
           pendingMessageId: args.pendingMessageId,
         });
         promptMessageId = saved.messages.at(-2)!._id;
@@ -1742,7 +1742,7 @@ export class Agent<
           userId,
           messages: [{ role: "assistant", content: [] }],
           metadata: [{ status: "pending" }],
-          failPendingSteps: true,
+          failPendingSteps: !!args.pendingMessageId,
           pendingMessageId: args.pendingMessageId,
         });
       }
