@@ -86,7 +86,7 @@ import { Agent, createTool, type Config } from "@convex-dev/agent";
 import { components } from "./_generated/api";
 
 const sharedDefaults = {
-  // The chat completions model to use for the agent.
+  // The language model to use for the agent.
   languageModel: openai.chat("gpt-4o-mini"),
   // Embedding model to power vector search of message history (RAG).
   textEmbeddingModel: openai.embedding("text-embedding-3-small"),

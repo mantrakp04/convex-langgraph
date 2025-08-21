@@ -15,7 +15,7 @@ if (process.env.OPENAI_API_KEY) {
     "meta-llama/llama-4-scout-17b-16e-instruct",
   );
   // } else if (process.env.OPENROUTER_API_KEY) {
-  //   chat = openrouter.chat("openai/gpt-4o-mini") as LanguageModelV2;
+  //   languageModel = openrouter.chat("openai/gpt-4o-mini") as LanguageModelV2;
 } else {
   throw new Error(
     "Run `npx convex env set GROQ_API_KEY=<your-api-key>` or `npx convex env set OPENAI_API_KEY=<your-api-key>` or `npx convex env set OPENROUTER_API_KEY=<your-api-key>` from the example directory to set the API key.",

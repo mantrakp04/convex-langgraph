@@ -20,7 +20,7 @@ The message history will be provided by default as context. See
 [LLM Context](./context.mdx) for details on configuring the context provided.
 
 The arguments to `generateText` and others are the same as the AI SDK, except
-you don't have to provide a model. By default it will use the agent's chat
+you don't have to provide a model. By default it will use the agent's language
 model.
 
 Note: `authorizeThreadAccess` referenced below is a function you would write to
@@ -183,7 +183,7 @@ See below for how to retrieve the stream deltas to a client.
 
 Similar to the AI SDK, you can generate or stream an object. The same arguments
 apply, except you don't have to provide a model. It will use the agent's default
-chat model.
+language model.
 
 ```ts
 import { z } from "zod/v3";
