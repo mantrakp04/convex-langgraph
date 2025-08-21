@@ -200,12 +200,12 @@ async function downloadFile(url: URL): Promise<ArrayBuffer> {
  * by converting them to base64. This solves the problem of LLMs not being
  * able to access localhost URLs.
  */
-export async function inlineMessagesFiles(
-  messages: (ModelMessage | Message)[],
-): Promise<(ModelMessage | Message)[]> {
+export async function inlineMessagesFiles<T extends ModelMessage | Message>(
+  messages: T[],
+): Promise<T[]> {
   // Process each message to convert localhost URLs to base64
   return Promise.all(
-    messages.map(async (message): Promise<ModelMessage | Message> => {
+    messages.map(async (message): Promise<T> => {
       if (
         (message.role !== "user" && message.role !== "assistant") ||
         typeof message.content === "string" ||

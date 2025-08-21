@@ -1672,11 +1672,11 @@ export class Agent<
     savedMessages: MessageDoc[] | undefined;
   }> {
     // If only a promptMessageId is provided, this will be empty.
-    const messages = args.messages ?? [];
-    const prompt: (ModelMessage | Message)[] = !args.prompt
+    const messages: (ModelMessage | Message)[] = args.messages ?? [];
+    const prompt: ModelMessage[] = !args.prompt
       ? []
       : Array.isArray(args.prompt)
-        ? args.prompt
+        ? args.prompt.map((p) => deserializeMessage(p))
         : [{ role: "user", content: args.prompt }];
     const userId =
       argsUserId ??
@@ -1685,7 +1685,7 @@ export class Agent<
           ?.userId) ??
       undefined;
     // If only a messageId is provided, this will add that message to the end.
-    const contextMessages = await this.fetchContextMessages(ctx, {
+    const contextMessages: MessageDoc[] = await this.fetchContextMessages(ctx, {
       userId,
       threadId,
       upToAndIncludingMessageId: args.promptMessageId,
@@ -1697,7 +1697,7 @@ export class Agent<
     const promptMessageIndex = args.promptMessageId
       ? contextMessages.findIndex((m) => m._id === args.promptMessageId)
       : -1;
-    const promptMessage =
+    const promptMessage: MessageDoc | undefined =
       promptMessageIndex !== -1
         ? contextMessages.splice(promptMessageIndex, 1)[0]
         : undefined;
@@ -1715,7 +1715,10 @@ export class Agent<
         (!args.promptMessageId || storageOptions?.saveMessages === "all")
       ) {
         const saveAll = storageOptions?.saveMessages === "all";
-        const coreMessages = [...messages, ...prompt];
+        const coreMessages: (ModelMessage | Message)[] = [
+          ...messages,
+          ...prompt,
+        ];
         const toSave = saveAll ? coreMessages : coreMessages.slice(-1);
         const metadata = Array.from({ length: toSave.length }, () => ({}));
         saved = await this.saveMessages(ctx, {
@@ -1747,7 +1750,7 @@ export class Agent<
     if (promptMessage?.message) {
       if (!args.prompt) {
         // If they override the prompt, we skip the existing prompt message.
-        messages.push(deserializeMessage(promptMessage.message));
+        messages.push(promptMessage.message);
       }
       // Lazily generate embeddings for the prompt message, if it doesn't have
       // embeddings yet. This can happen if the message was saved in a mutation
@@ -1757,22 +1760,20 @@ export class Agent<
       }
     }
 
-    const prePrompt = contextMessages.map((m) =>
-      deserializeMessage(m.message!),
-    );
-    let existingResponses: ModelMessage[] = [];
+    const prePrompt = contextMessages.map((m) => m.message).filter((m) => !!m);
+    let existingResponses: (ModelMessage | Message)[] = [];
     if (promptMessageIndex !== -1) {
       // pull any messages that already responded to the prompt off
       // and add them after the prompt
       existingResponses = prePrompt.splice(promptMessageIndex);
     }
 
-    let processedMessages = [
+    let processedMessages: ModelMessage[] = [
       ...prePrompt,
       ...messages,
       ...prompt,
       ...existingResponses,
-    ];
+    ].map((m) => deserializeMessage(m));
     if (promptMessageIndex === -1) {
       processedMessages.push(...prompt);
     } else {
