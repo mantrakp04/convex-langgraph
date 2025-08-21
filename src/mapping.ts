@@ -101,7 +101,9 @@ export async function serializeOrThrow(
   } as SerializedMessage;
 }
 
-export function deserializeMessage(message: SerializedMessage): ModelMessage {
+export function deserializeMessage(
+  message: SerializedMessage | ModelMessage,
+): ModelMessage {
   return {
     ...message,
     content: deserializeContent(message.content),
@@ -216,6 +218,16 @@ export async function serializeObjectResult(
   };
 }
 
+function getMimeOrMediaType(part: { mediaType?: string; mimeType?: string }) {
+  if ("mediaType" in part) {
+    return part.mediaType;
+  }
+  if ("mimeType" in part) {
+    return part.mimeType;
+  }
+  return undefined;
+}
+
 export async function serializeContent(
   ctx: ActionCtx | RunMutationCtx,
   component: AgentComponent,
@@ -225,15 +237,6 @@ export async function serializeContent(
     return { content };
   }
   const fileIds: string[] = [];
-  function getMimeType(part: { mediaType?: string; mimeType?: string }) {
-    if ("mediaType" in part) {
-      return part.mediaType;
-    }
-    if ("mimeType" in part) {
-      return part.mimeType;
-    }
-    return undefined;
-  }
   const metadata: {
     providerOptions?: ProviderOptions;
     providerMetadata?: ProviderMetadata;
@@ -264,7 +267,7 @@ export async function serializeContent(
               ctx,
               component,
               new Blob([image], {
-                type: getMimeType(part) || guessMimeType(image),
+                type: getMimeOrMediaType(part) || guessMimeType(image),
               }),
             );
             image = file.url;
@@ -272,7 +275,7 @@ export async function serializeContent(
           }
           return {
             type: part.type,
-            mimeType: getMimeType(part),
+            mimeType: getMimeOrMediaType(part),
             ...metadata,
             image,
           } satisfies Infer<typeof vImagePart>;
@@ -283,7 +286,7 @@ export async function serializeContent(
             const { file } = await storeFile(
               ctx,
               component,
-              new Blob([data], { type: getMimeType(part) }),
+              new Blob([data], { type: getMimeOrMediaType(part) }),
             );
             data = file.url;
             fileIds.push(file.fileId);
@@ -292,7 +295,7 @@ export async function serializeContent(
             type: part.type,
             data,
             filename: part.filename,
-            mimeType: getMimeType(part)!,
+            mimeType: getMimeOrMediaType(part)!,
             ...metadata,
           } satisfies Infer<typeof vFilePart>;
         }
@@ -303,8 +306,8 @@ export async function serializeContent(
             args: args ?? null,
             toolCallId: part.toolCallId,
             toolName: part.toolName,
-            ...metadata,
             providerExecuted: part.providerExecuted,
+            ...metadata,
           } satisfies Infer<typeof vToolCallPart>;
         }
         case "tool-result": {
@@ -343,7 +346,9 @@ export async function serializeContent(
   };
 }
 
-export function deserializeContent(content: SerializedContent): Content {
+export function deserializeContent(
+  content: SerializedContent | ModelMessage["content"],
+): Content {
   if (typeof content === "string") {
     return content;
   }
@@ -369,7 +374,7 @@ export function deserializeContent(content: SerializedContent): Content {
         return {
           type: part.type,
           image: deserializeUrl(part.image),
-          mediaType: part.mimeType,
+          mediaType: getMimeOrMediaType(part),
           ...metadata,
         } satisfies ImagePart;
       case "file":
@@ -377,26 +382,30 @@ export function deserializeContent(content: SerializedContent): Content {
           type: part.type,
           data: deserializeUrl(part.data),
           filename: part.filename,
-          mediaType: part.mimeType,
+          mediaType: getMimeOrMediaType(part)!,
           ...metadata,
         } satisfies FilePart;
-      case "tool-call":
+      case "tool-call": {
+        const input = "input" in part ? part.input : part.args;
         return {
           type: part.type,
-          input: part.args ?? null,
-          providerExecuted: part.providerExecuted,
+          input: input ?? null,
           toolCallId: part.toolCallId,
           toolName: part.toolName,
+          providerExecuted: part.providerExecuted,
           ...metadata,
         } satisfies ToolCallPart;
-      case "tool-result":
+      }
+      case "tool-result": {
+        const result = "output" in part ? part.output : part.result;
         return {
           type: part.type,
-          output: part.result ?? null,
+          output: result ?? null,
           toolCallId: part.toolCallId,
           toolName: part.toolName,
           ...metadata,
         } satisfies ToolResultPart;
+      }
       case "reasoning":
         return {
           type: part.type,
@@ -407,8 +416,20 @@ export function deserializeContent(content: SerializedContent): Content {
         // TODO: should we just drop this?
         return {
           type: "reasoning",
-          text: part.data,
+          text: "",
           ...metadata,
+          providerOptions: metadata.providerOptions
+            ? {
+                ...Object.fromEntries(
+                  Object.entries(metadata.providerOptions ?? {}).map(
+                    ([key, value]) => [
+                      key,
+                      { ...value, redactedData: part.data },
+                    ],
+                  ),
+                ),
+              }
+            : undefined,
         } satisfies ReasoningPart;
       default:
         return part satisfies Content;
@@ -507,8 +528,11 @@ export function serializeDataOrUrl(
 }
 
 export function deserializeUrl(
-  urlOrString: string | ArrayBuffer,
+  urlOrString: string | ArrayBuffer | URL | DataContent,
 ): URL | DataContent {
+  if (urlOrString instanceof URL) {
+    return urlOrString;
+  }
   if (typeof urlOrString === "string") {
     if (
       urlOrString.startsWith("http://") ||
