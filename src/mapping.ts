@@ -16,6 +16,7 @@ import {
   type TextPart,
   type ToolCallPart,
   type ToolResultPart,
+  type ProviderMetadata,
 } from "ai";
 import {
   vMessageWithMetadata,
@@ -37,6 +38,7 @@ import { MAX_FILE_SIZE, storeFile } from "./client/files.js";
 import type { Infer } from "convex/values";
 import {
   convertUint8ArrayToBase64,
+  type ProviderOptions,
   type ReasoningPart,
 } from "@ai-sdk/provider-utils";
 import { parse } from "convex-helpers/validators";
@@ -232,6 +234,16 @@ export async function serializeContent(
     }
     return undefined;
   }
+  const metadata: {
+    providerOptions?: ProviderOptions;
+    providerMetadata?: ProviderMetadata;
+  } = {};
+  if ("providerOptions" in content) {
+    metadata.providerOptions = content.providerOptions as ProviderOptions;
+  }
+  if ("providerMetadata" in content) {
+    metadata.providerMetadata = content.providerMetadata as ProviderMetadata;
+  }
   const serialized = await Promise.all(
     content.map(async (part) => {
       switch (part.type) {
@@ -239,7 +251,7 @@ export async function serializeContent(
           return {
             type: part.type,
             text: part.text,
-            providerOptions: part.providerOptions,
+            ...metadata,
           } satisfies Infer<typeof vTextPart>;
         }
         case "image": {
@@ -261,7 +273,7 @@ export async function serializeContent(
           return {
             type: part.type,
             mimeType: getMimeType(part),
-            providerOptions: part.providerOptions,
+            ...metadata,
             image,
           } satisfies Infer<typeof vImagePart>;
         }
@@ -281,7 +293,7 @@ export async function serializeContent(
             data,
             filename: part.filename,
             mimeType: getMimeType(part)!,
-            providerOptions: part.providerOptions,
+            ...metadata,
           } satisfies Infer<typeof vFilePart>;
         }
         case "tool-call": {
@@ -291,7 +303,7 @@ export async function serializeContent(
             args: args ?? null,
             toolCallId: part.toolCallId,
             toolName: part.toolName,
-            providerOptions: part.providerOptions,
+            ...metadata,
             providerExecuted: part.providerExecuted,
           } satisfies Infer<typeof vToolCallPart>;
         }
@@ -302,14 +314,14 @@ export async function serializeContent(
             result: result ?? null,
             toolCallId: part.toolCallId,
             toolName: part.toolName,
-            providerOptions: part.providerOptions,
+            ...metadata,
           } satisfies Infer<typeof vToolResultPart>;
         }
         case "reasoning": {
           return {
             type: part.type,
             text: part.text,
-            providerOptions: part.providerOptions,
+            ...metadata,
           } satisfies Infer<typeof vReasoningPart>;
         }
         // Not in current generation output, but could be in historical messages
@@ -317,7 +329,7 @@ export async function serializeContent(
           return {
             type: part.type,
             data: part.data,
-            providerOptions: part.providerOptions,
+            ...metadata,
           } satisfies Infer<typeof vRedactedReasoningPart>;
         }
         default:
