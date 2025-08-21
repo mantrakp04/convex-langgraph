@@ -17,18 +17,19 @@ import {
   type ToolCallPart,
   type ToolResultPart,
 } from "ai";
-import type {
-  Message,
-  MessageWithMetadata,
-  Usage,
-  vContent,
-  vFilePart,
-  vImagePart,
-  vReasoningPart,
-  vRedactedReasoningPart,
-  vTextPart,
-  vToolCallPart,
-  vToolResultPart,
+import {
+  vMessageWithMetadata,
+  type Message,
+  type MessageWithMetadata,
+  type Usage,
+  type vContent,
+  type vFilePart,
+  type vImagePart,
+  type vReasoningPart,
+  type vRedactedReasoningPart,
+  type vTextPart,
+  type vToolCallPart,
+  type vToolResultPart,
 } from "./validators.js";
 import type { ActionCtx, AgentComponent } from "./client/types.js";
 import type { RunMutationCtx } from "./client/types.js";
@@ -38,6 +39,7 @@ import {
   convertUint8ArrayToBase64,
   type ReasoningPart,
 } from "@ai-sdk/provider-utils";
+import { parse } from "convex-helpers/validators";
 export type AIMessageWithoutId = Omit<AIMessage, "id">;
 
 export type SerializeUrlsAndUint8Arrays<T> = T extends URL
@@ -171,12 +173,12 @@ export async function serializeNewMessagesInStep<TOOLS extends ToolSet>(
       : step.response.messages.slice(-1)
     ).map(async (msg): Promise<MessageWithMetadata> => {
       const { message, fileIds } = await serializeMessage(ctx, component, msg);
-      return {
+      return parse(vMessageWithMetadata, {
         message,
         ...(message.role === "tool" ? toolFields : assistantFields),
         text: step.text,
         fileIds,
-      };
+      });
     }),
   );
   // TODO: capture step.files separately?
