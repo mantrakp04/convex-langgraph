@@ -30,6 +30,8 @@ export function extractText(message: Message | ModelMessage) {
         .filter((c) => c.type === "text")
         .map((c) => c.text)
         .join("");
+    case "system":
+      return message.content;
   }
   return undefined;
 }

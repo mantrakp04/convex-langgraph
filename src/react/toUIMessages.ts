@@ -92,15 +92,6 @@ function groupAssistantMessages(
         message,
       });
     } else {
-      // Assistant or tool message
-      if (coreMessage.role === "tool" && currentAssistantGroup.length === 0) {
-        console.warn(
-          "Tool message without preceding assistant message.. skipping",
-          message,
-        );
-        continue;
-      }
-
       currentAssistantGroup.push(message);
 
       // End group if this is an assistant message without tool calls
@@ -132,8 +123,7 @@ function createSystemUIMessage<
 >(
   message: MessageDoc & { streaming?: boolean },
 ): UIMessage<METADATA, DATA_PARTS, TOOLS> {
-  const text =
-    message.text || ((message.message && extractText(message.message)) ?? "");
+  const text = extractTextFromMessageDoc(message);
   const partCommon = {
     state: message.streaming ? ("streaming" as const) : ("done" as const),
     ...(message.providerMetadata
@@ -155,6 +145,12 @@ function createSystemUIMessage<
   };
 }
 
+function extractTextFromMessageDoc(message: MessageDoc): string {
+  return (
+    message.text || (message.message && extractText(message.message)) || ""
+  );
+}
+
 function createUserUIMessage<
   METADATA = unknown,
   DATA_PARTS extends UIDataTypes = UIDataTypes,
@@ -163,8 +159,6 @@ function createUserUIMessage<
   message: MessageDoc & { streaming?: boolean },
 ): UIMessage<METADATA, DATA_PARTS, TOOLS> {
   const coreMessage = deserializeMessage(message.message!);
-  const text =
-    message.text || ((message.message && extractText(message.message)) ?? "");
   const content = coreMessage.content;
   const nonStringContent =
     content && typeof content !== "string" ? content : [];
@@ -177,10 +171,11 @@ function createUserUIMessage<
   };
 
   const parts: UIMessage<METADATA, DATA_PARTS, TOOLS>["parts"] = [];
+  const text = extractTextFromMessageDoc(message);
   if (text && !nonStringContent.length) {
     parts.push({ type: "text", text });
   }
-  nonStringContent.forEach((contentPart) => {
+  for (const contentPart of nonStringContent) {
     switch (contentPart.type) {
       case "text":
         parts.push({ type: "text", text: contentPart.text, ...partCommon });
@@ -189,8 +184,11 @@ function createUserUIMessage<
       case "image":
         parts.push(toUIFilePart(contentPart));
         break;
+      default:
+        console.warn("Unknown content part type for user", contentPart);
+        break;
     }
-  });
+  }
 
   return {
     id: message._id,
@@ -210,8 +208,11 @@ function createAssistantUIMessage<
   DATA_PARTS extends UIDataTypes = UIDataTypes,
   TOOLS extends UITools = UITools,
 >(
-  group: (MessageDoc & { streaming?: boolean })[],
+  groupUnordered: (MessageDoc & { streaming?: boolean })[],
 ): UIMessage<METADATA, DATA_PARTS, TOOLS> {
+  const group = groupUnordered.sort(
+    (a, b) => a.order - b.order || a.stepOrder - b.stepOrder,
+  );
   const firstMessage = group[0];
 
   // Use first message for special fields
