@@ -20,6 +20,7 @@ import {
 import type { Infer } from "convex/values";
 import { serializeWarnings } from "../mapping.js";
 import { parse } from "convex-helpers/validators";
+import { sorted } from "../shared.js";
 
 export function mergeDeltas(
   threadId: string,
@@ -64,10 +65,7 @@ export function mergeDeltas(
       changed = true;
     }
   }
-  const messages = newStreams
-    .map((s) => s.messages)
-    .flat()
-    .sort((a, b) => a.order - b.order || a.stepOrder - b.stepOrder);
+  const messages = sorted(newStreams.map((s) => s.messages).flat());
   return [messages, newStreams, changed];
 }
 

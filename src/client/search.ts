@@ -11,6 +11,7 @@ import {
   DEFAULT_MESSAGE_RANGE,
   DEFAULT_RECENT_MESSAGES,
   extractText,
+  sorted,
 } from "../shared.js";
 import type { Message } from "../validators.js";
 
@@ -140,12 +141,7 @@ export async function fetchContextMessages(
     );
   }
   // Ensure we don't include tool messages without a corresponding tool call
-  return filterOutOrphanedToolMessages(
-    contextMessages.sort((a, b) =>
-      // Sort the raw MessageDocs by order and stepOrder
-      a.order === b.order ? a.stepOrder - b.stepOrder : a.order - b.order,
-    ),
-  );
+  return filterOutOrphanedToolMessages(sorted(contextMessages));
 }
 
 /**

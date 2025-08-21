@@ -10,6 +10,7 @@ import {
   DEFAULT_RECENT_MESSAGES,
   extractText,
   isTool,
+  sorted,
 } from "../shared.js";
 import {
   vMessageEmbeddingsWithDimension,
@@ -631,11 +632,11 @@ export const _fetchSearchMessages = internalQuery({
       .map(publicMessage);
     messages.push(...(args.textSearchMessages ?? []));
     // TODO: prioritize more recent messages
-    messages.sort((a, b) => a.order! - b.order!);
+    messages = sorted(messages);
     messages = messages.slice(0, args.limit);
     // Fetch the surrounding messages
     if (!threadId) {
-      return messages.sort((a, b) => a.order - b.order);
+      return messages;
     }
     const included: Record<string, Set<number>> = {};
     for (const m of messages) {
@@ -688,7 +689,7 @@ export const _fetchSearchMessages = internalQuery({
         messages.push(publicMessage(r));
       }
     }
-    return messages.sort((a, b) => a.order - b.order);
+    return sorted(messages);
   },
 });
 
