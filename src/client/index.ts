@@ -59,7 +59,7 @@ import {
   type ProviderMetadata,
   type StreamArgs,
 } from "../validators.js";
-import { createTool, wrapTools, type ToolCtx } from "./createTool.js";
+import { wrapTools, type ToolCtx } from "./createTool.js";
 import {
   listMessages,
   saveMessages,
@@ -164,7 +164,8 @@ export {
   updateThreadMetadata,
   searchThreadTitles,
 } from "./threads.js";
-export { createTool, extractText, isTool };
+export { extractText, isTool, sorted } from "../shared.js";
+export { createTool } from "./createTool.js";
 export type {
   AgentComponent,
   ContextOptions,
@@ -179,8 +180,8 @@ export type {
   UsageHandler,
 };
 
- // 10k characters should be more than enough for most cases, and stays under
- // the 8k token limit for some models.
+// 10k characters should be more than enough for most cases, and stays under
+// the 8k token limit for some models.
 const MAX_EMBEDDING_TEXT_LENGTH = 10_000;
 
 export type Config = {
