@@ -219,12 +219,10 @@ export class DeltaStreamer {
       metadata.abortSignal.addEventListener("abort", async () => {
         if (this.streamId) {
           this.abortController.abort();
-          const finalDelta = this.#createDelta();
           await this.#ongoingWrite;
           await this.ctx.runMutation(this.component.streams.abort, {
             streamId: this.streamId,
             reason: "abortSignal",
-            finalDelta,
           });
         }
       });
@@ -302,11 +300,9 @@ export class DeltaStreamer {
     if (!this.streamId) {
       return;
     }
-    const finalDelta = this.#createDelta();
     await this.#ongoingWrite;
     await this.ctx.runMutation(this.component.streams.finish, {
       streamId: this.streamId,
-      finalDelta,
     });
   }
 
@@ -318,12 +314,10 @@ export class DeltaStreamer {
     if (!this.streamId) {
       return;
     }
-    const finalDelta = this.#createDelta();
     await this.#ongoingWrite;
     await this.ctx.runMutation(this.component.streams.abort, {
       streamId: this.streamId,
       reason,
-      finalDelta,
     });
   }
 }
