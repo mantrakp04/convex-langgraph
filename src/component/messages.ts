@@ -351,7 +351,7 @@ export const finalizeMessage = mutation({
       return;
     }
     // See if we can add any in-progress data
-    if (message.message === undefined) {
+    if (!message.message?.content.length) {
       const messages = await getStreamingMessagesWithMetadata(
         ctx,
         message,

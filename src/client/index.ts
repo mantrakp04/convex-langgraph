@@ -431,7 +431,12 @@ export class Agent<
     };
   }
 
-  async start<TOOLS extends ToolSet | undefined, T>(
+  async start<
+    TOOLS extends ToolSet | undefined,
+    T extends {
+      _internal?: { generateId?: IdGenerator };
+    },
+  >(
     ctx: ActionCtx & CustomCtx,
     /**
      * These are the arguments you'll pass to the LLM call such as
@@ -805,17 +810,23 @@ export class Agent<
     const opts = { ...this.options, ...options };
     const streamer =
       threadId && opts.saveStreamDeltas
-        ? new DeltaStreamer(this.component, ctx, opts.saveStreamDeltas, {
-            threadId,
-            userId,
-            agentName: this.options.name,
-            model: getModelName(args.model),
-            provider: getProviderName(args.model),
-            providerOptions: args.providerOptions,
-            order,
-            stepOrder,
-            abortSignal: args.abortSignal,
-          })
+        ? new DeltaStreamer(
+            this.component,
+            ctx,
+            opts.saveStreamDeltas,
+            call.fail,
+            {
+              threadId,
+              userId,
+              agentName: this.options.name,
+              model: getModelName(args.model),
+              provider: getProviderName(args.model),
+              providerOptions: args.providerOptions,
+              order,
+              stepOrder,
+              abortSignal: args.abortSignal,
+            },
+          )
         : undefined;
 
     const result = streamText({

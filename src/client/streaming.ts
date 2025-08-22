@@ -197,6 +197,7 @@ export class DeltaStreamer {
     public readonly component: AgentComponent,
     public readonly ctx: RunActionCtx,
     options: true | StreamingOptions,
+    private onAsyncAbort: (reason: string) => Promise<void>,
     public readonly metadata: {
       threadId: string;
       userId?: string;
@@ -210,13 +211,16 @@ export class DeltaStreamer {
     },
   ) {
     this.options =
-      typeof options === "boolean"
+      options === true
         ? DEFAULT_STREAMING_OPTIONS
         : { ...DEFAULT_STREAMING_OPTIONS, ...options };
     this.#nextParts = [];
     this.abortController = new AbortController();
     if (metadata.abortSignal) {
       metadata.abortSignal.addEventListener("abort", async () => {
+        if (this.abortController.signal.aborted) {
+          return;
+        }
         if (this.streamId) {
           this.abortController.abort();
           await this.#ongoingWrite;
@@ -263,9 +267,12 @@ export class DeltaStreamer {
         delta,
       );
       if (!success) {
+        await this.onAsyncAbort("async abort");
         this.abortController.abort();
+        return;
       }
     } catch (e) {
+      await this.onAsyncAbort(e instanceof Error ? e.message : "unknown error");
       this.abortController.abort();
       throw e;
     }
