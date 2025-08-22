@@ -484,9 +484,6 @@ export class Agent<
        * aborted, it will trigger this signal when detected.
        */
       abortSignal?: AbortSignal;
-      // We optimistically override the generateId function to use the pending
-      // message id.
-      _internal?: { generateId?: IdGenerator };
       stopWhen?:
         | StopCondition<TOOLS extends undefined ? AgentTools : TOOLS>
         | Array<StopCondition<TOOLS extends undefined ? AgentTools : TOOLS>>;
@@ -497,7 +494,6 @@ export class Agent<
       system?: string;
       model: LanguageModel;
       messages: ModelMessage[];
-      // abortSignal?: AbortSignal;
       tools?: TOOLS extends undefined ? AgentTools : TOOLS;
     } & CallSettings;
     order: number;
@@ -515,23 +511,17 @@ export class Agent<
     getSavedMessages: () => MessageDoc[];
   }> {
     const { threadId, ...opts } = { ...this.options, ...options };
-    const context = await this._saveMessagesAndFetchContext(ctx, args, {
+    const context = await this._saveMessagesAndFetchContext(ctx, {
       userId: options?.userId,
       threadId: options?.threadId,
+      messages: args.messages,
+      prompt: args.prompt,
+      promptMessageId: args.promptMessageId,
       ...opts,
     });
     let pendingMessageId = context.pendingMessageId;
-    // TODO: extract pending message if one exists
-    const { args: aiArgs, promptMessageId, order, stepOrder, userId } = context;
-    const messages = context.savedMessages ?? [];
-    if (pendingMessageId) {
-      if (!aiArgs._internal?.generateId) {
-        aiArgs._internal = {
-          ...aiArgs._internal,
-          generateId: () => pendingMessageId ?? crypto.randomUUID(),
-        };
-      }
-    }
+    const { messages, promptMessageId, order, stepOrder, userId } = context;
+    const savedMessages = context.savedMessages ?? [];
     const toolCtx = {
       ...(ctx as UserActionCtx & CustomCtx),
       userId,
@@ -555,10 +545,9 @@ export class Agent<
         });
       }
     };
-    let activeModel = aiArgs.model;
-    if (aiArgs.abortSignal) {
-      const abortSignal = aiArgs.abortSignal;
-      aiArgs.abortSignal.addEventListener(
+    if (args.abortSignal) {
+      const abortSignal = args.abortSignal;
+      abortSignal.addEventListener(
         "abort",
         async () => {
           await fail(abortSignal.reason ?? "Aborted");
@@ -566,21 +555,39 @@ export class Agent<
         { once: true },
       );
     }
+    const aiArgs = {
+      ...this.options.callSettings,
+      ...this.options.providerOptions,
+      ...omit(args, ["messages", "prompt", "promptMessageId"]),
+      model: args.model ?? this.options.languageModel,
+      system: args.system ?? this.options.instructions,
+      messages,
+      stopWhen:
+        args.stopWhen ??
+        this.options.stopWhen ??
+        stepCountIs(this.options.maxSteps ?? 1),
+      tools,
+    } as T & {
+      model: LanguageModel;
+      messages: ModelMessage[];
+      tools?: TOOLS extends undefined ? AgentTools : TOOLS;
+    } & CallSettings;
+    if (pendingMessageId) {
+      if (!aiArgs._internal?.generateId) {
+        aiArgs._internal = {
+          ...aiArgs._internal,
+          generateId: () => pendingMessageId ?? crypto.randomUUID(),
+        };
+      }
+    }
+    let activeModel = aiArgs.model;
     return {
-      args: {
-        stopWhen:
-          args.stopWhen ??
-          this.options.stopWhen ??
-          stepCountIs(this.options.maxSteps ?? 1),
-        ...aiArgs,
-        tools,
-        // abortSignal: abortController.signal,
-      },
+      args: aiArgs,
       order: order ?? 0,
       stepOrder: stepOrder ?? 0,
       userId,
       promptMessageId,
-      getSavedMessages: () => messages,
+      getSavedMessages: () => savedMessages,
       updateModel: (model: LanguageModel | undefined) => {
         if (model) {
           activeModel = model;
@@ -642,18 +649,18 @@ export class Agent<
           if (createPendingMessage) {
             if (lastMessage.status === "failed") {
               pendingMessageId = undefined;
-              messages.push(...saved.messages);
+              savedMessages.push(...saved.messages);
               await fail(
                 lastMessage.error ??
                   "Aborting - the pending message was marked as failed",
               );
             } else {
               pendingMessageId = lastMessage._id;
-              messages.push(...saved.messages.slice(0, -1));
+              savedMessages.push(...saved.messages.slice(0, -1));
             }
           } else {
             pendingMessageId = undefined;
-            messages.push(...saved.messages);
+            savedMessages.push(...saved.messages);
           }
         }
         const output = "object" in toSave ? toSave.object : toSave.step;
@@ -1654,30 +1661,23 @@ export class Agent<
     });
   }
 
-  async _saveMessagesAndFetchContext<
-    T extends {
-      prompt?: string | (ModelMessage | Message)[];
-      messages?: (ModelMessage | Message)[];
-      system?: string;
-      promptMessageId?: string;
-      pendingMessageId?: string;
-      model?: LanguageModel;
-    },
-  >(
+  async _saveMessagesAndFetchContext(
     ctx: RunActionCtx,
-    args: T,
     {
       userId: argsUserId,
       threadId,
       contextOptions,
       storageOptions,
+      ...args
     }: {
+      prompt: string | (ModelMessage | Message)[] | undefined;
+      messages: (ModelMessage | Message)[] | undefined;
+      promptMessageId: string | undefined;
       userId: string | null | undefined;
       threadId: string | undefined;
     } & Options,
   ): Promise<{
-    args: Extract<T, { model: LanguageModel; messages: ModelMessage[] }> &
-      CallSettings;
+    messages: ModelMessage[];
     userId: string | undefined;
     promptMessageId: string | undefined;
     pendingMessageId: string | undefined;
@@ -1687,7 +1687,7 @@ export class Agent<
   }> {
     // If only a promptMessageId is provided, this will be empty.
     const messages: (ModelMessage | Message)[] = args.messages ?? [];
-    const prompt: ModelMessage[] = !args.prompt
+    const promptArray: ModelMessage[] = !args.prompt
       ? []
       : Array.isArray(args.prompt)
         ? args.prompt.map((p) => deserializeMessage(p))
@@ -1724,14 +1724,14 @@ export class Agent<
     if (threadId && storageOptions?.saveMessages !== "none") {
       let saved: { messages: MessageDoc[] };
       if (
-        messages.length + prompt.length &&
+        messages.length + promptArray.length &&
         // If it was a promptMessageId, we don't want to save it again.
         (!args.promptMessageId || storageOptions?.saveMessages === "all")
       ) {
         const saveAll = storageOptions?.saveMessages === "all";
         const coreMessages: (ModelMessage | Message)[] = [
           ...messages,
-          ...prompt,
+          ...promptArray,
         ];
         const toSave = saveAll ? coreMessages : coreMessages.slice(-1);
         const metadata = Array.from({ length: toSave.length }, () => ({}));
@@ -1740,8 +1740,8 @@ export class Agent<
           userId,
           messages: [...toSave, { role: "assistant", content: [] }],
           metadata: [...metadata, { status: "pending" }],
-          failPendingSteps: !!args.pendingMessageId,
-          pendingMessageId: args.pendingMessageId,
+          // TODO: sanity check
+          failPendingSteps: !!args.promptMessageId,
         });
         promptMessageId = saved.messages.at(-2)!._id;
       } else {
@@ -1750,8 +1750,7 @@ export class Agent<
           userId,
           messages: [{ role: "assistant", content: [] }],
           metadata: [{ status: "pending" }],
-          failPendingSteps: !!args.pendingMessageId,
-          pendingMessageId: args.pendingMessageId,
+          failPendingSteps: !!args.promptMessageId,
         });
       }
       pendingMessageId = saved.messages.at(-1)!._id;
@@ -1785,7 +1784,7 @@ export class Agent<
     let processedMessages: ModelMessage[] = [
       ...prePrompt,
       ...messages,
-      ...prompt,
+      ...promptArray,
       ...existingResponses,
     ].map((m) => deserializeMessage(m));
 
@@ -1794,17 +1793,8 @@ export class Agent<
       processedMessages = await inlineMessagesFiles(processedMessages);
     }
 
-    const { prompt: _, model, ...rest } = args;
     return {
-      args: {
-        ...this.options.callSettings,
-        ...this.options.providerOptions,
-        ...rest,
-        model: model ?? this.options.languageModel,
-        system: args.system ?? this.options.instructions,
-        messages: processedMessages,
-      } as Extract<T, { model: LanguageModel; messages: ModelMessage[] }> &
-        CallSettings,
+      messages: processedMessages,
       userId,
       promptMessageId,
       pendingMessageId,
