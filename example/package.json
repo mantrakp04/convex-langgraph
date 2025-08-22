@@ -22,6 +22,7 @@
     "@convex-dev/rate-limiter": "^0.2.12",
     "@convex-dev/workflow": "^0.2.6-alpha.1",
     "@hookform/resolvers": "^5.0.1",
+    "@openrouter/ai-sdk-provider": "^1.1.2",
     "@radix-ui/react-accordion": "^1.2.4",
     "@radix-ui/react-checkbox": "^1.1.5",
     "@radix-ui/react-label": "^2.1.3",

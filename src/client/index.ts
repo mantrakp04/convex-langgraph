@@ -179,6 +179,7 @@ export type {
   ThreadDoc,
   UsageHandler,
 };
+export { mockModel } from "./mockModel.js";
 
 // 10k characters should be more than enough for most cases, and stays under
 // the 8k token limit for some models.
