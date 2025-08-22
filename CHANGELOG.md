@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.5 alpha
+## 0.2.5
 
 - omit fileIds in saveMessages when none present (credit:mlshv)
 - Add source as a first-class content type for assistants (unstable)
