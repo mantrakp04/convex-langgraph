@@ -4,6 +4,10 @@
 
 - omit fileIds in saveMessages when none present (credit:mlshv)
 - Add source as a first-class content type for assistants (unstable)
+- Adds a `mockModel` utility for testing (that works in the default Convex
+  runtime).
+- Fixes async abort saving of messages.
+- No longer saves the final delta when aborting a stream async.
 
 ## 0.2.4
 
