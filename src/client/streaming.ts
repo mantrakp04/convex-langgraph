@@ -1,10 +1,4 @@
-import {
-  type ChunkDetector,
-  smoothStream,
-  type StreamTextTransform,
-  type TextStreamPart,
-  type ToolSet,
-} from "ai";
+import { type ChunkDetector } from "ai";
 import {
   vStreamDelta,
   vStreamMessage,
@@ -21,8 +15,6 @@ import type {
   RunQueryCtx,
   SyncStreamsReturnValue,
 } from "./types.js";
-import { omit } from "convex-helpers";
-import { serializeTextStreamingPartsV5 } from "../parts.js";
 import { v } from "convex/values";
 import { vMessageDoc } from "../component/schema.js";
 
@@ -161,33 +153,21 @@ export const DEFAULT_STREAMING_OPTIONS = {
   returnImmediately: false,
 } satisfies StreamingOptions;
 
-export function mergeTransforms<TOOLS extends ToolSet>(
-  options: StreamingOptions | boolean | undefined,
-  existing:
-    | StreamTextTransform<TOOLS>
-    | Array<StreamTextTransform<TOOLS>>
-    | undefined,
-) {
-  if (!options) {
-    return existing;
-  }
-  const chunking =
-    typeof options === "boolean"
-      ? DEFAULT_STREAMING_OPTIONS.chunking
-      : options.chunking;
-  const transforms = Array.isArray(existing)
-    ? existing
-    : existing
-      ? [existing]
-      : [];
-  transforms.push(smoothStream({ delayInMs: null, chunking }));
-  return transforms;
-}
-
-export class DeltaStreamer {
+/**
+ * DeltaStreamer can be used to save a stream of "parts" by writing
+ * batches of them in "deltas" to the database so clients can subscribe
+ * (using the syncStreams utility and client hooks) and re-hydrate the stream.
+ * You can optionally compress the parts, e.g. concatenating text deltas, to
+ * optimize the data in transit.
+ */
+export class DeltaStreamer<T> {
   public streamId: string | undefined;
-  public readonly options: Required<StreamingOptions>;
-  #nextParts: TextStreamPart<ToolSet>[] = [];
+  public readonly config: {
+    stream: Required<StreamingOptions>;
+    onAsyncAbort: (reason: string) => Promise<void>;
+    compress: ((parts: T[]) => T[]) | null;
+  };
+  #nextParts: T[] = [];
   #latestWrite: number = 0;
   #ongoingWrite: Promise<void> | undefined;
   #cursor: number = 0;
@@ -196,8 +176,12 @@ export class DeltaStreamer {
   constructor(
     public readonly component: AgentComponent,
     public readonly ctx: RunActionCtx,
-    options: true | StreamingOptions,
-    private onAsyncAbort: (reason: string) => Promise<void>,
+    config: {
+      stream: true | StreamingOptions;
+      onAsyncAbort: (reason: string) => Promise<void>;
+      abortSignal: AbortSignal | undefined;
+      compress: ((parts: T[]) => T[]) | null;
+    },
     public readonly metadata: {
       threadId: string;
       userId?: string;
@@ -207,17 +191,20 @@ export class DeltaStreamer {
       model?: string;
       provider?: string;
       providerOptions?: ProviderOptions;
-      abortSignal?: AbortSignal;
     },
   ) {
-    this.options =
-      options === true
-        ? DEFAULT_STREAMING_OPTIONS
-        : { ...DEFAULT_STREAMING_OPTIONS, ...options };
+    this.config = {
+      stream:
+        config.stream === true
+          ? DEFAULT_STREAMING_OPTIONS
+          : { ...DEFAULT_STREAMING_OPTIONS, ...config },
+      onAsyncAbort: config.onAsyncAbort,
+      compress: config.compress,
+    };
     this.#nextParts = [];
     this.abortController = new AbortController();
-    if (metadata.abortSignal) {
-      metadata.abortSignal.addEventListener("abort", async () => {
+    if (config.abortSignal) {
+      config.abortSignal.addEventListener("abort", async () => {
         if (this.abortController.signal.aborted) {
           return;
         }
@@ -233,20 +220,20 @@ export class DeltaStreamer {
     }
   }
 
-  public async addParts(parts: TextStreamPart<ToolSet>[]) {
+  public async addParts(parts: T[]) {
     if (this.abortController.signal.aborted) {
       return;
     }
     if (!this.streamId) {
       this.streamId = await this.ctx.runMutation(
         this.component.streams.create,
-        omit(this.metadata, ["abortSignal"]),
+        this.metadata,
       );
     }
     this.#nextParts.push(...parts);
     if (
       !this.#ongoingWrite &&
-      Date.now() - this.#latestWrite >= this.options.throttleMs
+      Date.now() - this.#latestWrite >= this.config.stream.throttleMs
     ) {
       this.#ongoingWrite = this.#sendDelta();
     }
@@ -267,19 +254,21 @@ export class DeltaStreamer {
         delta,
       );
       if (!success) {
-        await this.onAsyncAbort("async abort");
+        await this.config.onAsyncAbort("async abort");
         this.abortController.abort();
         return;
       }
     } catch (e) {
-      await this.onAsyncAbort(e instanceof Error ? e.message : "unknown error");
+      await this.config.onAsyncAbort(
+        e instanceof Error ? e.message : "unknown error",
+      );
       this.abortController.abort();
       throw e;
     }
     // Now that we've sent the delta, check if we need to send another one.
     if (
       this.#nextParts.length > 0 &&
-      Date.now() - this.#latestWrite >= this.options.throttleMs
+      Date.now() - this.#latestWrite >= this.config.stream.throttleMs
     ) {
       // We send again immediately with the accumulated deltas.
       this.#ongoingWrite = this.#sendDelta();
@@ -295,7 +284,9 @@ export class DeltaStreamer {
     const start = this.#cursor;
     const end = start + this.#nextParts.length;
     this.#cursor = end;
-    const parts = serializeTextStreamingPartsV5(this.#nextParts);
+    const parts = this.config.compress
+      ? this.config.compress(this.#nextParts)
+      : this.#nextParts;
     this.#nextParts = [];
     if (!this.streamId) {
       throw new Error("Creating a delta before the stream is created");

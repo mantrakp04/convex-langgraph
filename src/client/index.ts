@@ -73,10 +73,13 @@ import {
 } from "./search.js";
 import {
   DeltaStreamer,
-  mergeTransforms,
   syncStreams,
   type StreamingOptions,
 } from "./streaming.js";
+import {
+  mergeTransforms,
+  serializeTextStreamingPartsV5,
+} from "./textStreamParts.js";
 import { createThread, getThreadMetadata } from "./threads.js";
 import type {
   ActionCtx,
@@ -813,8 +816,12 @@ export class Agent<
         ? new DeltaStreamer(
             this.component,
             ctx,
-            opts.saveStreamDeltas,
-            call.fail,
+            {
+              stream: opts.saveStreamDeltas,
+              onAsyncAbort: call.fail,
+              compress: serializeTextStreamingPartsV5,
+              abortSignal: args.abortSignal,
+            },
             {
               threadId,
               userId,
@@ -824,7 +831,6 @@ export class Agent<
               providerOptions: args.providerOptions,
               order,
               stepOrder,
-              abortSignal: args.abortSignal,
             },
           )
         : undefined;
@@ -832,7 +838,6 @@ export class Agent<
     const result = streamText({
       ...args,
       abortSignal: streamer?.abortController.signal ?? args.abortSignal,
-      // TODO: this is probably why reasoning isn't streaming
       experimental_transform: mergeTransforms(
         options?.saveStreamDeltas,
         streamTextArgs.experimental_transform,

@@ -1,4 +1,13 @@
-import type { TextStreamPart, ToolSet } from "ai";
+import {
+  smoothStream,
+  type StreamTextTransform,
+  type ToolSet,
+  type TextStreamPart,
+} from "ai";
+import {
+  DEFAULT_STREAMING_OPTIONS,
+  type StreamingOptions,
+} from "./streaming.js";
 
 export function serializeTextStreamingPartsV5(
   parts: TextStreamPart<ToolSet>[],
@@ -36,4 +45,27 @@ export function serializeTextStreamingPartsV5(
     }
   }
   return compressed;
+}
+
+export function mergeTransforms<TOOLS extends ToolSet>(
+  options: StreamingOptions | boolean | undefined,
+  existing:
+    | StreamTextTransform<TOOLS>
+    | Array<StreamTextTransform<TOOLS>>
+    | undefined,
+) {
+  if (!options) {
+    return existing;
+  }
+  const chunking =
+    typeof options === "boolean"
+      ? DEFAULT_STREAMING_OPTIONS.chunking
+      : options.chunking;
+  const transforms = Array.isArray(existing)
+    ? existing
+    : existing
+      ? [existing]
+      : [];
+  transforms.push(smoothStream({ delayInMs: null, chunking }));
+  return transforms;
 }
