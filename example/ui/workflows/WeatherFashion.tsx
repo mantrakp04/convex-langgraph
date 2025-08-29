@@ -147,7 +147,7 @@ export function WeatherFashion() {
                     <div key={i} className="font-mono text-sm text-green-700">
                       <strong>Result from {c.toolName}:</strong>
                       <pre className="bg-white border rounded p-2 mt-1 text-xs">
-                        {JSON.stringify(c.result, null, 2)}
+                        {JSON.stringify(c.output, null, 2)}
                       </pre>
                     </div>
                   ));
