@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 
 const FPS = 20;
 const MS_PER_FRAME = 1000 / FPS;
-const MAX_TIME_JUMP_MS = 250;
+const INITIAL_CHARS_PER_SEC = 128;
 
 export type SmoothTextOptions = {
   /**
@@ -28,17 +28,21 @@ export type SmoothTextOptions = {
  */
 export function useSmoothText(
   text: string,
-  { charsPerSec = 256, startStreaming = false }: SmoothTextOptions = {},
+  {
+    charsPerSec = INITIAL_CHARS_PER_SEC,
+    startStreaming = false,
+  }: SmoothTextOptions = {},
 ): [string, { cursor: number; isStreaming: boolean }] {
   const [visibleText, setVisibleText] = useState(
     startStreaming ? "" : text || "",
   );
   const smoothState = useRef({
-    tick: Date.now() + (visibleText.length * 1000) / charsPerSec,
+    tick: Date.now(),
     cursor: visibleText.length,
-    start: Date.now(),
-    initialLength: visibleText.length,
+    lastUpdate: Date.now(),
+    lastUpdateLength: text.length,
     charsPerMs: charsPerSec / 1000,
+    initial: true,
   });
 
   const isStreaming = smoothState.current.cursor < text.length;
@@ -47,46 +51,51 @@ export function useSmoothText(
     if (!isStreaming) {
       return;
     }
-    if (
-      smoothState.current.cursor === 0 &&
-      smoothState.current.initialLength === 0
-    ) {
-      smoothState.current.cursor = text.length;
-      smoothState.current.start = Date.now();
-      smoothState.current.initialLength = text.length;
-      smoothState.current.charsPerMs = charsPerSec / 1000;
-    } else {
+    if (smoothState.current.lastUpdateLength !== text.length) {
+      const timeSinceLastUpdate = Date.now() - smoothState.current.lastUpdate;
       const latestCharsPerMs =
-        (text.length - smoothState.current.initialLength) /
-        (Date.now() - smoothState.current.start);
-      // Smooth out the charsPerSec by averaging it with the previous value.
+        (text.length - smoothState.current.lastUpdateLength) /
+        timeSinceLastUpdate;
+      // Is the rate increasing?
+      const rateError = latestCharsPerMs - smoothState.current.charsPerMs;
+      // Is our visible text falling behind what it could show?
+      const charLag =
+        smoothState.current.lastUpdateLength - smoothState.current.cursor;
+      const lagRate = charLag / timeSinceLastUpdate;
+      const charsPerMs =
+        latestCharsPerMs +
+        (smoothState.current.initial
+          ? 0
+          : Math.max(0, (rateError + lagRate) / 2));
+      smoothState.current.initial = false;
+      // Smooth out the charsPerSec by weighting it with the previous value.
       smoothState.current.charsPerMs = Math.min(
-        (2 * latestCharsPerMs + smoothState.current.charsPerMs) / 3,
+        (2 * charsPerMs + smoothState.current.charsPerMs) / 3,
         smoothState.current.charsPerMs * 2,
       );
-      smoothState.current.tick = Math.max(
-        smoothState.current.tick,
-        Date.now() - 2 * MS_PER_FRAME,
-      );
     }
+    smoothState.current.tick = Math.max(
+      smoothState.current.tick,
+      Date.now() - MS_PER_FRAME,
+    );
+    smoothState.current.lastUpdate = Date.now();
+    smoothState.current.lastUpdateLength = text.length;
 
     function update() {
       if (smoothState.current.cursor >= text.length) {
         return;
       }
       const now = Date.now();
-      const timeSinceLastUpdate = Math.min(
-        MAX_TIME_JUMP_MS,
-        now - smoothState.current.tick,
-      );
-      const chars = Math.floor(
+      const timeSinceLastUpdate = now - smoothState.current.tick;
+      const charsSinceLastUpdate = Math.floor(
         timeSinceLastUpdate * smoothState.current.charsPerMs,
       );
-      smoothState.current.cursor = Math.min(
-        smoothState.current.cursor + chars,
-        text.length,
+      const chars = Math.min(
+        charsSinceLastUpdate,
+        text.length - smoothState.current.cursor,
       );
-      smoothState.current.tick = now;
+      smoothState.current.cursor += chars;
+      smoothState.current.tick += chars / smoothState.current.charsPerMs;
       setVisibleText(text.slice(0, smoothState.current.cursor));
     }
     update();
