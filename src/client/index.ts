@@ -1940,7 +1940,6 @@ export class Agent<
           llmArgs.stopWhen = stepCountIs(args.maxSteps);
         }
         const opts = {
-          ...this.options,
           ...pick(spec, ["contextOptions", "storageOptions"]),
           ...pick(args, ["contextOptions", "storageOptions"]),
           saveStreamDeltas: stream,
@@ -1964,7 +1963,7 @@ export class Agent<
             promptMessageId: result.promptMessageId,
             order: result.order,
             finishReason: await result.finishReason,
-            warnings: result.warnings,
+            warnings: await result.warnings,
             savedMessageIds: result.savedMessages?.map((m) => m._id) ?? [],
           };
         } else {
