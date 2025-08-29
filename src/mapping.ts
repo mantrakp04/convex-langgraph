@@ -433,7 +433,7 @@ export function deserializeContent(
   }) as Content;
 }
 
-function normalizeToolOutput(
+export function normalizeToolOutput(
   result: string | JSONValue | undefined,
 ): ToolResultPart["output"] {
   if (typeof result === "string") {

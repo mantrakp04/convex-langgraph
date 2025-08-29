@@ -1,4 +1,5 @@
 import type {
+  JSONValue,
   ProviderMetadata,
   TextStreamPart,
   ToolSet,
@@ -18,7 +19,7 @@ import {
   type vToolResultPart,
 } from "../validators.js";
 import type { Infer } from "convex/values";
-import { serializeWarnings } from "../mapping.js";
+import { normalizeToolOutput, serializeWarnings } from "../mapping.js";
 import { parse } from "convex-helpers/validators";
 import { sorted } from "../shared.js";
 
@@ -267,7 +268,9 @@ export function applyDeltasToStreamMessage(
           lastContent?.type === "tool-result" &&
           lastContent.toolCallId === part.toolCallId
         ) {
-          lastContent.result = part.output;
+          lastContent.output = normalizeToolOutput(
+            part.output as string | JSONValue | undefined,
+          );
           lastContent.providerExecuted = part.providerExecuted;
         } else {
           console.warn(
@@ -376,7 +379,10 @@ export function applyDeltasToStreamMessage(
           lastContent.toolCallId === part.toolCallId
         ) {
           lastContent.isError = true;
-          lastContent.result = part.errorText;
+          lastContent.output = {
+            type: "error-text",
+            value: part.errorText,
+          };
           lastContent.providerExecuted = part.providerExecuted;
         } else if (
           lastContent?.type === "tool-call" &&
@@ -391,7 +397,10 @@ export function applyDeltasToStreamMessage(
             toolCallId: part.toolCallId,
             toolName: lastContent.toolName,
             args: lastContent.args,
-            result: part.errorText,
+            output: {
+              type: "error-text",
+              value: part.errorText,
+            },
             providerExecuted: part.providerExecuted,
             isError: true,
           } satisfies Infer<typeof vToolResultPart>;
@@ -408,7 +417,10 @@ export function applyDeltasToStreamMessage(
           lastContent.toolCallId === part.toolCallId
         ) {
           lastContent.isError = true;
-          lastContent.result = part.error;
+          lastContent.output = {
+            type: "error-json",
+            value: part.error,
+          };
           lastContent.providerExecuted = part.providerExecuted;
         } else {
           if (
