@@ -249,13 +249,29 @@ export type Mounts = {
                             | { data: string; mimeType?: string; type: "image" }
                           >;
                           isError?: boolean;
+                          output?:
+                            | { type: "text"; value: string }
+                            | { type: "json"; value: any }
+                            | { type: "error-text"; value: string }
+                            | { type: "error-json"; value: any }
+                            | {
+                                type: "content";
+                                value: Array<
+                                  | { text: string; type: "text" }
+                                  | {
+                                      data: string;
+                                      mediaType: string;
+                                      type: "media";
+                                    }
+                                >;
+                              };
                           providerExecuted?: boolean;
                           providerMetadata?: Record<
                             string,
                             Record<string, any>
                           >;
                           providerOptions?: Record<string, Record<string, any>>;
-                          result: any;
+                          result?: any;
                           toolCallId: string;
                           toolName: string;
                           type: "tool-result";
@@ -297,10 +313,22 @@ export type Mounts = {
                     | { data: string; mimeType?: string; type: "image" }
                   >;
                   isError?: boolean;
+                  output?:
+                    | { type: "text"; value: string }
+                    | { type: "json"; value: any }
+                    | { type: "error-text"; value: string }
+                    | { type: "error-json"; value: any }
+                    | {
+                        type: "content";
+                        value: Array<
+                          | { text: string; type: "text" }
+                          | { data: string; mediaType: string; type: "media" }
+                        >;
+                      };
                   providerExecuted?: boolean;
                   providerMetadata?: Record<string, Record<string, any>>;
                   providerOptions?: Record<string, Record<string, any>>;
-                  result: any;
+                  result?: any;
                   toolCallId: string;
                   toolName: string;
                   type: "tool-result";
@@ -483,13 +511,29 @@ export type Mounts = {
                             | { data: string; mimeType?: string; type: "image" }
                           >;
                           isError?: boolean;
+                          output?:
+                            | { type: "text"; value: string }
+                            | { type: "json"; value: any }
+                            | { type: "error-text"; value: string }
+                            | { type: "error-json"; value: any }
+                            | {
+                                type: "content";
+                                value: Array<
+                                  | { text: string; type: "text" }
+                                  | {
+                                      data: string;
+                                      mediaType: string;
+                                      type: "media";
+                                    }
+                                >;
+                              };
                           providerExecuted?: boolean;
                           providerMetadata?: Record<
                             string,
                             Record<string, any>
                           >;
                           providerOptions?: Record<string, Record<string, any>>;
-                          result: any;
+                          result?: any;
                           toolCallId: string;
                           toolName: string;
                           type: "tool-result";
@@ -531,10 +575,22 @@ export type Mounts = {
                     | { data: string; mimeType?: string; type: "image" }
                   >;
                   isError?: boolean;
+                  output?:
+                    | { type: "text"; value: string }
+                    | { type: "json"; value: any }
+                    | { type: "error-text"; value: string }
+                    | { type: "error-json"; value: any }
+                    | {
+                        type: "content";
+                        value: Array<
+                          | { text: string; type: "text" }
+                          | { data: string; mediaType: string; type: "media" }
+                        >;
+                      };
                   providerExecuted?: boolean;
                   providerMetadata?: Record<string, Record<string, any>>;
                   providerOptions?: Record<string, Record<string, any>>;
-                  result: any;
+                  result?: any;
                   toolCallId: string;
                   toolName: string;
                   type: "tool-result";
@@ -729,10 +785,26 @@ export type Mounts = {
                           | { data: string; mimeType?: string; type: "image" }
                         >;
                         isError?: boolean;
+                        output?:
+                          | { type: "text"; value: string }
+                          | { type: "json"; value: any }
+                          | { type: "error-text"; value: string }
+                          | { type: "error-json"; value: any }
+                          | {
+                              type: "content";
+                              value: Array<
+                                | { text: string; type: "text" }
+                                | {
+                                    data: string;
+                                    mediaType: string;
+                                    type: "media";
+                                  }
+                              >;
+                            };
                         providerExecuted?: boolean;
                         providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
-                        result: any;
+                        result?: any;
                         toolCallId: string;
                         toolName: string;
                         type: "tool-result";
@@ -768,10 +840,22 @@ export type Mounts = {
                   | { data: string; mimeType?: string; type: "image" }
                 >;
                 isError?: boolean;
+                output?:
+                  | { type: "text"; value: string }
+                  | { type: "json"; value: any }
+                  | { type: "error-text"; value: string }
+                  | { type: "error-json"; value: any }
+                  | {
+                      type: "content";
+                      value: Array<
+                        | { text: string; type: "text" }
+                        | { data: string; mediaType: string; type: "media" }
+                      >;
+                    };
                 providerExecuted?: boolean;
                 providerMetadata?: Record<string, Record<string, any>>;
                 providerOptions?: Record<string, Record<string, any>>;
-                result: any;
+                result?: any;
                 toolCallId: string;
                 toolName: string;
                 type: "tool-result";
@@ -976,13 +1060,29 @@ export type Mounts = {
                             | { data: string; mimeType?: string; type: "image" }
                           >;
                           isError?: boolean;
+                          output?:
+                            | { type: "text"; value: string }
+                            | { type: "json"; value: any }
+                            | { type: "error-text"; value: string }
+                            | { type: "error-json"; value: any }
+                            | {
+                                type: "content";
+                                value: Array<
+                                  | { text: string; type: "text" }
+                                  | {
+                                      data: string;
+                                      mediaType: string;
+                                      type: "media";
+                                    }
+                                >;
+                              };
                           providerExecuted?: boolean;
                           providerMetadata?: Record<
                             string,
                             Record<string, any>
                           >;
                           providerOptions?: Record<string, Record<string, any>>;
-                          result: any;
+                          result?: any;
                           toolCallId: string;
                           toolName: string;
                           type: "tool-result";
@@ -1024,10 +1124,22 @@ export type Mounts = {
                     | { data: string; mimeType?: string; type: "image" }
                   >;
                   isError?: boolean;
+                  output?:
+                    | { type: "text"; value: string }
+                    | { type: "json"; value: any }
+                    | { type: "error-text"; value: string }
+                    | { type: "error-json"; value: any }
+                    | {
+                        type: "content";
+                        value: Array<
+                          | { text: string; type: "text" }
+                          | { data: string; mediaType: string; type: "media" }
+                        >;
+                      };
                   providerExecuted?: boolean;
                   providerMetadata?: Record<string, Record<string, any>>;
                   providerOptions?: Record<string, Record<string, any>>;
-                  result: any;
+                  result?: any;
                   toolCallId: string;
                   toolName: string;
                   type: "tool-result";
@@ -1207,10 +1319,26 @@ export type Mounts = {
                           | { data: string; mimeType?: string; type: "image" }
                         >;
                         isError?: boolean;
+                        output?:
+                          | { type: "text"; value: string }
+                          | { type: "json"; value: any }
+                          | { type: "error-text"; value: string }
+                          | { type: "error-json"; value: any }
+                          | {
+                              type: "content";
+                              value: Array<
+                                | { text: string; type: "text" }
+                                | {
+                                    data: string;
+                                    mediaType: string;
+                                    type: "media";
+                                  }
+                              >;
+                            };
                         providerExecuted?: boolean;
                         providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
-                        result: any;
+                        result?: any;
                         toolCallId: string;
                         toolName: string;
                         type: "tool-result";
@@ -1246,10 +1374,22 @@ export type Mounts = {
                   | { data: string; mimeType?: string; type: "image" }
                 >;
                 isError?: boolean;
+                output?:
+                  | { type: "text"; value: string }
+                  | { type: "json"; value: any }
+                  | { type: "error-text"; value: string }
+                  | { type: "error-json"; value: any }
+                  | {
+                      type: "content";
+                      value: Array<
+                        | { text: string; type: "text" }
+                        | { data: string; mediaType: string; type: "media" }
+                      >;
+                    };
                 providerExecuted?: boolean;
                 providerMetadata?: Record<string, Record<string, any>>;
                 providerOptions?: Record<string, Record<string, any>>;
-                result: any;
+                result?: any;
                 toolCallId: string;
                 toolName: string;
                 type: "tool-result";
@@ -1422,10 +1562,26 @@ export type Mounts = {
                           | { data: string; mimeType?: string; type: "image" }
                         >;
                         isError?: boolean;
+                        output?:
+                          | { type: "text"; value: string }
+                          | { type: "json"; value: any }
+                          | { type: "error-text"; value: string }
+                          | { type: "error-json"; value: any }
+                          | {
+                              type: "content";
+                              value: Array<
+                                | { text: string; type: "text" }
+                                | {
+                                    data: string;
+                                    mediaType: string;
+                                    type: "media";
+                                  }
+                              >;
+                            };
                         providerExecuted?: boolean;
                         providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
-                        result: any;
+                        result?: any;
                         toolCallId: string;
                         toolName: string;
                         type: "tool-result";
@@ -1461,10 +1617,22 @@ export type Mounts = {
                   | { data: string; mimeType?: string; type: "image" }
                 >;
                 isError?: boolean;
+                output?:
+                  | { type: "text"; value: string }
+                  | { type: "json"; value: any }
+                  | { type: "error-text"; value: string }
+                  | { type: "error-json"; value: any }
+                  | {
+                      type: "content";
+                      value: Array<
+                        | { text: string; type: "text" }
+                        | { data: string; mediaType: string; type: "media" }
+                      >;
+                    };
                 providerExecuted?: boolean;
                 providerMetadata?: Record<string, Record<string, any>>;
                 providerOptions?: Record<string, Record<string, any>>;
-                result: any;
+                result?: any;
                 toolCallId: string;
                 toolName: string;
                 type: "tool-result";
@@ -1648,13 +1816,29 @@ export type Mounts = {
                             | { data: string; mimeType?: string; type: "image" }
                           >;
                           isError?: boolean;
+                          output?:
+                            | { type: "text"; value: string }
+                            | { type: "json"; value: any }
+                            | { type: "error-text"; value: string }
+                            | { type: "error-json"; value: any }
+                            | {
+                                type: "content";
+                                value: Array<
+                                  | { text: string; type: "text" }
+                                  | {
+                                      data: string;
+                                      mediaType: string;
+                                      type: "media";
+                                    }
+                                >;
+                              };
                           providerExecuted?: boolean;
                           providerMetadata?: Record<
                             string,
                             Record<string, any>
                           >;
                           providerOptions?: Record<string, Record<string, any>>;
-                          result: any;
+                          result?: any;
                           toolCallId: string;
                           toolName: string;
                           type: "tool-result";
@@ -1696,10 +1880,22 @@ export type Mounts = {
                     | { data: string; mimeType?: string; type: "image" }
                   >;
                   isError?: boolean;
+                  output?:
+                    | { type: "text"; value: string }
+                    | { type: "json"; value: any }
+                    | { type: "error-text"; value: string }
+                    | { type: "error-json"; value: any }
+                    | {
+                        type: "content";
+                        value: Array<
+                          | { text: string; type: "text" }
+                          | { data: string; mediaType: string; type: "media" }
+                        >;
+                      };
                   providerExecuted?: boolean;
                   providerMetadata?: Record<string, Record<string, any>>;
                   providerOptions?: Record<string, Record<string, any>>;
-                  result: any;
+                  result?: any;
                   toolCallId: string;
                   toolName: string;
                   type: "tool-result";
@@ -1810,10 +2006,26 @@ export type Mounts = {
                           | { data: string; mimeType?: string; type: "image" }
                         >;
                         isError?: boolean;
+                        output?:
+                          | { type: "text"; value: string }
+                          | { type: "json"; value: any }
+                          | { type: "error-text"; value: string }
+                          | { type: "error-json"; value: any }
+                          | {
+                              type: "content";
+                              value: Array<
+                                | { text: string; type: "text" }
+                                | {
+                                    data: string;
+                                    mediaType: string;
+                                    type: "media";
+                                  }
+                              >;
+                            };
                         providerExecuted?: boolean;
                         providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
-                        result: any;
+                        result?: any;
                         toolCallId: string;
                         toolName: string;
                         type: "tool-result";
@@ -1849,10 +2061,22 @@ export type Mounts = {
                   | { data: string; mimeType?: string; type: "image" }
                 >;
                 isError?: boolean;
+                output?:
+                  | { type: "text"; value: string }
+                  | { type: "json"; value: any }
+                  | { type: "error-text"; value: string }
+                  | { type: "error-json"; value: any }
+                  | {
+                      type: "content";
+                      value: Array<
+                        | { text: string; type: "text" }
+                        | { data: string; mediaType: string; type: "media" }
+                      >;
+                    };
                 providerExecuted?: boolean;
                 providerMetadata?: Record<string, Record<string, any>>;
                 providerOptions?: Record<string, Record<string, any>>;
-                result: any;
+                result?: any;
                 toolCallId: string;
                 toolName: string;
                 type: "tool-result";

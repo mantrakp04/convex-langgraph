@@ -131,16 +131,38 @@ const vToolResultContent = v.array(
   ),
 );
 
+export const vToolResultOutput = v.union(
+  v.object({ type: v.literal("text"), value: v.string() }),
+  v.object({ type: v.literal("json"), value: v.any() }),
+  v.object({ type: v.literal("error-text"), value: v.string() }),
+  v.object({ type: v.literal("error-json"), value: v.any() }),
+  v.object({
+    type: v.literal("content"),
+    value: v.array(
+      v.union(
+        v.object({ type: v.literal("text"), text: v.string() }),
+        v.object({
+          type: v.literal("media"),
+          data: v.string(),
+          mediaType: v.string(),
+        }),
+      ),
+    ),
+  }),
+);
+
 export const vToolResultPart = v.object({
   type: v.literal("tool-result"),
   toolCallId: v.string(),
   toolName: v.string(),
-  result: v.any(),
+  output: v.optional(vToolResultOutput),
+
   providerOptions,
   providerMetadata,
   providerExecuted: v.optional(v.boolean()),
 
   // Deprecated in ai v5
+  result: v.optional(v.any()), // either this or output will be present
   isError: v.optional(v.boolean()),
   // This is only here b/c steps include it in toolResults
   // Normal ModelMessage doesn't have this

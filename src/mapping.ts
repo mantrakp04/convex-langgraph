@@ -17,6 +17,7 @@ import {
   type ToolCallPart,
   type ToolResultPart,
   type ProviderMetadata,
+  type JSONValue,
 } from "ai";
 import {
   vMessageWithMetadata,
@@ -33,6 +34,7 @@ import {
   type vToolCallPart,
   type vToolResultPart,
   type SourcePart,
+  vToolResultOutput,
 } from "./validators.js";
 import type { ActionCtx, AgentComponent } from "./client/types.js";
 import type { RunMutationCtx } from "./client/types.js";
@@ -43,7 +45,7 @@ import {
   type ProviderOptions,
   type ReasoningPart,
 } from "@ai-sdk/provider-utils";
-import { parse } from "convex-helpers/validators";
+import { parse, validate } from "convex-helpers/validators";
 export type AIMessageWithoutId = Omit<AIMessage, "id">;
 
 export type SerializeUrlsAndUint8Arrays<T> = T extends URL
@@ -314,14 +316,7 @@ export async function serializeContent(
           } satisfies Infer<typeof vToolCallPart>;
         }
         case "tool-result": {
-          const result = "output" in part ? part.output : part.result;
-          return {
-            type: part.type,
-            result: result ?? null,
-            toolCallId: part.toolCallId,
-            toolName: part.toolName,
-            ...metadata,
-          } satisfies Infer<typeof vToolResultPart>;
+          return normalizeToolResult(part, metadata);
         }
         case "reasoning": {
           return {
@@ -403,14 +398,7 @@ export function deserializeContent(
         } satisfies ToolCallPart;
       }
       case "tool-result": {
-        const result = "output" in part ? part.output : part.result;
-        return {
-          type: part.type,
-          output: result ?? null,
-          toolCallId: part.toolCallId,
-          toolName: part.toolName,
-          ...metadata,
-        } satisfies ToolResultPart;
+        return normalizeToolResult(part, metadata);
       }
       case "reasoning":
         return {
@@ -443,6 +431,42 @@ export function deserializeContent(
         return part satisfies Content;
     }
   }) as Content;
+}
+
+function normalizeToolOutput(
+  result: string | JSONValue | undefined,
+): ToolResultPart["output"] {
+  if (typeof result === "string") {
+    return {
+      type: "text",
+      value: result,
+    };
+  }
+  if (validate(vToolResultOutput, result)) {
+    return result;
+  }
+  return {
+    type: "json",
+    value: result ?? null,
+  };
+}
+
+function normalizeToolResult(
+  part: ToolResultPart | Infer<typeof vToolResultPart>,
+  metadata: {
+    providerOptions?: ProviderOptions;
+    providerMetadata?: ProviderMetadata;
+  },
+): ToolResultPart & Infer<typeof vToolResultPart> {
+  return {
+    type: part.type,
+    output:
+      part.output ??
+      normalizeToolOutput("result" in part ? part.result : undefined),
+    toolCallId: part.toolCallId,
+    toolName: part.toolName,
+    ...metadata,
+  } satisfies ToolResultPart;
 }
 
 /**

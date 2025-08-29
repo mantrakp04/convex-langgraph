@@ -6,14 +6,17 @@ import {
   serializeMessage,
   deserializeMessage,
   serializeContent,
+  deserializeContent,
 } from "./mapping.js";
 import { api } from "./component/_generated/api.js";
 import type { AgentComponent, ActionCtx } from "./client/types.js";
-import { vMessage } from "./validators.js";
+import { vMessage, vToolResultPart } from "./validators.js";
 import fs from "fs";
 import path from "path";
 import type { SerializedContent } from "./mapping.js";
 import { validate } from "convex-helpers/validators";
+import type { ToolResultPart } from "ai";
+import type { Infer } from "convex/values";
 
 const testAssetsDir = path.join(__dirname, "../test-assets");
 const testFiles = [
@@ -82,6 +85,52 @@ describe("mapping", () => {
     expect(validate(vMessage, ser)).toBeTruthy();
     const round = deserializeMessage(ser);
     expect(round).toEqual(message);
+  });
+
+  test("tool output round-trips", async () => {
+    const toolResult = {
+      type: "tool-result" as const,
+      toolCallId: "tool-call-id",
+      toolName: "tool-name",
+      output: {
+        type: "text",
+        value: "hello world",
+      },
+    } satisfies ToolResultPart;
+    const [result] = deserializeContent([toolResult]);
+    expect(result).toMatchObject(toolResult);
+    const {
+      content: [roundtrip],
+    } = await serializeContent({} as ActionCtx, {} as AgentComponent, [
+      result as ToolResultPart,
+    ]);
+    expect(roundtrip).toMatchObject(toolResult);
+  });
+
+  test("tool results get normalized to output", async () => {
+    const toolResult = {
+      type: "tool-result" as const,
+      toolCallId: "tool-call-id",
+      toolName: "tool-name",
+      result: "hello world",
+    } satisfies Infer<typeof vToolResultPart>;
+    const expected = {
+      type: "tool-result",
+      toolCallId: "tool-call-id",
+      toolName: "tool-name",
+      output: {
+        type: "text",
+        value: "hello world",
+      },
+    };
+    const [deserialized] = deserializeContent([toolResult]);
+    expect(deserialized).toMatchObject(expected);
+    const {
+      content: [serialized],
+    } = await serializeContent({} as ActionCtx, {} as AgentComponent, [
+      toolResult,
+    ]);
+    expect(serialized).toMatchObject(expected);
   });
 
   test("saving files returns fileIds when too big", async () => {

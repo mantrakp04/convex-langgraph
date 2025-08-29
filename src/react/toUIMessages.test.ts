@@ -106,7 +106,10 @@ describe("toUIMessages", () => {
               type: "tool-result",
               toolCallId: "call1",
               toolName: "myTool",
-              result: "42",
+              output: {
+                type: "text",
+                value: "42",
+              },
             },
           ],
         },
@@ -129,7 +132,10 @@ describe("toUIMessages", () => {
       type: "tool-myTool",
       toolCallId: "call1",
       state: "output-available",
-      output: "42",
+      output: {
+        type: "text",
+        value: "42",
+      },
     });
   });
 
@@ -590,7 +596,10 @@ describe("toUIMessages", () => {
               type: "tool-result",
               toolCallId: "call1",
               toolName: "calculator",
-              result: "42",
+              output: {
+                type: "text",
+                value: "42",
+              },
             },
           ],
         },
@@ -639,7 +648,10 @@ describe("toUIMessages", () => {
       toolCallId: "call1",
       state: "output-available",
       input: { operation: "add", a: 40, b: 2 },
-      output: "42",
+      output: {
+        type: "text",
+        value: "42",
+      },
     });
 
     // Should also have text part
