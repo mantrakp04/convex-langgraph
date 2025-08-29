@@ -565,7 +565,7 @@ export class Agent<
     }
     const aiArgs = {
       ...this.options.callSettings,
-      ...this.options.providerOptions,
+      providerOptions: this.options.providerOptions,
       ...omit(args, ["messages", "prompt", "promptMessageId"]),
       model: args.model ?? this.options.languageModel,
       system: args.system ?? this.options.instructions,
