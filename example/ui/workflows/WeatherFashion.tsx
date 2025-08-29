@@ -92,7 +92,7 @@ export function WeatherFashion() {
           </form>
         </div>
         <div className="space-y-6">
-          {[...messages.results].reverse().map((message) => {
+          {[...messages.results].map((message) => {
             // Tool-related messages
             if (
               message.tool &&
