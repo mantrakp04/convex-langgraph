@@ -5,6 +5,8 @@ export const rawRequestResponseHandler: RawRequestResponseHandler = async (
   ctx,
   { request, response, agentName, threadId, userId },
 ) => {
+  // Optionally dump debug logs without pushing code
+  if (process.env.DEBUG !== "true") return;
   // Logging it here, to look up in the logs.
   // Note: really long requests & responses may end up truncated.
   console.log({
