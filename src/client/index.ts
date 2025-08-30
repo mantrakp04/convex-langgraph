@@ -1788,19 +1788,20 @@ export class Agent<
       handler: async (ctx_, args) => {
         const stream =
           args.stream === true ? spec?.stream || true : (spec?.stream ?? false);
-        const targetArgs = { userId: args.userId, threadId: args.threadId };
+        const { userId, threadId, prompt, messages, maxSteps, ...rest } = args;
+        const targetArgs = { userId, threadId };
         const llmArgs = {
-          stopWhen: spec?.stopWhen ?? this.options.stopWhen,
+          stopWhen: spec?.stopWhen,
           ...overrides,
-          ...omit(args, ["storageOptions", "contextOptions"]),
-          messages: args.messages?.map(deserializeMessage),
-          prompt: Array.isArray(args.prompt)
-            ? args.prompt.map(deserializeMessage)
-            : args.prompt,
+          ...omit(rest, ["storageOptions", "contextOptions", "stream"]),
+          messages: messages?.map(deserializeMessage),
+          prompt: Array.isArray(prompt)
+            ? prompt.map(deserializeMessage)
+            : prompt,
           toolChoice: args.toolChoice as ToolChoice<AgentTools>,
         } satisfies StreamingTextArgs<AgentTools>;
-        if (args.maxSteps) {
-          llmArgs.stopWhen = stepCountIs(args.maxSteps);
+        if (maxSteps) {
+          llmArgs.stopWhen = stepCountIs(maxSteps);
         }
         const opts = {
           ...pick(spec, ["contextOptions", "storageOptions"]),
