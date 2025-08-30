@@ -1,15 +1,5 @@
-import { v } from "convex/values";
-import { api, internal } from "../_generated/api.js";
-import type { Doc, Id } from "../_generated/dataModel.js";
-import {
-  action,
-  internalAction,
-  internalMutation,
-  internalQuery,
-  mutation,
-  query,
-} from "../_generated/server.js";
-import { Agent, createThread } from "@convex-dev/agent";
+import { action } from "../_generated/server.js";
+import { Agent, createThread, saveMessage } from "@convex-dev/agent";
 import { components } from "../_generated/api.js";
 import { defaultConfig } from "../agents/config.js";
 import z from "zod/v4";
@@ -21,10 +11,10 @@ export const createObject = action({
       ...defaultConfig,
       name: "object-agent",
     });
-    const threadid = await createThread(ctx, components.agent);
+    const threadId = await createThread(ctx, components.agent);
     const { object } = await agent.generateObject(
       ctx,
-      { threadId: threadid },
+      { threadId },
       {
         prompt: "Generate a plan to make a sandwich",
         schema: z.object({

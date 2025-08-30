@@ -262,8 +262,15 @@ export type GenerateObjectArgs<
     ? Array<InferSchema<SCHEMA>>
     : InferSchema<SCHEMA>,
 > = Omit<CallSettings, "stopSequences"> &
-  Prompt &
-  (OUTPUT extends "enum"
+  Prompt & {
+    /**
+     * If provided, this message will be used as the "prompt" for the LLM call,
+     * instead of the prompt or messages.
+     * This is useful if you want to first save a user message, then use it as
+     * the prompt for the LLM call in another call.
+     */
+    promptMessageId?: string;
+  } & (OUTPUT extends "enum"
     ? {
         /**
 The enum values that the model should use.
