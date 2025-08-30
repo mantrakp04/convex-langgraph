@@ -6,13 +6,14 @@
   and matches the ModelMessage expected format. This also coerces the
   previous `result` format into the new `output` data format.
 - cachedInputTokens is now saved in the usage field
-- The global default for providerOptions is provided correctly.
+- The global default for providerOptions is supplied correctly.
 - Fix: useSmoothText starts streaming even if no text update happens.
 - The DeltaStreamer class is now generic on the type of part to save,
   and decoupled to make it easier to use on its own.
-- Running agent-playground in windows works (credit: yahyasamet)
+- Running agent-playground works on windows (credit: yahyasamet)
 - The setup script works interactively (credit: kfiroo)
 - Playground assistant messages CSS fix (credit: jamieday)
+- Fix: promptMessageId is back on the generate/streamObject args type
 
 ## 0.2.5
 
