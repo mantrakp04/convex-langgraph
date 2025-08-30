@@ -46,7 +46,12 @@ import {
   serializeNewMessagesInStep,
   serializeObjectResult,
 } from "../mapping.js";
-import { extractText, isTool } from "../shared.js";
+import {
+  extractText,
+  getModelName,
+  getProviderName,
+  isTool,
+} from "../shared.js";
 import {
   vMessageEmbeddings,
   vMessageWithMetadata,
@@ -65,13 +70,7 @@ import {
   type SaveMessageArgs,
   type SaveMessagesArgs,
 } from "./messages.js";
-import {
-  embedMany,
-  embedMessages,
-  fetchContextMessages,
-  getModelName,
-  getProviderName,
-} from "./search.js";
+import { embedMany, embedMessages, fetchContextMessages } from "./search.js";
 import {
   DeltaStreamer,
   syncStreams,
