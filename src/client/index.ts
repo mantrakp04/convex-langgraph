@@ -230,6 +230,7 @@ export type Config = {
    */
   rawRequestResponseHandler?: RawRequestResponseHandler;
   /**
+   * @deprecated Reach out if you use this. Otherwise will be removed soon.
    * Default provider options to pass for the LLM calls.
    * This can be overridden at each generate/stream callsite on a per-field
    * basis. To clear a default setting, you'll need to pass `undefined`.
