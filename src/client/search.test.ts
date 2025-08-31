@@ -46,6 +46,41 @@ describe("search.ts", () => {
   let mockCtx: RunActionCtx;
   let ctx: RunActionCtx;
 
+  // Shared helper functions
+  async function createTestThread(userId: string) {
+    return await t.run(async (mutCtx) => {
+      return await createThread(mutCtx, components.agent, {
+        userId,
+      });
+    });
+  }
+
+  async function createTestMessages(
+    threadId: string,
+    userId: string,
+    messages: Array<{
+      role: "user" | "assistant";
+      content: string;
+      order: number;
+    }>,
+  ) {
+    await t.run(async (mutCtx) => {
+      await saveMessages(mutCtx, components.agent, {
+        threadId,
+        userId,
+        messages: messages.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+        metadata: messages.map((msg) => ({
+          order: msg.order,
+          stepOrder: msg.order,
+          status: "success" as const,
+        })),
+      });
+    });
+  }
+
   beforeEach(() => {
     vi.clearAllMocks();
     t = initConvexTest(schema);
@@ -528,40 +563,6 @@ describe("search.ts", () => {
       callSettings: {},
     };
 
-    async function createTestThread(userId: string) {
-      return await t.run(async (mutCtx) => {
-        return await createThread(mutCtx, components.agent, {
-          userId,
-        });
-      });
-    }
-
-    async function createTestMessages(
-      threadId: string,
-      userId: string,
-      messages: Array<{
-        role: "user" | "assistant";
-        content: string;
-        order: number;
-      }>,
-    ) {
-      await t.run(async (mutCtx) => {
-        await saveMessages(mutCtx, components.agent, {
-          threadId,
-          userId,
-          messages: messages.map((msg) => ({
-            role: msg.role,
-            content: msg.content,
-          })),
-          metadata: messages.map((msg) => ({
-            order: msg.order,
-            stepOrder: msg.order,
-            status: "success" as const,
-          })),
-        });
-      });
-    }
-
     it("should fetch and combine real messages with prompt", async () => {
       const threadId = await createTestThread("user123");
 
@@ -721,6 +722,296 @@ describe("search.ts", () => {
         role: "user",
         content: "Only prompt",
       });
+    });
+  });
+
+  describe("fetchContextWithPrompt - contextHandler Tests", () => {
+    const baseArgs = {
+      userId: "user123",
+      threadId: "thread123",
+      agentName: "test-agent",
+      contextOptions: {},
+      usageHandler: undefined,
+      callSettings: {},
+    };
+
+    it("should use custom contextHandler to reorder messages", async () => {
+      const threadId = await createTestThread("userContext");
+
+      await createTestMessages(threadId, "userContext", [
+        { role: "user", content: "Recent message 1", order: 1 },
+        { role: "assistant", content: "Recent response 1", order: 2 },
+      ]);
+
+      // Create a contextHandler that puts inputMessages first, then inputPrompt, then recent
+      const contextHandler = vi.fn(async (ctx, args) => {
+        return [
+          ...args.inputMessages,
+          ...args.inputPrompt,
+          ...args.recent,
+          ...args.search,
+          ...args.existingResponses,
+        ];
+      });
+
+      const result = await fetchContextWithPrompt(ctx, components.agent, {
+        ...baseArgs,
+        userId: "userContext",
+        threadId,
+        prompt: "Custom prompt",
+        messages: [{ role: "user", content: "Input message" }],
+        promptMessageId: undefined,
+        contextOptions: { recentMessages: 10 },
+        contextHandler,
+      });
+
+      // Verify contextHandler was called with correct arguments
+      expect(contextHandler).toHaveBeenCalledWith(
+        ctx,
+        expect.objectContaining({
+          search: [], // No search performed in this test
+          recent: expect.arrayContaining([
+            expect.objectContaining({ content: "Recent message 1" }),
+            expect.objectContaining({ content: "Recent response 1" }),
+          ]),
+          inputMessages: expect.arrayContaining([
+            expect.objectContaining({ content: "Input message" }),
+          ]),
+          inputPrompt: expect.arrayContaining([
+            expect.objectContaining({ content: "Custom prompt" }),
+          ]),
+          existingResponses: [], // No existing responses in this test
+          userId: "userContext",
+          threadId,
+        }),
+      );
+
+      // Result should follow the custom order: inputMessages, inputPrompt, recent
+      expect(result.messages).toHaveLength(4);
+      expect(result.messages[0].content).toBe("Input message"); // inputMessages
+      expect(result.messages[1].content).toBe("Custom prompt"); // inputPrompt
+      expect(result.messages[2].content).toBe("Recent message 1"); // recent
+      expect(result.messages[3].content).toBe("Recent response 1"); // recent
+    });
+
+    it("should allow contextHandler to filter out messages", async () => {
+      const threadId = await createTestThread("userFilter");
+
+      await createTestMessages(threadId, "userFilter", [
+        { role: "user", content: "Keep this message", order: 1 },
+        { role: "assistant", content: "Filter this out", order: 2 },
+        { role: "user", content: "Keep this too", order: 3 },
+      ]);
+
+      // Create a contextHandler that filters out assistant messages
+      const contextHandler = vi.fn(async (ctx, args) => {
+        const allMessages = [
+          ...args.search,
+          ...args.recent,
+          ...args.inputMessages,
+          ...args.inputPrompt,
+          ...args.existingResponses,
+        ];
+
+        // Filter out assistant messages
+        return allMessages.filter((msg) => msg.role !== "assistant");
+      });
+
+      const result = await fetchContextWithPrompt(ctx, components.agent, {
+        ...baseArgs,
+        userId: "userFilter",
+        threadId,
+        prompt: "Filter prompt",
+        messages: undefined,
+        promptMessageId: undefined,
+        contextOptions: { recentMessages: 10 },
+        contextHandler,
+      });
+
+      // Should only have user messages and the prompt
+      expect(result.messages).toHaveLength(3);
+      expect(result.messages[0].content).toBe("Keep this message");
+      expect(result.messages[1].content).toBe("Keep this too");
+      expect(result.messages[2].content).toBe("Filter prompt");
+
+      // Should not contain the filtered assistant message
+      expect(
+        result.messages.find((m) => m.content === "Filter this out"),
+      ).toBeUndefined();
+    });
+
+    it("should allow contextHandler to add custom messages", async () => {
+      const threadId = await createTestThread("userCustom");
+
+      await createTestMessages(threadId, "userCustom", [
+        { role: "user", content: "Original message", order: 1 },
+      ]);
+
+      // Create a contextHandler that adds a custom system message
+      const contextHandler = vi.fn(async (ctx, args) => {
+        const customSystemMessage = {
+          role: "system" as const,
+          content: "This is a custom system message added by contextHandler",
+        };
+
+        return [customSystemMessage, ...args.recent, ...args.inputPrompt];
+      });
+
+      const result = await fetchContextWithPrompt(ctx, components.agent, {
+        ...baseArgs,
+        userId: "userCustom",
+        threadId,
+        prompt: "Test prompt",
+        messages: undefined,
+        promptMessageId: undefined,
+        contextOptions: { recentMessages: 10 },
+        contextHandler,
+      });
+
+      expect(result.messages).toHaveLength(3);
+      expect(result.messages[0].role).toBe("system");
+      expect(result.messages[0].content).toBe(
+        "This is a custom system message added by contextHandler",
+      );
+      expect(result.messages[1].content).toBe("Original message");
+      expect(result.messages[2].content).toBe("Test prompt");
+    });
+
+    it("should work with search messages in contextHandler", async () => {
+      const threadId = await createTestThread("userSearch");
+
+      // Create multiple messages for search to find
+      await createTestMessages(threadId, "userSearch", [
+        { role: "user", content: "Searchable content about cats", order: 1 },
+        { role: "assistant", content: "Response about cats", order: 2 },
+        { role: "user", content: "Recent non-searchable message", order: 3 },
+      ]);
+
+      const contextHandler = vi.fn(async (ctx, args) => {
+        // Put search messages first, then recent, then prompt
+        return [...args.search, ...args.recent, ...args.inputPrompt];
+      });
+
+      const result = await fetchContextWithPrompt(ctx, components.agent, {
+        ...baseArgs,
+        userId: "userSearch",
+        threadId,
+        prompt: "Tell me about cats",
+        messages: undefined,
+        promptMessageId: undefined,
+        contextOptions: {
+          recentMessages: 1, // Only get 1 recent message
+          searchOptions: {
+            textSearch: true,
+            limit: 2,
+          },
+        },
+        contextHandler,
+      });
+
+      expect(contextHandler).toHaveBeenCalledWith(
+        ctx,
+        expect.objectContaining({
+          search: expect.any(Array),
+          recent: expect.any(Array),
+          inputPrompt: expect.arrayContaining([
+            expect.objectContaining({ content: "Tell me about cats" }),
+          ]),
+        }),
+      );
+
+      // Should have recent + prompt (search may not return results in test environment)
+      expect(result.messages.length).toBeGreaterThanOrEqual(2);
+      expect(result.messages[result.messages.length - 1].content).toBe(
+        "Tell me about cats",
+      );
+    });
+
+    it("should handle existingResponses in contextHandler when promptMessageId provided", async () => {
+      const threadId = await createTestThread("userResponses");
+
+      const { messages: savedMessages } = await t.run(async (mutCtx) => {
+        return await saveMessages(mutCtx, components.agent, {
+          threadId,
+          userId: "userResponses",
+          messages: [
+            { role: "user", content: "Before prompt" },
+            { role: "user", content: "Original prompt" },
+            { role: "assistant", content: "Existing response 1" },
+            { role: "assistant", content: "Existing response 2" },
+          ],
+          metadata: [{}, {}, {}, {}],
+        });
+      });
+
+      const promptMessageId = savedMessages[1]._id; // The prompt message
+
+      const contextHandler = vi.fn(async (ctx, args) => {
+        // Put existing responses first to test they're properly identified
+        return [
+          ...args.recent,
+          ...args.existingResponses,
+          ...args.inputPrompt,
+        ];
+      });
+
+      const result = await fetchContextWithPrompt(ctx, components.agent, {
+        ...baseArgs,
+        userId: "userResponses",
+        threadId,
+        prompt: "New replacement prompt",
+        messages: undefined,
+        promptMessageId,
+        contextOptions: { recentMessages: 10 },
+        contextHandler,
+      });
+
+      expect(contextHandler).toHaveBeenCalledWith(
+        ctx,
+        expect.objectContaining({
+          recent: expect.arrayContaining([
+            expect.objectContaining({ content: "Before prompt" }),
+          ]),
+          existingResponses: expect.arrayContaining([
+            expect.objectContaining({ content: "Existing response 1" }),
+            expect.objectContaining({ content: "Existing response 2" }),
+          ]),
+          inputPrompt: expect.arrayContaining([
+            expect.objectContaining({ content: "New replacement prompt" }),
+          ]),
+        })
+      );
+
+      expect(result.messages).toHaveLength(4);
+      expect(result.messages[0].content).toBe("Before prompt");
+      expect(result.messages[1].content).toBe("Existing response 1");
+      expect(result.messages[2].content).toBe("Existing response 2");
+      expect(result.messages[3].content).toBe("New replacement prompt");
+    });
+
+    it("should work without contextHandler (default behavior)", async () => {
+      const threadId = await createTestThread("userDefault");
+
+      await createTestMessages(threadId, "userDefault", [
+        { role: "user", content: "Default order test", order: 1 },
+      ]);
+
+      const result = await fetchContextWithPrompt(ctx, components.agent, {
+        ...baseArgs,
+        userId: "userDefault",
+        threadId,
+        prompt: "Default prompt",
+        messages: [{ role: "user", content: "Input message" }],
+        promptMessageId: undefined,
+        contextOptions: { recentMessages: 10 },
+        // No contextHandler provided
+      });
+
+      // Should follow default order: recent, input, prompt
+      expect(result.messages).toHaveLength(3);
+      expect(result.messages[0].content).toBe("Default order test"); // recent
+      expect(result.messages[1].content).toBe("Input message"); // inputMessages
+      expect(result.messages[2].content).toBe("Default prompt"); // inputPrompt
     });
   });
 });

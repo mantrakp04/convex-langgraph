@@ -456,7 +456,8 @@ export async function fetchContextWithPrompt(
       : args.messages?.at(-1)
         ? extractText(args.messages.at(-1)!)
         : undefined;
-  const contextMessages: MessageDoc[] = await fetchContextMessages(
+  // If only a messageId is provided, this will add that message to the end.
+  const { recentMessages, searchMessages } = await fetchRecentAndSearchMessages(
     ctx,
     component,
     {
@@ -486,16 +487,16 @@ export async function fetchContextWithPrompt(
   );
 
   const promptMessageIndex = args.promptMessageId
-    ? contextMessages.findIndex((m) => m._id === args.promptMessageId)
+    ? recentMessages.findIndex((m) => m._id === args.promptMessageId)
     : -1;
   const promptMessage =
-    promptMessageIndex !== -1 ? contextMessages[promptMessageIndex] : undefined;
-  let prePromptDocs = contextMessages;
+    promptMessageIndex !== -1 ? recentMessages[promptMessageIndex] : undefined;
+  let prePromptDocs = recentMessages;
   const messages = args.messages ?? [];
   let existingResponseDocs: MessageDoc[] = [];
   if (promptMessage) {
-    prePromptDocs = contextMessages.slice(0, promptMessageIndex);
-    existingResponseDocs = contextMessages.slice(promptMessageIndex + 1);
+    prePromptDocs = recentMessages.slice(0, promptMessageIndex);
+    existingResponseDocs = recentMessages.slice(promptMessageIndex + 1);
     if (promptArray.length === 0) {
       // If they didn't override the prompt, use the existing prompt message.
       if (promptMessage.message) {
@@ -519,14 +520,38 @@ export async function fetchContextWithPrompt(
     }
   }
 
-  let processedMessages: ModelMessage[] = [
-    ...prePromptDocs.map((m) => m.message),
-    ...messages,
-    ...promptArray,
-    ...existingResponseDocs.map((m) => m.message),
-  ]
+  const search = searchMessages
+    .map((m) => m.message)
     .filter((m) => !!m)
-    .map((m) => deserializeMessage(m));
+    .map(deserializeMessage);
+  const recent = prePromptDocs
+    .map((m) => m.message)
+    .filter((m) => !!m)
+    .map(deserializeMessage);
+  const inputMessages = messages.map(deserializeMessage);
+  const inputPrompt = promptArray.map(deserializeMessage);
+  const existingResponses = existingResponseDocs
+    .map((m) => m.message)
+    .filter((m) => !!m)
+    .map(deserializeMessage);
+
+  let processedMessages = args.contextHandler
+    ? await args.contextHandler(ctx, {
+        search,
+        recent,
+        inputMessages,
+        inputPrompt,
+        existingResponses,
+        userId,
+        threadId,
+      })
+    : [
+        ...search,
+        ...recent,
+        ...inputMessages,
+        ...inputPrompt,
+        ...existingResponses,
+      ];
 
   // Process messages to inline localhost files (if not, file urls pointing to localhost will be sent to LLM providers)
   if (process.env.CONVEX_CLOUD_URL?.startsWith("http://127.0.0.1")) {

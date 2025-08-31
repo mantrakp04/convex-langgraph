@@ -1,5 +1,6 @@
 import type {
   InferSchema,
+  ModelMessage,
   ProviderOptions,
   Schema,
 } from "@ai-sdk/provider-utils";
@@ -85,6 +86,13 @@ export type Config = {
    */
   usageHandler?: UsageHandler;
   /**
+   * By default, messages are ordered with context in `fetchContextWithPrompt`,
+   * but you can override this by providing a context handler. Here you can
+   * filter, modify, or enrich the context messages. If provided, the default
+   * ordering will not apply. This excludes the system message / instructions.
+   */
+  contextHandler?: ContextHandler;
+  /**
    * Called for each LLM request/response, so you can do things like
    * log the raw request body or response headers to a table, or logs.
    */
@@ -119,7 +127,6 @@ export type Config = {
    */
   maxSteps?: number;
 };
-
 
 /**
  * Options to configure what messages are fetched as context,
@@ -227,6 +234,50 @@ export type UsageHandler = (
     provider: string;
   },
 ) => void | Promise<void>;
+
+/**
+ * By default, messages are ordered with context in `fetchContextWithPrompt`,
+ * but you can override this by providing a context handler. Here you can filter
+ * out, add in, or reorder messages.
+ */
+export type ContextHandler = (
+  ctx: RunActionCtx,
+  args: {
+    /**
+     * The messages fetched from search.
+     */
+    search: ModelMessage[];
+    /**
+     * The recent messages already in the thread history,
+     * excluding any messages that came after promptMessageId.
+     */
+    recent: ModelMessage[];
+    /**
+     * The messages passed as the `messages` argument to e.g. generateText.
+     */
+    inputMessages: ModelMessage[];
+    /**
+     * The message(s) passed as the `prompt` argument to e.g. generateText.
+     * Otherwise, if `promptMessageId` was provided, the message at that id.
+     * `prompt` will override the message at `promptMessageId`.
+     */
+    inputPrompt: ModelMessage[];
+    /**
+     * Any messages on the same `order` as the promptMessageId message after the
+     * prompt message. These are presumably existing responses to the prompt
+     * message.
+     */
+    existingResponses: ModelMessage[];
+    /**
+     * The user associated with the generation, if any.
+     */
+    userId: string | undefined;
+    /**
+     * The thread associated with the generation, if any.
+     */
+    threadId: string | undefined;
+  },
+) => ModelMessage[] | Promise<ModelMessage[]>;
 
 export type RawRequestResponseHandler = (
   ctx: ActionCtx,
@@ -652,6 +703,13 @@ export type Options = {
    * set in the agent constructor.
    */
   usageHandler?: UsageHandler;
+  /**
+   * By default, messages are ordered with context in `fetchContextWithPrompt`,
+   * but you can override this by providing a context handler. Here you can
+   * filter, modify, or enrich the context messages. If provided, the default
+   * ordering will not apply. This excludes the system message / instructions.
+   */
+  contextHandler?: ContextHandler;
 };
 
 export type SyncStreamsReturnValue =
