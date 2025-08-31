@@ -5,13 +5,13 @@ import type {
 import type { ReasoningPart, TextPart } from "@ai-sdk/provider-utils";
 import { simulateReadableStream } from "ai";
 
-const longDefaultText = `
+export const DEFAULT_TEXT = `
 A A A A A A A A A A A A A A A
 B B B B B B B B B B B B B B B
 C C C C C C C C C C C C C C C
 D D D D D D D D D D D D D D D
 `;
-const defaultUsage = { outputTokens: 10, inputTokens: 3, totalTokens: 13 };
+const DEFAULT_USAGE = { outputTokens: 10, inputTokens: 3, totalTokens: 13 };
 
 export type MockModelArgs = {
   provider?: LanguageModelV2["provider"];
@@ -55,7 +55,7 @@ export class MockLanguageModel implements LanguageModelV2 {
     this.provider = args.provider || "mock-provider";
     this.modelId = args.modelId || "mock-model-id";
     const {
-      content = [{ type: "text", text: longDefaultText }],
+      content = [{ type: "text", text: DEFAULT_TEXT }],
       chunkDelayInMs = 200,
       initialDelayInMs = 1000,
       supportedUrls = {},
@@ -125,7 +125,7 @@ export class MockLanguageModel implements LanguageModelV2 {
     chunks.push({
       type: "finish",
       finishReason: fail ? "error" : "stop",
-      usage: defaultUsage,
+      usage: DEFAULT_USAGE,
       providerMetadata: {
         mockProvider: { mock: "mock metadata" },
       },
@@ -144,7 +144,7 @@ export class MockLanguageModel implements LanguageModelV2 {
         return {
           content,
           finishReason: "stop",
-          usage: defaultUsage,
+          usage: DEFAULT_USAGE,
           providerMetadata: { mockProvider: { mock: "mock metadata" } },
           warnings: [],
         };

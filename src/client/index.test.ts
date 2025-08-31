@@ -20,14 +20,10 @@ import type {
 } from "convex/server";
 import { v } from "convex/values";
 import { defineSchema } from "convex/server";
-import { MockLanguageModelV2 } from "ai/test";
-import type {
-  LanguageModelV2,
-  LanguageModelV2StreamPart,
-} from "@ai-sdk/provider";
-import { simulateReadableStream, stepCountIs } from "ai";
+import { stepCountIs } from "ai";
 import { components, initConvexTest } from "./setup.test.js";
 import { z } from "zod/v4";
+import { mockModel } from "./mockModel.js";
 
 const schema = defineSchema({});
 type DataModel = DataModelFromSchemaDefinition<typeof schema>;
@@ -36,11 +32,14 @@ const query = queryGeneric as QueryBuilder<DataModel, "public">;
 const mutation = mutationGeneric as MutationBuilder<DataModel, "public">;
 const action = actionGeneric as ActionBuilder<DataModel, "public">;
 
+const TEST_TEXT = JSON.stringify({ hello: "world" });
+
 const agent = new Agent(components.agent, {
   name: "test",
   instructions: "You are a test agent",
-  // TODO: get mock model that works in v8
-  languageModel: mockModel(),
+  languageModel: mockModel({
+    content: [{ type: "text", text: TEST_TEXT }],
+  }),
 });
 
 export const testQuery = query({
@@ -65,7 +64,7 @@ export const createThreadManually = mutation({
 
 export const createThreadMutation = agent.createThreadMutation();
 export const generateObjectAction = agent.asObjectAction({
-  schema: z.object({ prompt: z.any().describe("The prompt passed in") }),
+  schema: z.object({ hello: z.string().describe("A string for testing") }),
 });
 export const generateTextAction = agent.asTextAction({});
 export const streamTextAction = agent.asTextAction({ stream: true });
@@ -177,7 +176,7 @@ describe("Agent thick client", () => {
     const t = initConvexTest(schema);
     const result = await t.action(testApi.createAndGenerate, {});
     expect(result).toBeDefined();
-    expect(result).toMatch("Hello");
+    expect(result).toMatch(TEST_TEXT);
   });
 });
 
@@ -243,40 +242,6 @@ describe("filterOutOrphanedToolMessages", () => {
     expect(filterOutOrphanedToolMessages([response1, call2])).toEqual([call2]);
   });
 });
-
-function mockModel(): LanguageModelV2 {
-  return new MockLanguageModelV2({
-    provider: "mock",
-    modelId: "mock",
-    // supportsStructuredOutputs: true,
-    doGenerate: async ({ prompt }) => ({
-      finishReason: "stop",
-      content: [{ type: "text", text: JSON.stringify({ prompt }) }],
-      warnings: [],
-      usage: { outputTokens: 10, inputTokens: 3, totalTokens: 13 },
-      rawCall: { rawPrompt: null, rawSettings: {} },
-      text: JSON.stringify({ prompt }),
-    }),
-    doStream: async ({ prompt }) => ({
-      stream: simulateReadableStream({
-        chunkDelayInMs: 50,
-        initialDelayInMs: 100,
-        chunks: [
-          {
-            type: "text-delta",
-            textDelta: `This is a sample response to ${JSON.stringify(prompt)}`,
-          },
-          {
-            type: "finish",
-            finishReason: "stop",
-            usage: { outputTokens: 10, inputTokens: 3, totalTokens: 13 },
-          },
-        ] as LanguageModelV2StreamPart[],
-      }),
-      rawCall: { rawPrompt: null, rawSettings: {} },
-    }),
-  });
-}
 
 describe("Agent option variations and normal behavior", () => {
   test("Agent can be constructed with minimal options", () => {
@@ -368,7 +333,7 @@ describe("Agent text/object generation", () => {
       contextOptions: { recentMessages: 1 },
       storageOptions: { saveMessages: "all" },
     });
-    expect(result.text).toMatch(/Test/);
+    expect(result.text).toEqual(TEST_TEXT);
   });
 
   test("generateObject returns object", async () => {
@@ -403,7 +368,7 @@ describe("Agent-generated mutations/actions/queries", () => {
       threadId,
       messages: [{ role: "user", content: "Say hi" }],
     });
-    expect(textResult.text).toMatch(/Say hi/);
+    expect(textResult.text).toEqual(TEST_TEXT);
 
     const objResult = await t.action(testApi.generateObjectAction, {
       userId: "8",
