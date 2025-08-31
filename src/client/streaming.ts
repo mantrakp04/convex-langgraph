@@ -166,7 +166,7 @@ export const DEFAULT_STREAMING_OPTIONS = {
  * @returns The merged transforms to pass to the underlying `streamText` call.
  */
 export function mergeTransforms<TOOLS extends ToolSet>(
-  options: StreamingOptions | boolean | undefined,
+  options: { chunking?: StreamingOptions["chunking"] } | boolean | undefined,
   existing:
     | StreamTextTransform<TOOLS>
     | Array<StreamTextTransform<TOOLS>>
@@ -198,7 +198,7 @@ export function mergeTransforms<TOOLS extends ToolSet>(
 export class DeltaStreamer<T> {
   public streamId: string | undefined;
   public readonly config: {
-    stream: Required<StreamingOptions>;
+    throttleMs: number;
     onAsyncAbort: (reason: string) => Promise<void>;
     compress: ((parts: T[]) => T[]) | null;
   };
@@ -212,7 +212,7 @@ export class DeltaStreamer<T> {
     public readonly component: AgentComponent,
     public readonly ctx: RunMutationCtx,
     config: {
-      stream: true | StreamingOptions;
+      throttleMs: number | undefined;
       onAsyncAbort: (reason: string) => Promise<void>;
       abortSignal: AbortSignal | undefined;
       compress: ((parts: T[]) => T[]) | null;
@@ -230,10 +230,7 @@ export class DeltaStreamer<T> {
     },
   ) {
     this.config = {
-      stream:
-        config.stream === true
-          ? DEFAULT_STREAMING_OPTIONS
-          : { ...DEFAULT_STREAMING_OPTIONS, ...config },
+      throttleMs: config.throttleMs ?? DEFAULT_STREAMING_OPTIONS.throttleMs,
       onAsyncAbort: config.onAsyncAbort,
       compress: config.compress,
     };
@@ -269,7 +266,7 @@ export class DeltaStreamer<T> {
     this.#nextParts.push(...parts);
     if (
       !this.#ongoingWrite &&
-      Date.now() - this.#latestWrite >= this.config.stream.throttleMs
+      Date.now() - this.#latestWrite >= this.config.throttleMs
     ) {
       this.#ongoingWrite = this.#sendDelta();
     }
@@ -311,7 +308,7 @@ export class DeltaStreamer<T> {
     // Now that we've sent the delta, check if we need to send another one.
     if (
       this.#nextParts.length > 0 &&
-      Date.now() - this.#latestWrite >= this.config.stream.throttleMs
+      Date.now() - this.#latestWrite >= this.config.throttleMs
     ) {
       // We send again immediately with the accumulated deltas.
       this.#ongoingWrite = this.#sendDelta();

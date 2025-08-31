@@ -70,6 +70,7 @@ import {
 } from "./search.js";
 import { start } from "./start.js";
 import {
+  DEFAULT_STREAMING_OPTIONS,
   DeltaStreamer,
   mergeTransforms,
   syncStreams,
@@ -610,7 +611,10 @@ export class Agent<
             this.component,
             ctx,
             {
-              stream: opts.saveStreamDeltas,
+              throttleMs:
+                typeof opts.saveStreamDeltas === "object"
+                  ? opts.saveStreamDeltas.throttleMs
+                  : undefined,
               onAsyncAbort: call.fail,
               compress: compressUIMessageChunks,
               abortSignal: args.abortSignal,
