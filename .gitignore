@@ -18,3 +18,4 @@ react/package.json
 *.tgz
 
 *.tsbuildinfo
+.claude
