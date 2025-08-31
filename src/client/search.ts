@@ -23,9 +23,12 @@ import type {
   AgentComponent,
   Config,
   ContextOptions,
+  Options,
   RunActionCtx,
   RunQueryCtx,
 } from "./types.js";
+import { inlineMessagesFiles } from "./files.js";
+import { deserializeMessage } from "./index.js";
 
 const DEFAULT_VECTOR_SCORE_THRESHOLD = 0.0;
 // 10k characters should be more than enough for most cases, and stays under
@@ -215,6 +218,10 @@ export function filterOutOrphanedToolMessages(docs: MessageDoc[]) {
   return result;
 }
 
+/**
+ * Embed a list of messages, including calling any usage handler.
+ * This will not save the embeddings to the database.
+ */
 export async function embedMessages(
   ctx: RunActionCtx,
   {
@@ -277,6 +284,13 @@ export async function embedMessages(
   return embeddings;
 }
 
+/**
+ * Embeds many strings, calling any usage handler.
+ * @param ctx The ctx parameter to an action.
+ * @param args Arguments to AI SDK's embedMany, and context for the embedding,
+ *   passed to the usage handler.
+ * @returns The embeddings for the strings, matching the order of the values.
+ */
 export async function embedMany(
   ctx: RunActionCtx,
   {
@@ -328,6 +342,13 @@ export async function embedMany(
   return { embeddings: result.embeddings };
 }
 
+/**
+ * Embed a list of messages, and save the embeddings to the database.
+ * @param ctx The ctx parameter to an action.
+ * @param component The agent component, usually components.agent.
+ * @param args The context for the embedding, passed to the usage handler.
+ * @param messages The messages to embed, in the Agent MessageDoc format.
+ */
 export async function generateAndSaveEmbeddings(
   ctx: RunActionCtx,
   component: AgentComponent,
@@ -363,4 +384,134 @@ export async function generateAndSaveEmbeddings(
         .filter((v) => v.vector !== null),
     });
   }
+}
+
+/**
+ * Similar to fetchContextMessages, but also combines the input messages,
+ * with search context, recent messages, input messages, then prompt messages.
+ * If there is a promptMessageId and prompt message(s) provided, it will splice
+ * the prompt messages into the history to replace the promptMessageId message,
+ * but still be followed by any existing messages that were in response to the
+ * promptMessageId message.
+ */
+export async function fetchContextWithPrompt(
+  ctx: RunActionCtx,
+  component: AgentComponent,
+  args: {
+    prompt: string | (ModelMessage | Message)[] | undefined;
+    messages: (ModelMessage | Message)[] | undefined;
+    promptMessageId: string | undefined;
+    userId: string | undefined;
+    threadId: string | undefined;
+    agentName?: string;
+  } & Options &
+    Config,
+): Promise<{
+  messages: ModelMessage[];
+  order: number | undefined;
+  stepOrder: number | undefined;
+}> {
+  const { threadId, userId, textEmbeddingModel } = args;
+
+  const promptArray = getPromptArray(args.prompt);
+
+  const searchText = promptArray.length
+    ? extractText(promptArray.at(-1)!)
+    : args.promptMessageId
+      ? undefined
+      : args.messages?.at(-1)
+        ? extractText(args.messages.at(-1)!)
+        : undefined;
+  const contextMessages: MessageDoc[] = await fetchContextMessages(
+    ctx,
+    component,
+    {
+      userId,
+      threadId,
+      targetMessageId: args.promptMessageId,
+      searchText,
+      contextOptions: args.contextOptions ?? {},
+      getEmbedding: async (text) => {
+        assert(
+          textEmbeddingModel,
+          "A textEmbeddingModel is required to be set on the Agent that you're doing vector search with",
+        );
+        return {
+          embedding: (
+            await embedMany(ctx, {
+              ...args,
+              userId,
+              values: [text],
+              textEmbeddingModel,
+            })
+          ).embeddings[0],
+          textEmbeddingModel,
+        };
+      },
+    },
+  );
+
+  const promptMessageIndex = args.promptMessageId
+    ? contextMessages.findIndex((m) => m._id === args.promptMessageId)
+    : -1;
+  const promptMessage =
+    promptMessageIndex !== -1 ? contextMessages[promptMessageIndex] : undefined;
+  let prePromptDocs = contextMessages;
+  const messages = args.messages ?? [];
+  let existingResponseDocs: MessageDoc[] = [];
+  if (promptMessage) {
+    prePromptDocs = contextMessages.slice(0, promptMessageIndex);
+    existingResponseDocs = contextMessages.slice(promptMessageIndex + 1);
+    if (promptArray.length === 0) {
+      // If they didn't override the prompt, use the existing prompt message.
+      if (promptMessage.message) {
+        promptArray.push(promptMessage.message);
+      }
+    }
+    if (!promptMessage.embeddingId && textEmbeddingModel) {
+      // Lazily generate embeddings for the prompt message, if it doesn't have
+      // embeddings yet. This can happen if the message was saved in a mutation
+      // where the LLM is not available.
+      await generateAndSaveEmbeddings(
+        ctx,
+        component,
+        {
+          ...args,
+          userId,
+          textEmbeddingModel,
+        },
+        [promptMessage],
+      );
+    }
+  }
+
+  let processedMessages: ModelMessage[] = [
+    ...prePromptDocs.map((m) => m.message),
+    ...messages,
+    ...promptArray,
+    ...existingResponseDocs.map((m) => m.message),
+  ]
+    .filter((m) => !!m)
+    .map((m) => deserializeMessage(m));
+
+  // Process messages to inline localhost files (if not, file urls pointing to localhost will be sent to LLM providers)
+  if (process.env.CONVEX_CLOUD_URL?.startsWith("http://127.0.0.1")) {
+    processedMessages = await inlineMessagesFiles(processedMessages);
+  }
+
+  return {
+    messages: processedMessages,
+    order: promptMessage?.order,
+    stepOrder: promptMessage?.stepOrder,
+  };
+}
+
+export function getPromptArray(
+  prompt: string | (ModelMessage | Message)[] | undefined,
+): (ModelMessage | Message)[] {
+  return !prompt
+    ? []
+    : Array.isArray(prompt)
+      ? prompt
+      : [{ role: "user", content: prompt }];
 }

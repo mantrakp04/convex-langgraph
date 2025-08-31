@@ -152,6 +152,10 @@ export {
 export {
   fetchContextMessages,
   filterOutOrphanedToolMessages,
+  fetchContextWithPrompt,
+  generateAndSaveEmbeddings,
+  embedMessages,
+  embedMany,
 } from "./search.js";
 export {
   abortStream,

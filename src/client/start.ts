@@ -10,38 +10,28 @@ import {
   type ToolSet,
 } from "ai";
 import {
-  deserializeMessage,
   serializeNewMessagesInStep,
   serializeObjectResult,
 } from "../mapping.js";
-import {
-  embedMany,
-  embedMessages,
-  fetchContextMessages,
-  generateAndSaveEmbeddings,
-} from "./search.js";
+import { embedMessages, fetchContextWithPrompt } from "./search.js";
 import type {
   ActionCtx,
   AgentComponent,
   Config,
   Options,
-  RunActionCtx,
-  RunMutationCtx,
   UserActionCtx,
 } from "./types.js";
 import { saveMessages } from "./messages.js";
 import type { Message, MessageDoc } from "../validators.js";
 import {
-  extractText,
   getModelName,
   getProviderName,
   type ModelOrMetadata,
 } from "../shared.js";
 import { wrapTools, type ToolCtx } from "./createTool.js";
 import type { Agent } from "./index.js";
-import { assert } from "convex-helpers";
-import { inlineMessagesFiles } from "./files.js";
-import type { VectorDimension } from "../component/vector/tables.js";
+import { omit } from "convex-helpers";
+import { saveInputMessages } from "./saveInputMessages.js";
 
 export async function start<
   T,
@@ -57,12 +47,7 @@ export async function start<
    * The type of the arguments returned infers from the type of the arguments
    * you pass here.
    */
-  {
-    messages: argsMessages,
-    prompt: argsPrompt,
-    promptMessageId: argsPromptMessageId,
-    ...args
-  }: T & {
+  args: T & {
     /**
      * If provided, this message will be used as the "prompt" for the LLM call,
      * instead of the prompt or messages.
@@ -136,7 +121,6 @@ export async function start<
   fail: (reason: string) => Promise<void>;
   getSavedMessages: () => MessageDoc[];
 }> {
-  const model = args.model ?? opts.languageModel;
   const userId =
     opts.userId ??
     (threadId &&
@@ -144,37 +128,41 @@ export async function start<
         ?.userId) ??
     undefined;
 
-  const context = await combineContextWithPrompt(ctx, component, {
+  const context = await fetchContextWithPrompt(ctx, component, {
     ...opts,
     userId,
     threadId,
-    messages: argsMessages,
-    prompt: argsPrompt,
-    promptMessageId: argsPromptMessageId,
+    messages: args.messages,
+    prompt: args.prompt,
+    promptMessageId: args.promptMessageId,
   });
 
+  const saveMessages = opts.storageOptions?.saveMessages ?? "promptAndOutput";
   const { promptMessageId, pendingMessage, savedMessages } =
-    await saveInputMessages(ctx, component, {
-      ...opts,
-      userId,
-      threadId,
-      prompt: argsPrompt,
-      messages: argsMessages,
-      promptMessageId: argsPromptMessageId,
-    });
+    threadId && saveMessages !== "none"
+      ? await saveInputMessages(ctx, component, {
+          ...opts,
+          userId,
+          threadId,
+          prompt: args.prompt,
+          messages: args.messages,
+          promptMessageId: args.promptMessageId,
+          storageOptions: { saveMessages },
+        })
+      : {
+          promptMessageId: args.promptMessageId,
+          pendingMessage: undefined,
+          savedMessages: [],
+        };
 
   const order = pendingMessage?.order ?? context.order;
   const stepOrder = pendingMessage?.stepOrder ?? context.stepOrder;
-
   let pendingMessageId = pendingMessage?._id;
-  const saveOutput = opts.storageOptions?.saveMessages !== "none";
+
+  const model = args.model ?? opts.languageModel;
   let activeModel: ModelOrMetadata = model;
+
   const fail = async (reason: string) => {
-    if (threadId && promptMessageId) {
-      console.error(
-        `Message failed in thread ${threadId} with promptMessageId ${promptMessageId}: ${reason}`,
-      );
-    }
     if (pendingMessageId) {
       await ctx.runMutation(component.messages.finalizeMessage, {
         messageId: pendingMessageId,
@@ -187,7 +175,7 @@ export async function start<
     abortSignal.addEventListener(
       "abort",
       async () => {
-        await fail(abortSignal.reason ?? "abortSignal");
+        await fail(abortSignal.reason?.toString() ?? "abortSignal");
       },
       { once: true },
     );
@@ -203,7 +191,7 @@ export async function start<
   const aiArgs = {
     ...opts.callSettings,
     providerOptions: opts.providerOptions,
-    ...args,
+    ...omit(args, ["promptMessageId", "messages", "prompt"]),
     model,
     messages: context.messages,
     stopWhen:
@@ -244,7 +232,7 @@ export async function start<
         | { object: GenerateObjectResult<unknown> },
       createPendingMessage?: boolean,
     ) => {
-      if (threadId && promptMessageId && saveOutput) {
+      if (threadId && saveMessages !== "none") {
         const serialized =
           "object" in toSave
             ? await serializeObjectResult(
@@ -321,221 +309,5 @@ export async function start<
         });
       }
     },
-  };
-}
-
-async function combineContextWithPrompt(
-  ctx: RunActionCtx,
-  component: AgentComponent,
-  args: {
-    prompt: string | (ModelMessage | Message)[] | undefined;
-    messages: (ModelMessage | Message)[] | undefined;
-    promptMessageId: string | undefined;
-    userId: string | undefined;
-    threadId: string | undefined;
-    agentName?: string;
-  } & Options &
-    Config,
-): Promise<{
-  messages: ModelMessage[];
-  order: number | undefined;
-  stepOrder: number | undefined;
-}> {
-  const { threadId, userId, textEmbeddingModel } = args;
-
-  const promptArray = getPromptArray(args.prompt);
-
-  // If only a messageId is provided, this will add that message to the end.
-  const searchMsg =
-    promptArray.at(-1) ??
-    (args.promptMessageId ? undefined : args.messages?.at(-1));
-  const searchText = searchMsg ? extractText(searchMsg) : undefined;
-
-  const contextMessages: MessageDoc[] = await fetchContextMessages(
-    ctx,
-    component,
-    {
-      userId,
-      threadId,
-      targetMessageId: args.promptMessageId,
-      searchText,
-      contextOptions: args.contextOptions ?? {},
-      getEmbedding: async (text) => {
-        assert(
-          textEmbeddingModel,
-          "A textEmbeddingModel is required to be set on the Agent that you're doing vector search with",
-        );
-        return {
-          embedding: (
-            await embedMany(ctx, {
-              ...args,
-              userId,
-              values: [text],
-              textEmbeddingModel,
-            })
-          ).embeddings[0],
-          textEmbeddingModel,
-        };
-      },
-    },
-  );
-
-  const promptMessageIndex = args.promptMessageId
-    ? contextMessages.findIndex((m) => m._id === args.promptMessageId)
-    : -1;
-  const promptMessage =
-    promptMessageIndex !== -1 ? contextMessages[promptMessageIndex] : undefined;
-  let prePromptDocs = contextMessages;
-  const messages = args.messages ?? [];
-  let existingResponseDocs: MessageDoc[] = [];
-  if (promptMessage) {
-    prePromptDocs = contextMessages.slice(0, promptMessageIndex);
-    existingResponseDocs = contextMessages.slice(promptMessageIndex + 1);
-    if (promptArray.length === 0) {
-      // If they didn't override the prompt, use the existing prompt message.
-      if (promptMessage.message) {
-        promptArray.push(promptMessage.message);
-      }
-    }
-    if (!promptMessage.embeddingId && textEmbeddingModel) {
-      // Lazily generate embeddings for the prompt message, if it doesn't have
-      // embeddings yet. This can happen if the message was saved in a mutation
-      // where the LLM is not available.
-      await generateAndSaveEmbeddings(
-        ctx,
-        component,
-        {
-          ...args,
-          userId,
-          textEmbeddingModel,
-        },
-        [promptMessage],
-      );
-    }
-  }
-
-  let processedMessages: ModelMessage[] = [
-    ...prePromptDocs.map((m) => m.message),
-    ...messages,
-    ...promptArray,
-    ...existingResponseDocs.map((m) => m.message),
-  ]
-    .filter((m) => !!m)
-    .map((m) => deserializeMessage(m));
-
-  // Process messages to inline localhost files (if not, file urls pointing to localhost will be sent to LLM providers)
-  if (process.env.CONVEX_CLOUD_URL?.startsWith("http://127.0.0.1")) {
-    processedMessages = await inlineMessagesFiles(processedMessages);
-  }
-
-  return {
-    messages: processedMessages,
-    order: promptMessage?.order,
-    stepOrder: promptMessage?.stepOrder,
-  };
-}
-
-function getPromptArray(
-  prompt: string | (ModelMessage | Message)[] | undefined,
-): (ModelMessage | Message)[] {
-  return !prompt
-    ? []
-    : Array.isArray(prompt)
-      ? prompt
-      : [{ role: "user", content: prompt }];
-}
-
-async function saveInputMessages(
-  ctx: RunMutationCtx | RunActionCtx,
-  component: AgentComponent,
-  {
-    threadId,
-    userId,
-    prompt,
-    messages,
-    ...args
-  }: {
-    prompt: string | (ModelMessage | Message)[] | undefined;
-    messages: (ModelMessage | Message)[] | undefined;
-    promptMessageId: string | undefined;
-    userId: string | undefined;
-    threadId: string | undefined;
-    agentName?: string;
-  } & Pick<
-    Config,
-    "usageHandler" | "textEmbeddingModel" | "callSettings" | "storageOptions"
-  >,
-): Promise<{
-  promptMessageId: string | undefined;
-  pendingMessage: MessageDoc | undefined;
-  savedMessages: MessageDoc[];
-}> {
-  const shouldSave = args.storageOptions?.saveMessages ?? "promptAndOutput";
-  // If only a promptMessageId is provided, this will be empty.
-  const promptArray = getPromptArray(prompt);
-
-  if (!threadId || shouldSave === "none") {
-    return {
-      promptMessageId: args.promptMessageId,
-      pendingMessage: undefined,
-      savedMessages: [],
-    };
-  }
-
-  const toSave: (ModelMessage | Message)[] = [];
-  if (args.promptMessageId) {
-    // We don't save any inputs if a promptMessageId is provided.
-    // It's unclear where they'd want to save the new messages.
-  } else if (shouldSave === "all") {
-    if (messages) toSave.push(...messages);
-    toSave.push(...promptArray);
-  } else {
-    if (promptArray.length) {
-      // We treat the whole promptArray as the prompt message to save.
-      toSave.push(...promptArray);
-    } else if (messages) {
-      // Otherwise, treat the last message as the prompt message to save.
-      toSave.push(...messages.slice(-1));
-    }
-  }
-  let embeddings:
-    | {
-        vectors: (number[] | null)[];
-        dimension: VectorDimension;
-        model: string;
-      }
-    | undefined;
-  if (args.textEmbeddingModel && toSave.length) {
-    assert(
-      "runAction" in ctx,
-      "You must be in an action context to generate embeddings",
-    );
-    embeddings = await embedMessages(
-      ctx,
-      { ...args, userId: userId ?? undefined, threadId },
-      toSave,
-    );
-    if (embeddings) {
-      // for the pending message
-      embeddings.vectors.push(null);
-    }
-  }
-  const saved = await saveMessages(ctx, component, {
-    threadId,
-    userId,
-    messages: [...toSave, { role: "assistant", content: [] }],
-    metadata: [
-      ...Array.from({ length: toSave.length }, () => ({})),
-      { status: "pending" },
-    ],
-    failPendingSteps: !!args.promptMessageId,
-    embeddings,
-  });
-  return {
-    promptMessageId: toSave.length
-      ? saved.messages.at(-2)!._id
-      : args.promptMessageId,
-    pendingMessage: saved.messages.at(-1)!,
-    savedMessages: saved.messages.slice(0, -1),
   };
 }
