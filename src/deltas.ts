@@ -156,6 +156,7 @@ export function getParts(
         );
       }
     }
+    parts.push(...delta.parts);
     cursor = delta.end;
   }
   return { parts, cursor };
