@@ -35,6 +35,7 @@ import {
 import { convexToJson, v, type Value } from "convex/values";
 import type { threadFieldsSupportingPatch } from "../component/threads.js";
 import { type VectorDimension } from "../component/vector/tables.js";
+import { compressUIMessageChunks } from "../deltas.js";
 import {
   deserializeMessage,
   serializeMessage,
@@ -70,20 +71,20 @@ import {
 import { start } from "./start.js";
 import {
   DeltaStreamer,
-  syncStreams,
   mergeTransforms,
+  syncStreams,
   type StreamingOptions,
 } from "./streaming.js";
-import { compressUIMessageChunks } from "../deltas.js";
 import { createThread, getThreadMetadata } from "./threads.js";
 import type {
   ActionCtx,
   AgentComponent,
+  Config,
   ContextOptions,
   DefaultObjectSchema,
+  GenerateObjectArgs,
   GenerationOutputMetadata,
   MaybeCustomCtx,
-  GenerateObjectArgs,
   ObjectMode,
   ObjectSchema,
   Options,
@@ -99,26 +100,28 @@ import type {
   Thread,
   UsageHandler,
   UserActionCtx,
-  Config,
 } from "./types.js";
 
 export { stepCountIs } from "ai";
 export {
   deserializeMessage,
+  guessMimeType,
   serializeDataOrUrl,
   serializeMessage,
-  guessMimeType,
   toUIFilePart,
 } from "../mapping.js";
 // NOTE: these are also exported via @convex-dev/agent/validators
 // a future version may put them all here or move these over there
+export { extractText, isTool, sorted } from "../shared.js";
 export {
   vAssistantMessage,
+  vContent,
   vContextOptions,
   vMessage,
   vMessageDoc,
   vPaginationResult,
   vProviderMetadata,
+  vSource,
   vStorageOptions,
   vStreamArgs,
   vSystemMessage,
@@ -126,15 +129,13 @@ export {
   vToolMessage,
   vUsage,
   vUserMessage,
-  vSource,
-  vContent,
   type Message,
   type MessageDoc,
   type SourcePart,
   type ThreadDoc,
   type Usage,
 } from "../validators.js";
-export type { ToolCtx } from "./createTool.js";
+export { createTool, type ToolCtx } from "./createTool.js";
 export {
   definePlaygroundAPI,
   type AgentsFn,
@@ -148,6 +149,7 @@ export {
   type SaveMessageArgs,
   type SaveMessagesArgs,
 } from "./messages.js";
+export { mockModel } from "./mockModel.js";
 export {
   fetchContextMessages,
   filterOutOrphanedToolMessages,
@@ -165,11 +167,9 @@ export {
 export {
   createThread,
   getThreadMetadata,
-  updateThreadMetadata,
   searchThreadTitles,
+  updateThreadMetadata,
 } from "./threads.js";
-export { extractText, isTool, sorted } from "../shared.js";
-export { createTool } from "./createTool.js";
 export type {
   AgentComponent,
   Config,
@@ -182,7 +182,6 @@ export type {
   Thread,
   UsageHandler,
 };
-export { mockModel } from "./mockModel.js";
 
 export class Agent<
   /**
