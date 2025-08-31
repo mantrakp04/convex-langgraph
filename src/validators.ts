@@ -460,3 +460,51 @@ export const vStreamDelta = v.object({
   parts: v.array(v.any()),
 });
 export type StreamDelta = Infer<typeof vStreamDelta>;
+
+export const vMessageDoc = v.object({
+  _id: v.string(),
+  _creationTime: v.number(),
+  userId: v.optional(v.string()), // useful for searching across threads
+  threadId: v.string(),
+  order: v.number(),
+  stepOrder: v.number(),
+  embeddingId: v.optional(v.string()),
+  fileIds: v.optional(v.array(v.string())),
+  error: v.optional(v.string()),
+  status: vMessageStatus,
+
+  // Context on how it was generated
+  agentName: v.optional(v.string()),
+  model: v.optional(v.string()),
+  provider: v.optional(v.string()),
+  providerOptions: v.optional(vProviderOptions), // Sent to model
+
+  // The result
+  message: v.optional(vMessage),
+  // Convenience fields extracted from the message
+  tool: v.boolean(), // either tool call (assistant) or tool result (tool)
+  text: v.optional(v.string()),
+
+  // Result metadata
+  usage: v.optional(vUsage),
+  providerMetadata: v.optional(vProviderMetadata), // Received from model
+  sources: v.optional(v.array(vSource)),
+  warnings: v.optional(v.array(vLanguageModelCallWarning)),
+  finishReason: v.optional(vFinishReason),
+  // Likely deprecated soon
+  reasoning: v.optional(v.string()),
+  reasoningDetails: v.optional(vReasoningDetails),
+  // Deprecated
+  id: v.optional(v.string()), // external id, e.g. from Vercel AI SDK
+});
+export type MessageDoc = Infer<typeof vMessageDoc>; // Public
+
+export const vThreadDoc = v.object({
+  _id: v.string(),
+  _creationTime: v.number(),
+  userId: v.optional(v.string()), // Unset for anonymous
+  title: v.optional(v.string()),
+  summary: v.optional(v.string()),
+  status: vThreadStatus,
+});
+export type ThreadDoc = Infer<typeof vThreadDoc>;

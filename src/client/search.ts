@@ -4,7 +4,7 @@ import {
   type ModelMessage,
 } from "ai";
 import { assert } from "convex-helpers";
-import type { MessageDoc } from "../component/schema.js";
+import type { MessageDoc } from "../validators.js";
 import {
   validateVectorDimension,
   type VectorDimension,

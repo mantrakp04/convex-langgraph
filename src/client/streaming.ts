@@ -15,7 +15,7 @@ import type {
   SyncStreamsReturnValue,
 } from "./types.js";
 import { v } from "convex/values";
-import { vMessageDoc } from "../component/schema.js";
+import { vMessageDoc } from "../validators.js";
 
 export const vStreamMessagesReturnValue = v.object({
   ...vPaginationResult(vMessageDoc).fields,

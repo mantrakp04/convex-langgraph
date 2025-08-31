@@ -1,5 +1,5 @@
 import { defineSchema, defineTable } from "convex/server";
-import { type Infer, v } from "convex/values";
+import { v } from "convex/values";
 import {
   vThreadStatus,
   vMessage,
@@ -14,7 +14,6 @@ import {
 } from "../validators.js";
 import { typedV } from "convex-helpers/validators";
 import vectorTables, { vVectorId } from "./vector/tables.js";
-import { omit } from "convex-helpers";
 
 export const schema = defineSchema({
   threads: defineTable({
@@ -163,32 +162,5 @@ export const schema = defineSchema({
 
 export const vv = typedV(schema);
 export { vv as v };
-
-// Public
-export const vThreadDoc = v.object({
-  _id: v.string(),
-  _creationTime: v.number(),
-  userId: v.optional(v.string()), // Unset for anonymous
-  title: v.optional(v.string()),
-  summary: v.optional(v.string()),
-  status: vThreadStatus,
-});
-export type ThreadDoc = Infer<typeof vThreadDoc>;
-
-export const vMessageDoc = v.object({
-  _id: v.string(),
-  _creationTime: v.number(),
-  ...omit(schema.tables.messages.validator.fields, [
-    "parentMessageId",
-    "stepId",
-    "files",
-  ]),
-  // Overwrite all the types that have a v.id validator
-  // Outside of the component, they are strings
-  threadId: v.string(),
-  embeddingId: v.optional(v.string()),
-  fileIds: v.optional(v.array(v.string())),
-});
-export type MessageDoc = Infer<typeof vMessageDoc>;
 
 export default schema;

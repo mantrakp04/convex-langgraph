@@ -13,10 +13,12 @@ import {
   sorted,
 } from "../shared.js";
 import {
+  vMessageDoc,
   vMessageEmbeddingsWithDimension,
   vMessageStatus,
   vMessageWithMetadataInternal,
   vPaginationResult,
+  type MessageDoc,
 } from "../validators.js";
 import { api, internal } from "./_generated/api.js";
 import type { Doc, Id } from "./_generated/dataModel.js";
@@ -28,8 +30,7 @@ import {
   query,
   type QueryCtx,
 } from "./_generated/server.js";
-import type { MessageDoc } from "./schema.js";
-import { schema, v, vMessageDoc } from "./schema.js";
+import { schema, v } from "./schema.js";
 import { insertVector, searchVectors } from "./vector/index.js";
 import {
   validateVectorDimension,

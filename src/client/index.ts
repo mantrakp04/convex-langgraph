@@ -34,7 +34,6 @@ import {
   type WithoutSystemFields,
 } from "convex/server";
 import { convexToJson, v, type Value } from "convex/values";
-import type { MessageDoc, ThreadDoc } from "../component/schema.js";
 import type { threadFieldsSupportingPatch } from "../component/threads.js";
 import {
   validateVectorDimension,
@@ -58,10 +57,12 @@ import {
   vSafeObjectArgs,
   vTextArgs,
   type Message,
+  type MessageDoc,
   type MessageStatus,
   type MessageWithMetadata,
   type ProviderMetadata,
   type StreamArgs,
+  type ThreadDoc,
 } from "../validators.js";
 import { wrapTools, type ToolCtx } from "./createTool.js";
 import {
@@ -110,7 +111,6 @@ import { inlineMessagesFiles } from "./files.js";
 import type { DataModel } from "../component/_generated/dataModel.js";
 
 export { stepCountIs } from "ai";
-export { vMessageDoc, vThreadDoc } from "../component/schema.js";
 export {
   deserializeMessage,
   serializeDataOrUrl,
@@ -124,18 +124,22 @@ export {
   vAssistantMessage,
   vContextOptions,
   vMessage,
+  vMessageDoc,
   vPaginationResult,
   vProviderMetadata,
   vStorageOptions,
   vStreamArgs,
   vSystemMessage,
+  vThreadDoc,
   vToolMessage,
   vUsage,
   vUserMessage,
   vSource,
   vContent,
-  type SourcePart,
   type Message,
+  type MessageDoc,
+  type SourcePart,
+  type ThreadDoc,
   type Usage,
 } from "../validators.js";
 export type { ToolCtx } from "./createTool.js";
@@ -174,14 +178,12 @@ export type {
   AgentComponent,
   Config,
   ContextOptions,
-  MessageDoc,
   ProviderMetadata,
   RawRequestResponseHandler,
   StorageOptions,
   StreamArgs,
   SyncStreamsReturnValue,
   Thread,
-  ThreadDoc,
   UsageHandler,
 };
 export { mockModel } from "./mockModel.js";

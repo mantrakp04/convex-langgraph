@@ -1,5 +1,5 @@
 import type { WithoutSystemFields } from "convex/server";
-import type { ThreadDoc } from "../component/schema.js";
+import type { ThreadDoc } from "../validators.js";
 import type { AgentComponent, RunMutationCtx, RunQueryCtx } from "./types.js";
 
 /**

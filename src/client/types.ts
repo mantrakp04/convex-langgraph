@@ -37,11 +37,12 @@ import type {
 } from "convex/server";
 import type { GenericId } from "convex/values";
 import type { Mounts } from "../component/_generated/api.js";
-import type { MessageDoc, ThreadDoc } from "../component/schema.js";
 import type {
+  MessageDoc,
   ProviderMetadata,
   StreamDelta,
   StreamMessage,
+  ThreadDoc,
 } from "../validators.js";
 import type { StreamingOptions } from "./streaming.js";
 import type * as z3 from "zod/v3";
