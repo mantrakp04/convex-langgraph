@@ -298,6 +298,7 @@ export class DeltaStreamer<T> {
       return;
     }
     await this.#ongoingWrite;
+    await this.#sendDelta();
     await this.ctx.runMutation(this.component.streams.finish, {
       streamId: this.streamId,
     });
