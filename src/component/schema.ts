@@ -91,6 +91,12 @@ export const schema = defineSchema({
     model: v.optional(v.string()),
     provider: v.optional(v.string()),
     providerOptions: v.optional(vProviderOptions), // Sent to model
+    // The data format for the deltas. By default, we use UIMessageChunks.
+    // This format dictates how the messages are materialized for capturing
+    // partial messages during failure, as well as on the client side.
+    format: v.optional(
+      v.union(v.literal("UIMessageChunk"), v.literal("TextStreamPart")),
+    ),
 
     threadId: v.id("threads"),
     order: v.number(),

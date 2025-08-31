@@ -623,6 +623,7 @@ export class Agent<
               model: getModelName(args.model),
               provider: getProviderName(args.model),
               providerOptions: args.providerOptions,
+              format: "UIMessageChunk",
               order,
               stepOrder,
             },

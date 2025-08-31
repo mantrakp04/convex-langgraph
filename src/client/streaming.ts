@@ -226,6 +226,7 @@ export class DeltaStreamer<T> {
       model?: string;
       provider?: string;
       providerOptions?: ProviderOptions;
+      format: "UIMessageChunk" | "TextStreamPart" | undefined;
     },
   ) {
     this.config = {
