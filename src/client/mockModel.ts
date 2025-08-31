@@ -1,8 +1,8 @@
 import type {
   LanguageModelV2,
+  LanguageModelV2Content,
   LanguageModelV2StreamPart,
 } from "@ai-sdk/provider";
-import type { ReasoningPart, TextPart } from "@ai-sdk/provider-utils";
 import { simulateReadableStream } from "ai";
 
 export const DEFAULT_TEXT = `
@@ -22,7 +22,7 @@ export type MockModelArgs = {
   chunkDelayInMs?: number;
   initialDelayInMs?: number;
   // provide either content or doGenerate & doStream
-  content?: (TextPart | ReasoningPart)[];
+  content?: LanguageModelV2Content[];
   doGenerate?: LanguageModelV2["doGenerate"];
   doStream?: LanguageModelV2["doStream"];
   fail?:
@@ -56,8 +56,8 @@ export class MockLanguageModel implements LanguageModelV2 {
     this.modelId = args.modelId || "mock-model-id";
     const {
       content = [{ type: "text", text: DEFAULT_TEXT }],
-      chunkDelayInMs = 200,
-      initialDelayInMs = 1000,
+      chunkDelayInMs = 0,
+      initialDelayInMs = 0,
       supportedUrls = {},
     } = args;
     const fail =
@@ -73,21 +73,25 @@ export class MockLanguageModel implements LanguageModelV2 {
       { type: "stream-start", warnings: [] },
     ];
     chunks.push(
-      ...content.flatMap((c, ci) => {
+      ...content.flatMap((c, ci): LanguageModelV2StreamPart[] => {
+        if (c.type !== "text" && c.type !== "reasoning") {
+          return [c];
+        }
         const deltas = c.text.split(" ");
-        let parts: LanguageModelV2StreamPart[] = [];
+        const parts: LanguageModelV2StreamPart[] = [];
         if (c.type === "reasoning") {
           parts.push({
             type: "reasoning-start",
-            id: `${ci}-reasoning-start`,
+
+            id: `${ci}-reasoning`,
           });
           parts.push(
             ...deltas.map(
               (delta, di) =>
                 ({
                   type: "reasoning-delta",
-                  delta,
-                  id: `${ci}-reasoning-${di}`,
+                  delta: (di ? " " : "") + delta,
+                  id: `${ci}-reasoning`,
                   providerMetadata: {
                     mockProvider: { mock: { reasoningDetails: null } },
                   },
@@ -96,21 +100,26 @@ export class MockLanguageModel implements LanguageModelV2 {
           );
           parts.push({
             type: "reasoning-end",
-            id: `${ci}-reasoning-end`,
+            id: `${ci}-reasoning`,
           });
         } else if (c.type === "text") {
           parts.push({
             type: "text-start",
-            id: `${ci}-text-start`,
+            id: `${ci}-text`,
           });
-          parts = deltas.map((delta, di) => ({
-            type: "text-delta",
-            delta,
-            id: `${ci}-text-${di}`,
-          }));
+          parts.push(
+            ...deltas.map(
+              (delta, di) =>
+                ({
+                  type: "text-delta",
+                  delta: (di ? " " : "") + delta,
+                  id: `${ci}-text`,
+                }) satisfies LanguageModelV2StreamPart,
+            ),
+          );
           parts.push({
             type: "text-end",
-            id: `${ci}-text-end`,
+            id: `${ci}-text`,
           });
         }
         return parts;
