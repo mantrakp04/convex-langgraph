@@ -221,9 +221,11 @@ export async function embedMessages(
     userId,
     threadId,
     ...options
-  }: { userId: string | undefined; threadId: string | undefined } & Config & {
-      agentName?: string;
-    },
+  }: {
+    userId: string | undefined;
+    threadId: string | undefined;
+    agentName?: string;
+  } & Pick<Config, "usageHandler" | "textEmbeddingModel" | "callSettings">,
   messages: (ModelMessage | Message)[],
 ): Promise<
   | {
