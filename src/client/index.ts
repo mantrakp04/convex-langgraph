@@ -70,7 +70,6 @@ import {
 } from "./search.js";
 import { start } from "./start.js";
 import {
-  DEFAULT_STREAMING_OPTIONS,
   DeltaStreamer,
   mergeTransforms,
   syncStreams,
@@ -160,6 +159,7 @@ export {
   embedMany,
 } from "./search.js";
 export {
+  DEFAULT_STREAMING_OPTIONS,
   abortStream,
   listStreams,
   syncStreams,
