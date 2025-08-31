@@ -10,7 +10,6 @@ import {
 } from "../validators.js";
 import type {
   AgentComponent,
-  RunActionCtx,
   RunMutationCtx,
   RunQueryCtx,
   SyncStreamsReturnValue,
@@ -175,7 +174,7 @@ export class DeltaStreamer<T> {
 
   constructor(
     public readonly component: AgentComponent,
-    public readonly ctx: RunActionCtx,
+    public readonly ctx: RunMutationCtx,
     config: {
       stream: true | StreamingOptions;
       onAsyncAbort: (reason: string) => Promise<void>;
