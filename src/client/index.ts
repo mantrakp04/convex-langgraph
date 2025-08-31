@@ -612,7 +612,7 @@ export class Agent<
             {
               stream: opts.saveStreamDeltas,
               onAsyncAbort: call.fail,
-              compress: compressUIMessageChunks<Tools>,
+              compress: compressUIMessageChunks,
               abortSignal: args.abortSignal,
             },
             {

@@ -25,7 +25,6 @@ import { sorted } from "./shared.js";
 
 /**
  * Compressing parts when streaming to save bandwidth in deltas.
- * Done
  */
 
 export function compressTextStreamParts(
@@ -57,10 +56,10 @@ export function compressTextStreamParts(
   return compressed;
 }
 
-export function compressUIMessageChunks<TOOLSET extends ToolSet>(
-  parts: UIMessageChunk<TOOLSET>[],
-): UIMessageChunk<TOOLSET>[] {
-  const compressed: UIMessageChunk<TOOLSET>[] = [];
+export function compressUIMessageChunks(
+  parts: UIMessageChunk[],
+): UIMessageChunk[] {
+  const compressed: UIMessageChunk[] = [];
   for (const part of parts) {
     const last = compressed.at(-1);
     if (part.type === "text-delta" && last?.type === "text-delta") {
@@ -133,7 +132,7 @@ export function getParts(
   streamDeltas: StreamDelta[],
 ) {
   const deltas = streamDeltas.filter((d) => d.streamId === stream.streamId);
-  const parts: UIMessageChunk<ToolSet>[] = [];
+  const parts: UIMessageChunk[] = [];
   let cursor = stream.cursor;
   for (const delta of deltas.sort((a, b) => a.start - b.start)) {
     if (delta.parts.length === 0) {
@@ -185,7 +184,7 @@ export function applyDeltasToStreamMessage(
 ): [{ streamId: string; cursor: number; messages: MessageDoc[] }, boolean] {
   let changed = false;
   let cursor = existing?.cursor ?? 0;
-  let parts: (UIMessageChunk<ToolSet> | TextStreamPart<ToolSet>)[] = [];
+  let parts: (UIMessageChunk | TextStreamPart<ToolSet>)[] = [];
   for (const delta of deltas.sort((a, b) => a.start - b.start)) {
     if (delta.parts.length === 0) {
       console.warn(`Got delta with no parts: ${JSON.stringify(delta)}`);
@@ -612,8 +611,8 @@ function mergeProviderMetadata(
 function toolCallContent(
   part:
     | Extract<TextStreamPart<ToolSet>, { type: "tool-call" }>
-    | Extract<UIMessageChunk<ToolSet>, { type: "tool-input-error" }>
-    | Extract<UIMessageChunk<ToolSet>, { type: "tool-input-available" }>,
+    | Extract<UIMessageChunk, { type: "tool-input-error" }>
+    | Extract<UIMessageChunk, { type: "tool-input-available" }>,
 ): Infer<typeof vToolCallPart> {
   const args = "args" in part ? part.args : part.input;
   return {
@@ -678,7 +677,7 @@ function statusFromStreamStatus(
 export function createStreamingMessage(
   threadId: string,
   message: StreamMessage,
-  part: UIMessageChunk<ToolSet> | TextStreamPart<ToolSet>,
+  part: UIMessageChunk | TextStreamPart<ToolSet>,
   index: number,
 ): MessageDoc {
   const { streamId, ...rest } = message;
