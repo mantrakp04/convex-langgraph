@@ -91,6 +91,21 @@ export async function serializeMessage(
   };
 }
 
+// Similar to serializeMessage, but doesn't save any files and is looser
+// For use on the frontend / in synchronous environments.
+export function fromModelMessage(
+  message: ModelMessage,
+): Message {
+  const content = fromModelMessageContent(message.content);
+  return {
+    role: message.role,
+    content,
+    ...(message.providerOptions
+      ? { providerOptions: message.providerOptions }
+      : {}),
+  } as SerializedMessage;
+}
+
 export async function serializeOrThrow(
   message: ModelMessage | Message,
 ): Promise<SerializedMessage> {
@@ -350,6 +365,63 @@ export async function serializeContent(
     content: serialized as SerializedContent,
     fileIds: fileIds.length > 0 ? fileIds : undefined,
   };
+}
+
+export function fromModelMessageContent(content: Content): Message["content"] {
+  if (typeof content === "string") {
+    return content;
+  }
+  const metadata: {
+    providerOptions?: ProviderOptions;
+    providerMetadata?: ProviderMetadata;
+  } = {};
+  if ("providerOptions" in content) {
+    metadata.providerOptions = content.providerOptions as ProviderOptions;
+  }
+  if ("providerMetadata" in content) {
+    metadata.providerMetadata = content.providerMetadata as ProviderMetadata;
+  }
+  return content.map((part) => {
+    switch (part.type) {
+      case "text":
+        return part satisfies Infer<typeof vTextPart>;
+      case "image":
+        return {
+          type: part.type,
+          mimeType: getMimeOrMediaType(part),
+          ...metadata,
+          image: serializeDataOrUrl(part.image),
+        } satisfies Infer<typeof vImagePart>;
+      case "file":
+        return {
+          type: part.type,
+          data: serializeDataOrUrl(part.data),
+          filename: part.filename,
+          mimeType: getMimeOrMediaType(part)!,
+          ...metadata,
+        } satisfies Infer<typeof vFilePart>;
+      case "tool-call":
+        return {
+          type: part.type,
+          args: part.input ?? null,
+          toolCallId: part.toolCallId,
+          toolName: part.toolName,
+          providerExecuted: part.providerExecuted,
+          ...metadata,
+        } satisfies Infer<typeof vToolCallPart>;
+      case "tool-result":
+        return normalizeToolResult(part, metadata);
+      case "reasoning":
+        return {
+          type: part.type,
+          text: part.text,
+          ...metadata,
+        } satisfies Infer<typeof vReasoningPart>;
+      // Not in current generation output, but could be in historical messages
+      default:
+        return part satisfies Infer<typeof vContent>;
+    }
+  }) as Message["content"];
 }
 
 export function deserializeContent(

@@ -37,6 +37,16 @@ export function extractText(message: Message | ModelMessage) {
   return undefined;
 }
 
+export function extractReasoning(message: Message | ModelMessage) {
+  if (typeof message.content === "string") {
+    return undefined;
+  }
+  return message.content
+    .filter((c) => c.type === "reasoning")
+    .map((c) => c.text)
+    .join("");
+}
+
 export const DEFAULT_MESSAGE_RANGE = { before: 2, after: 1 };
 
 export function sorted<T extends { order: number; stepOrder: number }>(
