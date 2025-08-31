@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
-import { mergeDeltas, applyDeltasToStreamMessage } from "../deltas.js";
-import type { StreamMessage, StreamDelta } from "../validators.js";
+import { mergeDeltas, applyDeltasToStreamMessage } from "./deltas.js";
+import type { StreamMessage, StreamDelta } from "./validators.js";
 import { omit } from "convex-helpers";
 import type { TextStreamPart, ToolSet } from "ai";
 
