@@ -20,7 +20,7 @@ import { stream } from "convex-helpers/server/stream";
 import { mergedStream } from "convex-helpers/server/stream";
 import { paginator } from "convex-helpers/server/pagination";
 import type { WithoutSystemFields } from "convex/server";
-import { mergeDeltas } from "../react/deltas.js";
+import { mergeDeltas } from "../deltas.js";
 import { serializeOrThrow } from "../mapping.js";
 
 const SECOND = 1000;

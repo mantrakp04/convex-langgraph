@@ -1,4 +1,10 @@
-import { type ChunkDetector, type AsyncIterableStream } from "ai";
+import {
+  type ChunkDetector,
+  type AsyncIterableStream,
+  type StreamTextTransform,
+  type ToolSet,
+  smoothStream,
+} from "ai";
 import {
   vStreamDelta,
   vStreamMessage,
@@ -151,6 +157,36 @@ export const DEFAULT_STREAMING_OPTIONS = {
   throttleMs: 250,
   returnImmediately: false,
 } satisfies StreamingOptions;
+
+/**
+ *
+ * @param options The options passed to `agent.streamText` to decide whether to
+ * save deltas while streaming.
+ * @param existing The transforms passed to `agent.streamText` to merge with.
+ * @returns The merged transforms to pass to the underlying `streamText` call.
+ */
+export function mergeTransforms<TOOLS extends ToolSet>(
+  options: StreamingOptions | boolean | undefined,
+  existing:
+    | StreamTextTransform<TOOLS>
+    | Array<StreamTextTransform<TOOLS>>
+    | undefined,
+) {
+  if (!options) {
+    return existing;
+  }
+  const chunking =
+    typeof options === "boolean"
+      ? DEFAULT_STREAMING_OPTIONS.chunking
+      : options.chunking;
+  const transforms = Array.isArray(existing)
+    ? existing
+    : existing
+      ? [existing]
+      : [];
+  transforms.push(smoothStream({ delayInMs: null, chunking }));
+  return transforms;
+}
 
 /**
  * DeltaStreamer can be used to save a stream of "parts" by writing

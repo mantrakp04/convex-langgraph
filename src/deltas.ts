@@ -5,7 +5,7 @@ import type {
   ToolSet,
   UIMessageChunk,
 } from "ai";
-import type { MessageDoc } from "../client/index.js";
+import type { MessageDoc } from "./client/index.js";
 import {
   vSource,
   type Message,
@@ -17,11 +17,69 @@ import {
   type vTextPart,
   type vToolCallPart,
   type vToolResultPart,
-} from "../validators.js";
+} from "./validators.js";
 import type { Infer } from "convex/values";
-import { normalizeToolOutput, serializeWarnings } from "../mapping.js";
+import { normalizeToolOutput, serializeWarnings } from "./mapping.js";
 import { parse } from "convex-helpers/validators";
-import { sorted } from "../shared.js";
+import { sorted } from "./shared.js";
+
+/**
+ * Compressing parts when streaming to save bandwidth in deltas.
+ * Done
+ */
+
+export function compressTextStreamParts(
+  parts: TextStreamPart<ToolSet>[],
+): TextStreamPart<ToolSet>[] {
+  const compressed: TextStreamPart<ToolSet>[] = [];
+  for (const part of parts) {
+    const last = compressed.at(-1);
+    if (part.type === "text-delta" && last?.type === "text-delta") {
+      last.text += part.text;
+    } else if (
+      part.type === "reasoning-delta" &&
+      last?.type === "reasoning-delta"
+    ) {
+      last.text += part.text;
+    } else {
+      if (part.type === "file") {
+        compressed.push({
+          type: "file",
+          file: {
+            ...part.file,
+            uint8Array: undefined as unknown as Uint8Array,
+          },
+        });
+      }
+      compressed.push(part);
+    }
+  }
+  return compressed;
+}
+
+export function compressUIMessageChunks<TOOLSET extends ToolSet>(
+  parts: UIMessageChunk<TOOLSET>[],
+): UIMessageChunk<TOOLSET>[] {
+  const compressed: UIMessageChunk<TOOLSET>[] = [];
+  for (const part of parts) {
+    const last = compressed.at(-1);
+    if (part.type === "text-delta" && last?.type === "text-delta") {
+      last.delta += part.delta;
+    } else if (
+      part.type === "reasoning-delta" &&
+      last?.type === "reasoning-delta"
+    ) {
+      last.delta += part.delta;
+    } else {
+      compressed.push(part);
+    }
+  }
+  return compressed;
+}
+
+/**
+ *
+ */
 
 export function mergeDeltas(
   threadId: string,

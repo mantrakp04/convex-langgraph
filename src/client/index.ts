@@ -71,9 +71,10 @@ import { start } from "./start.js";
 import {
   DeltaStreamer,
   syncStreams,
+  mergeTransforms,
   type StreamingOptions,
 } from "./streaming.js";
-import { compressUIMessageChunks, mergeTransforms } from "./textStreamParts.js";
+import { compressUIMessageChunks } from "../deltas.js";
 import { createThread, getThreadMetadata } from "./threads.js";
 import type {
   ActionCtx,
