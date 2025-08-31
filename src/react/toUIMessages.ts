@@ -30,12 +30,17 @@ export type UIMessage<
   _creationTime: number;
 };
 
+type ExtraFields<METADATA = unknown> = {
+  streaming?: boolean;
+  metadata?: METADATA;
+};
+
 export function toUIMessages<
   METADATA = unknown,
   DATA_PARTS extends UIDataTypes = UIDataTypes,
   TOOLS extends UITools = UITools,
 >(
-  messages: (MessageDoc & { streaming?: boolean })[],
+  messages: (MessageDoc & ExtraFields<METADATA>)[],
 ): UIMessage<METADATA, DATA_PARTS, TOOLS>[] {
   // Group assistant and tool messages together
   const assistantGroups = groupAssistantMessages(messages);
@@ -55,29 +60,29 @@ export function toUIMessages<
   return uiMessages;
 }
 
-type Group =
+type Group<METADATA = unknown> =
   | {
       role: "user";
-      message: MessageDoc & { streaming?: boolean };
+      message: MessageDoc & ExtraFields<METADATA>;
     }
   | {
       role: "system";
-      message: MessageDoc & { streaming?: boolean };
+      message: MessageDoc & ExtraFields<METADATA>;
     }
   | {
       role: "assistant";
-      messages: (MessageDoc & { streaming?: boolean })[];
+      messages: (MessageDoc & ExtraFields<METADATA>)[];
     };
 
-function groupAssistantMessages(
-  messages: (MessageDoc & { streaming?: boolean })[],
-): Group[] {
-  const groups: Group[] = [];
+function groupAssistantMessages<METADATA = unknown>(
+  messages: (MessageDoc & ExtraFields<METADATA>)[],
+): Group<METADATA>[] {
+  const groups: Group<METADATA>[] = [];
 
   // Sort messages by order and stepOrder first to handle out-of-order arrivals
   const sortedMessages = sorted(messages);
 
-  let currentAssistantGroup: (MessageDoc & { streaming?: boolean })[] = [];
+  let currentAssistantGroup: (MessageDoc & ExtraFields<METADATA>)[] = [];
   let currentOrder: number | undefined;
 
   for (const message of sortedMessages) {
@@ -145,7 +150,7 @@ function createSystemUIMessage<
   DATA_PARTS extends UIDataTypes = UIDataTypes,
   TOOLS extends UITools = UITools,
 >(
-  message: MessageDoc & { streaming?: boolean },
+  message: MessageDoc & ExtraFields<METADATA>,
 ): UIMessage<METADATA, DATA_PARTS, TOOLS> {
   const text = extractTextFromMessageDoc(message);
   const partCommon = {
@@ -166,6 +171,7 @@ function createSystemUIMessage<
     role: "system",
     agentName: message.agentName,
     parts: [{ type: "text", text, ...partCommon } satisfies TextUIPart],
+    metadata: message.metadata,
   };
 }
 
@@ -180,7 +186,7 @@ function createUserUIMessage<
   DATA_PARTS extends UIDataTypes = UIDataTypes,
   TOOLS extends UITools = UITools,
 >(
-  message: MessageDoc & { streaming?: boolean },
+  message: MessageDoc & ExtraFields<METADATA>,
 ): UIMessage<METADATA, DATA_PARTS, TOOLS> {
   const text = extractTextFromMessageDoc(message);
   const coreMessage = deserializeMessage(message.message!);
@@ -224,6 +230,7 @@ function createUserUIMessage<
     text,
     role: "user",
     parts,
+    metadata: message.metadata,
   };
 }
 
@@ -232,7 +239,7 @@ function createAssistantUIMessage<
   DATA_PARTS extends UIDataTypes = UIDataTypes,
   TOOLS extends UITools = UITools,
 >(
-  groupUnordered: (MessageDoc & { streaming?: boolean })[],
+  groupUnordered: (MessageDoc & ExtraFields<METADATA>)[],
 ): UIMessage<METADATA, DATA_PARTS, TOOLS> {
   const group = sorted(groupUnordered);
   const firstMessage = group[0];
@@ -415,6 +422,7 @@ function createAssistantUIMessage<
     text: allText,
     status,
     parts: allParts,
+    metadata: group.find((m) => m.metadata)?.metadata,
   };
 }
 
