@@ -327,3 +327,40 @@ export async function embedMany(
   }
   return { embeddings: result.embeddings };
 }
+
+export async function generateAndSaveEmbeddings(
+  ctx: RunActionCtx,
+  component: AgentComponent,
+  args: {
+    threadId: string | undefined;
+    userId: string | undefined;
+    agentName?: string;
+    textEmbeddingModel: EmbeddingModel<string>;
+  } & Pick<Config, "usageHandler" | "callSettings">,
+  messages: MessageDoc[],
+) {
+  const toEmbed = messages.filter((m) => !m.embeddingId && m.message);
+  if (toEmbed.length === 0) {
+    return;
+  }
+  const embeddings = await embedMessages(
+    ctx,
+    args,
+    toEmbed.map((m) => m.message!),
+  );
+  if (embeddings && embeddings.vectors.some((v) => v !== null)) {
+    await ctx.runMutation(component.vector.index.insertBatch, {
+      vectorDimension: embeddings.dimension,
+      vectors: toEmbed
+        .map((m, i) => ({
+          messageId: m._id,
+          model: embeddings.model,
+          table: "messages",
+          userId: m.userId,
+          threadId: m.threadId,
+          vector: embeddings.vectors[i]!,
+        }))
+        .filter((v) => v.vector !== null),
+    });
+  }
+}

@@ -60,7 +60,13 @@ import {
   type SaveMessageArgs,
   type SaveMessagesArgs,
 } from "./messages.js";
-import { embedMany, embedMessages, fetchContextMessages } from "./search.js";
+import {
+  embedMany,
+  embedMessages,
+  fetchContextMessages,
+  generateAndSaveEmbeddings,
+} from "./search.js";
+import { start } from "./start.js";
 import {
   DeltaStreamer,
   syncStreams,
@@ -96,7 +102,6 @@ import type {
   UserActionCtx,
   Config,
 } from "./types.js";
-import { start } from "./start.js";
 
 export { stepCountIs } from "ai";
 export {
@@ -1078,45 +1083,24 @@ export class Agent<
             .join(", "),
       );
     }
-    const messagesMissingEmbeddings = messages.filter((m) => !m.embeddingId);
-    if (messagesMissingEmbeddings.length === 0) {
-      return;
-    }
-    const embeddings = await this.generateEmbeddings(
-      ctx,
-      {
-        userId: messagesMissingEmbeddings[0]!.userId,
-        threadId: messagesMissingEmbeddings[0]!.threadId,
-      },
-      messagesMissingEmbeddings.map((m) => deserializeMessage(m!.message!)),
-    );
-    if (!embeddings) {
-      if (!this.options.textEmbeddingModel) {
-        throw new Error(
-          "No embeddings were generated for the messages. You must pass a textEmbeddingModel to the agent constructor.",
-        );
-      }
+    const { textEmbeddingModel } = this.options;
+    if (!textEmbeddingModel) {
       throw new Error(
-        "No embeddings were generated for these messages: " +
-          messagesMissingEmbeddings.map((m) => m!._id).join(", "),
+        "No embeddings were generated for the messages. You must pass a textEmbeddingModel to the agent constructor.",
       );
     }
-    await ctx.runMutation(this.component.vector.index.insertBatch, {
-      vectorDimension: embeddings.dimension,
-      vectors: messagesMissingEmbeddings
-        .map((m, i) => ({
-          messageId: m!._id,
-          model: embeddings.model,
-          table: "messages",
-          userId: m.userId,
-          threadId: m.threadId,
-          vector: embeddings.vectors[i],
-        }))
-        .filter(
-          (v): v is Extract<typeof v, { vector: number[] }> =>
-            v.vector !== null,
-        ),
-    });
+    await generateAndSaveEmbeddings(
+      ctx,
+      this.component,
+      {
+        ...this.options,
+        agentName: this.options.name,
+        threadId: messages[0].threadId,
+        userId: messages[0].userId,
+        textEmbeddingModel,
+      },
+      messages,
+    );
   }
 
   /**
