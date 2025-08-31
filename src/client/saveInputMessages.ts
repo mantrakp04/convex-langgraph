@@ -34,7 +34,7 @@ export async function saveInputMessages(
   } & Pick<Config, "usageHandler" | "textEmbeddingModel" | "callSettings">,
 ): Promise<{
   promptMessageId: string | undefined;
-  pendingMessage: MessageDoc | undefined;
+  pendingMessage: MessageDoc;
   savedMessages: MessageDoc[];
 }> {
   const shouldSave = args.storageOptions?.saveMessages ?? "promptAndOutput";
