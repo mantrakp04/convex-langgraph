@@ -28,7 +28,7 @@ import type {
   RunQueryCtx,
 } from "./types.js";
 import { inlineMessagesFiles } from "./files.js";
-import { deserializeMessage } from "./index.js";
+import { deserializeMessage } from "../mapping.js";
 
 const DEFAULT_VECTOR_SCORE_THRESHOLD = 0.0;
 // 10k characters should be more than enough for most cases, and stays under
