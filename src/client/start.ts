@@ -152,7 +152,7 @@ export async function start<
       : {
           promptMessageId: args.promptMessageId,
           pendingMessage: undefined,
-          savedMessages: [],
+          savedMessages: [] as MessageDoc[],
         };
 
   const order = pendingMessage?.order ?? context.order;
