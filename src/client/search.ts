@@ -76,11 +76,48 @@ export async function fetchContextMessages(
     getEmbedding?: GetEmbedding;
   },
 ): Promise<MessageDoc[]> {
+  const { recentMessages, searchMessages } = await fetchRecentAndSearchMessages(
+    ctx,
+    component,
+    args,
+  );
+  return [...searchMessages, ...recentMessages];
+}
+
+export async function fetchRecentAndSearchMessages(
+  ctx: RunQueryCtx | RunActionCtx,
+  component: AgentComponent,
+  args: {
+    userId: string | undefined;
+    threadId: string | undefined;
+    /**
+     * If targetMessageId is not provided, this text will be used
+     * for text and vector search
+     */
+    searchText?: string;
+    /**
+     * If provided, it will use this message for text/vector search (if enabled)
+     * and will only fetch messages up to (and including) this message's "order"
+     */
+    targetMessageId?: string;
+    /**
+     * @deprecated use searchText and targetMessageId instead
+     */
+    messages?: (ModelMessage | Message)[];
+    /**
+     * @deprecated use targetMessageId instead
+     */
+    upToAndIncludingMessageId?: string;
+    contextOptions: ContextOptions;
+    getEmbedding?: GetEmbedding;
+  },
+): Promise<{ recentMessages: MessageDoc[]; searchMessages: MessageDoc[] }> {
   assert(args.userId || args.threadId, "Specify userId or threadId");
   const opts = args.contextOptions;
   // Fetch the latest messages from the thread
   let included: Set<string> | undefined;
-  const contextMessages: MessageDoc[] = [];
+  let recentMessages: MessageDoc[] = [];
+  let searchMessages: MessageDoc[] = [];
   const targetMessageId =
     args.targetMessageId ?? args.upToAndIncludingMessageId;
   if (args.threadId && opts.recentMessages !== 0) {
@@ -99,10 +136,7 @@ export async function fetchContextMessages(
       },
     );
     included = new Set(page.map((m) => m._id));
-    contextMessages.push(
-      // Reverse since we fetched in descending order
-      ...page.reverse(),
-    );
+    recentMessages = filterOutOrphanedToolMessages(sorted(page));
   }
   if (
     (opts.searchOptions?.textSearch || opts.searchOptions?.vectorSearch) &&
@@ -116,7 +150,7 @@ export async function fetchContextMessages(
     let embeddingModel: string | undefined;
     if (!text) {
       if (targetMessageId) {
-        const targetMessage = contextMessages.find(
+        const targetMessage = recentMessages.find(
           (m) => m._id === targetMessageId,
         );
         if (targetMessage) {
@@ -148,7 +182,7 @@ export async function fetchContextMessages(
           : undefined;
       }
     }
-    const searchMessages = await ctx.runAction(
+    const searchResults = await ctx.runAction(
       component.messages.searchMessages,
       {
         searchAllMessagesForUserId: opts?.searchOtherThreads
@@ -178,12 +212,12 @@ export async function fetchContextMessages(
       },
     );
     // TODO: track what messages we used for context
-    contextMessages.unshift(
-      ...searchMessages.filter((m) => !included?.has(m._id)),
+    searchMessages = filterOutOrphanedToolMessages(
+      sorted(searchResults.filter((m) => !included?.has(m._id))),
     );
   }
   // Ensure we don't include tool messages without a corresponding tool call
-  return filterOutOrphanedToolMessages(sorted(contextMessages));
+  return { recentMessages, searchMessages };
 }
 
 /**
