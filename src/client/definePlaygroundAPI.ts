@@ -315,8 +315,11 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
       agentName: v.string(),
       userId: v.optional(v.string()),
       threadId: v.optional(v.string()),
-      messages: v.array(vMessage),
+      searchText: v.optional(v.string()),
+      targetMessageId: v.optional(v.string()),
       contextOptions: vContextOptions,
+      // @deprecated use searchText and targetMessageId instead
+      messages: v.optional(v.array(vMessage)),
       beforeMessageId: v.optional(v.string()),
     },
     handler: async (ctx, args) => {
@@ -329,20 +332,26 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
       if (!namedAgent) throw new Error(`Unknown agent: ${args.agentName}`);
       const { agent } = namedAgent;
       const contextOptions = args.contextOptions;
-      if (args.beforeMessageId) {
+      const targetMessageId = args.targetMessageId ?? args.beforeMessageId;
+      if (targetMessageId) {
         contextOptions.recentMessages =
           (contextOptions.recentMessages ?? 10) + 1;
       }
       const messages = await agent.fetchContextMessages(ctx, {
         userId: args.userId,
         threadId: args.threadId,
-        messages: args.messages.map(deserializeMessage),
+        targetMessageId,
+        searchText: args.searchText,
         contextOptions: args.contextOptions,
-        upToAndIncludingMessageId: args.beforeMessageId,
+        messages: args.messages?.map(deserializeMessage),
       });
-      return messages.filter(
-        (m) => !args.beforeMessageId || m._id !== args.beforeMessageId,
+      const targetMessageIndex = messages.findIndex(
+        (m) => m._id === targetMessageId,
       );
+      if (targetMessageIndex !== -1) {
+        return messages.slice(0, targetMessageIndex);
+      }
+      return messages;
     },
   });
 

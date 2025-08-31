@@ -689,6 +689,12 @@ export type Mounts = {
       },
       null
     >;
+    getMessageSearchFields: FunctionReference<
+      "query",
+      "public",
+      { messageId: string },
+      { embedding?: Array<number>; embeddingModel?: string; text?: string }
+    >;
     getMessagesByIds: FunctionReference<
       "query",
       "public",
@@ -1217,15 +1223,17 @@ export type Mounts = {
       "action",
       "public",
       {
-        beforeMessageId?: string;
         embedding?: Array<number>;
         embeddingModel?: string;
         limit: number;
         messageRange?: { after: number; before: number };
         searchAllMessagesForUserId?: string;
+        targetMessageId?: string;
         text?: string;
+        textSearch?: boolean;
         threadId?: string;
         vectorScoreThreshold?: number;
+        vectorSearch?: boolean;
       },
       Array<{
         _creationTime: number;
@@ -1464,10 +1472,10 @@ export type Mounts = {
       "query",
       "public",
       {
-        beforeMessageId?: string;
         limit: number;
         searchAllMessagesForUserId?: string;
-        text: string;
+        targetMessageId?: string;
+        text?: string;
         threadId?: string;
       },
       Array<{

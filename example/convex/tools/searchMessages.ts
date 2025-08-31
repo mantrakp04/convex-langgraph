@@ -18,7 +18,7 @@ export const searchMessages = createTool({
     return fetchContextMessages(ctx, components.agent, {
       userId: ctx.userId,
       threadId: ctx.threadId,
-      messages: [{ role: "user", content: query }],
+      searchText: query,
       contextOptions: {
         searchOtherThreads: !!ctx.userId, // search other threads if the user is logged in
         recentMessages: 0, // only search older messages

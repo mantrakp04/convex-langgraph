@@ -6,7 +6,11 @@ import { useToast } from "@/components/ui/use-toast";
 import { Switch } from "@/components/ui/switch";
 import { useQuery, useAction } from "convex/react";
 import { usePaginatedQuery } from "convex-helpers/react";
-import { type MessageDoc, type PlaygroundAPI } from "@convex-dev/agent";
+import {
+  extractText,
+  type MessageDoc,
+  type PlaygroundAPI,
+} from "@convex-dev/agent";
 import { ContextMessage, Thread, Agent } from "@/types";
 import { ContextOptions, StorageOptions } from "@convex-dev/agent";
 import { useThreadMessages } from "@convex-dev/agent/react";
@@ -164,9 +168,10 @@ function Play({ apiKey, api }: PlayProps) {
           agentName: selectedAgent.name,
           threadId: selectedThreadId,
           userId: selectedUserId,
-          messages: selectedMessage.message ? [selectedMessage.message] : [],
+          searchText:
+            selectedMessage.message && extractText(selectedMessage.message),
+          targetMessageId: selectedMessage._id,
           contextOptions,
-          beforeMessageId: selectedMessage._id,
         });
         setContextMessages(context);
       } catch (err) {

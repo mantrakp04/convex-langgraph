@@ -55,15 +55,21 @@ const result = await agent.generateText(
 This is what the agent does automatically, but it can be useful to do manually,
 e.g. to find custom context to include.
 
-If you provide a `beforeMessageId`, it will only fetch messages from before that
-message.
+For text and vector search, you can provide a `targetMessageId` and/or
+`searchText`. It will embed the text for vector search. If `searchText` is
+not provided, it will use the target message's text.
+
+If `targetMessageId` is provided, it will only fetch search messages previous to
+that message, and recent messages up to and including that message's "order".
+This enables re-generating a response for an earlier message.
 
 ```ts
 import type { MessageDoc } from "@convex-dev/agent";
 
 const messages: MessageDoc[] = await agent.fetchContextMessages(ctx, {
   threadId,
-  messages: [{ role: "user", content: prompt }],
+  searchText: prompt, // Optional unless you want text/vector search.
+  targetMessageId: promptMessageId, // Optionally target the search.
   userId, // Optional, unless `searchOtherThreads` is true.
   contextOptions, // Optional, defaults are used if not provided.
 });
@@ -78,7 +84,8 @@ import { fetchContextMessages } from "@convex-dev/agent";
 
 const messages = await fetchContextMessages(ctx, components.agent, {
   threadId,
-  messages: [{ role: "user", content: prompt }],
+  searchText: prompt, // Optional unless you want text/vector search.
+  targetMessageId: promptMessageId, // Optionally target the search.
   getEmbedding: async (text) => {
     const embedding = await textEmbeddingModel.embed(text);
     return { embedding, textEmbeddingModel };

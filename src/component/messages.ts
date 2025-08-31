@@ -33,7 +33,6 @@ import { schema, v, vMessageDoc } from "./schema.js";
 import { insertVector, searchVectors } from "./vector/index.js";
 import {
   validateVectorDimension,
-  VectorDimensions,
   type VectorTableId,
   vVectorId,
 } from "./vector/tables.js";
@@ -504,10 +503,12 @@ export const searchMessages = action({
   args: {
     threadId: v.optional(v.id("threads")),
     searchAllMessagesForUserId: v.optional(v.string()),
-    beforeMessageId: v.optional(v.id("messages")),
+    targetMessageId: v.optional(v.id("messages")),
     embedding: v.optional(v.array(v.number())),
     embeddingModel: v.optional(v.string()),
     text: v.optional(v.string()),
+    textSearch: v.optional(v.boolean()),
+    vectorSearch: v.optional(v.boolean()),
     limit: v.number(),
     vectorScoreThreshold: v.optional(v.number()),
     messageRange: v.optional(
@@ -522,25 +523,38 @@ export const searchMessages = action({
     );
     const limit = args.limit;
     let textSearchMessages: MessageDoc[] | undefined;
-    if (args.text) {
+    if (args.textSearch) {
       textSearchMessages = await ctx.runQuery(api.messages.textSearch, {
         searchAllMessagesForUserId: args.searchAllMessagesForUserId,
         threadId: args.threadId,
+        targetMessageId: args.targetMessageId,
         text: args.text,
         limit,
-        beforeMessageId: args.beforeMessageId,
       });
     }
-    if (args.embedding) {
-      const dimension = args.embedding.length;
-      validateVectorDimension(dimension);
-      if (!VectorDimensions.includes(dimension)) {
-        throw new Error(`Unsupported embedding dimension: ${dimension}`);
+    if (args.vectorSearch) {
+      let embedding = args.embedding;
+      let model = args.embeddingModel;
+      if (!embedding) {
+        if (args.targetMessageId) {
+          const target = await ctx.runQuery(
+            api.messages.getMessageSearchFields,
+            {
+              messageId: args.targetMessageId,
+            },
+          );
+          assert(target, "Target message embedding not found.");
+          embedding = target.embedding;
+          model = target.embeddingModel;
+        }
       }
+      assert(embedding && model, "Embedding missing");
+      const dimension = embedding.length;
+      validateVectorDimension(dimension);
       const vectors = (
-        await searchVectors(ctx, args.embedding, {
+        await searchVectors(ctx, embedding, {
           dimension,
-          model: args.embeddingModel ?? "unknown",
+          model,
           table: "messages",
           searchAllMessagesForUserId: args.searchAllMessagesForUserId,
           threadId: args.threadId,
@@ -569,7 +583,7 @@ export const searchMessages = action({
             (m) => !embeddingIds.includes(m.embeddingId! as VectorTableId),
           ),
           messageRange: args.messageRange ?? DEFAULT_MESSAGE_RANGE,
-          beforeMessageId: args.beforeMessageId,
+          beforeMessageId: args.targetMessageId,
           limit,
         },
       );
@@ -700,26 +714,29 @@ export const textSearch = query({
   args: {
     threadId: v.optional(v.id("threads")),
     searchAllMessagesForUserId: v.optional(v.string()),
-    text: v.string(),
+    text: v.optional(v.string()),
+    targetMessageId: v.optional(v.id("messages")),
     limit: v.number(),
-    beforeMessageId: v.optional(v.id("messages")),
   },
   handler: async (ctx, args) => {
     assert(
       args.searchAllMessagesForUserId || args.threadId,
       "Specify userId or threadId",
     );
-    const beforeMessage =
-      args.beforeMessageId && (await ctx.db.get(args.beforeMessageId));
-    const order = beforeMessage?.order;
+    const targetMessage =
+      args.targetMessageId && (await ctx.db.get(args.targetMessageId));
+    const order = targetMessage?.order;
+    const text = args.text || targetMessage?.text;
+    if (!text) {
+      console.warn("No text to search", targetMessage, args.text);
+      return [];
+    }
     const messages = await ctx.db
       .query("messages")
       .withSearchIndex("text_search", (q) =>
         args.searchAllMessagesForUserId
-          ? q
-              .search("text", args.text)
-              .eq("userId", args.searchAllMessagesForUserId)
-          : q.search("text", args.text).eq("threadId", args.threadId!),
+          ? q.search("text", text).eq("userId", args.searchAllMessagesForUserId)
+          : q.search("text", text).eq("threadId", args.threadId!),
       )
       // Just in case tool messages slip through
       .filter((q) => {
@@ -733,12 +750,39 @@ export const textSearch = query({
     return messages
       .filter(
         (m) =>
-          !beforeMessage ||
-          m.order < beforeMessage.order ||
-          (m.order === beforeMessage.order &&
-            m.stepOrder < beforeMessage.stepOrder),
+          !targetMessage ||
+          m.order < targetMessage.order ||
+          (m.order === targetMessage.order &&
+            m.stepOrder < targetMessage.stepOrder),
       )
       .map(publicMessage);
   },
   returns: v.array(vMessageDoc),
+});
+
+export const getMessageSearchFields = query({
+  args: {
+    messageId: v.id("messages"),
+  },
+  returns: v.object({
+    text: v.optional(v.string()),
+    embedding: v.optional(v.array(v.number())),
+    embeddingModel: v.optional(v.string()),
+  }),
+  handler: async (ctx, args) => {
+    const message = await ctx.db.get(args.messageId);
+    const text = message?.text;
+    let embedding = undefined;
+    let embeddingModel = undefined;
+    if (message?.embeddingId) {
+      const target = await ctx.db.get(message.embeddingId);
+      embedding = target?.vector;
+      embeddingModel = target?.model;
+    }
+    return {
+      text,
+      embedding,
+      embeddingModel,
+    };
+  },
 });

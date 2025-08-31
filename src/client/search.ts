@@ -51,11 +51,22 @@ export async function fetchContextMessages(
   args: {
     userId: string | undefined;
     threadId: string | undefined;
-    messages: (ModelMessage | Message)[];
     /**
-     * If provided, it will search for messages up to and including this message.
-     * Note: if this is far in the past, text and vector search results may be more
-     * limited, as it's post-filtering the results.
+     * If targetMessageId is not provided, this text will be used
+     * for text and vector search
+     */
+    searchText?: string;
+    /**
+     * If provided, it will use this message for text/vector search (if enabled)
+     * and will only fetch messages up to (and including) this message's "order"
+     */
+    targetMessageId?: string;
+    /**
+     * @deprecated use searchText and targetMessageId instead
+     */
+    messages?: (ModelMessage | Message)[];
+    /**
+     * @deprecated use targetMessageId instead
      */
     upToAndIncludingMessageId?: string;
     contextOptions: ContextOptions;
@@ -67,10 +78,9 @@ export async function fetchContextMessages(
   // Fetch the latest messages from the thread
   let included: Set<string> | undefined;
   const contextMessages: MessageDoc[] = [];
-  if (
-    args.threadId &&
-    (opts.recentMessages !== 0 || args.upToAndIncludingMessageId)
-  ) {
+  const targetMessageId =
+    args.targetMessageId ?? args.upToAndIncludingMessageId;
+  if (args.threadId && opts.recentMessages !== 0) {
     const { page } = await ctx.runQuery(
       component.messages.listMessagesByThreadId,
       {
@@ -80,7 +90,7 @@ export async function fetchContextMessages(
           numItems: opts.recentMessages ?? DEFAULT_RECENT_MESSAGES,
           cursor: null,
         },
-        upToAndIncludingMessageId: args.upToAndIncludingMessageId,
+        upToAndIncludingMessageId: targetMessageId,
         order: "desc",
         statuses: ["success"],
       },
@@ -95,30 +105,46 @@ export async function fetchContextMessages(
     (opts.searchOptions?.textSearch || opts.searchOptions?.vectorSearch) &&
     opts.searchOptions?.limit
   ) {
-    const targetMessage = contextMessages.find(
-      (m) => m._id === args.upToAndIncludingMessageId,
-    )?.message;
-    const messagesToSearch = targetMessage ? [targetMessage] : args.messages;
     if (!("runAction" in ctx)) {
       throw new Error("searchUserMessages only works in an action");
     }
-    const lastMessage = messagesToSearch.at(-1)!;
-    assert(lastMessage, "No messages to search");
-    const text = extractText(lastMessage);
-    assert(text, `No text to search in message ${JSON.stringify(lastMessage)}`);
-    assert(
-      !args.contextOptions?.searchOptions?.vectorSearch || "runAction" in ctx,
-      "You must do vector search from an action",
-    );
-    if (opts.searchOptions?.vectorSearch && !args.getEmbedding) {
-      throw new Error(
-        "You must provide an embedding and embeddingModel to use vector search",
-      );
+    let text = args.searchText;
+    let embedding: number[] | undefined;
+    let embeddingModel: string | undefined;
+    if (!text) {
+      if (targetMessageId) {
+        const targetMessage = contextMessages.find(
+          (m) => m._id === targetMessageId,
+        );
+        if (targetMessage) {
+          text = targetMessage.text;
+        } else {
+          const targetSearchFields = await ctx.runQuery(
+            component.messages.getMessageSearchFields,
+            {
+              messageId: targetMessageId,
+            },
+          );
+          text = targetSearchFields.text;
+          embedding = targetSearchFields.embedding;
+          embeddingModel = targetSearchFields.embeddingModel;
+        }
+        assert(text, "Target message has no text for searching");
+      } else if (args.messages?.length) {
+        text = extractText(args.messages.at(-1)!);
+        assert(text, "Final context message has no text to search");
+      }
+      assert(text, "No text to search");
     }
-    const embeddingFields =
-      opts.searchOptions?.vectorSearch && text
-        ? await args.getEmbedding?.(text)
-        : undefined;
+    if (opts.searchOptions?.vectorSearch) {
+      if (!embedding && args.getEmbedding) {
+        const embeddingFields = await args.getEmbedding(text);
+        embedding = embeddingFields.embedding;
+        embeddingModel = embeddingFields.textEmbeddingModel
+          ? getModelName(embeddingFields.textEmbeddingModel)
+          : undefined;
+      }
+    }
     const searchMessages = await ctx.runAction(
       component.messages.searchMessages,
       {
@@ -132,20 +158,20 @@ export async function fetchContextMessages(
               )?.userId))
           : undefined,
         threadId: args.threadId,
-        beforeMessageId: args.upToAndIncludingMessageId,
+        targetMessageId,
         limit: opts.searchOptions?.limit ?? 10,
         messageRange: {
           ...DEFAULT_MESSAGE_RANGE,
           ...opts.searchOptions?.messageRange,
         },
         text,
+        textSearch: opts.searchOptions?.textSearch,
+        vectorSearch: opts.searchOptions?.vectorSearch,
         vectorScoreThreshold:
           opts.searchOptions?.vectorScoreThreshold ??
           DEFAULT_VECTOR_SCORE_THRESHOLD,
-        embedding: embeddingFields?.embedding,
-        embeddingModel: embeddingFields?.textEmbeddingModel
-          ? getModelName(embeddingFields.textEmbeddingModel)
-          : undefined,
+        embedding,
+        embeddingModel,
       },
     );
     // TODO: track what messages we used for context
@@ -268,7 +294,7 @@ export async function embedMany(
     abortSignal?: AbortSignal;
     headers?: Record<string, string>;
     agentName?: string;
-  } & Config,
+  } & Pick<Config, "usageHandler" | "textEmbeddingModel" | "callSettings">,
 ): Promise<{ embeddings: number[][] }> {
   const embeddingModel = textEmbeddingModel;
   assert(

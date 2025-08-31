@@ -186,10 +186,6 @@ export type {
 };
 export { mockModel } from "./mockModel.js";
 
-// 10k characters should be more than enough for most cases, and stays under
-// the 8k token limit for some models.
-const MAX_EMBEDDING_TEXT_LENGTH = 10_000;
-
 export class Agent<
   /**
    * You can require that all `ctx` args to generateText & streamText
@@ -1108,11 +1104,22 @@ export class Agent<
     args: {
       userId: string | undefined;
       threadId: string | undefined;
-      messages: (ModelMessage | Message)[];
       /**
-       * If provided, it will search for messages up to and including this message.
-       * Note: if this is far in the past, text and vector search results may be more
-       * limited, as it's post-filtering the results.
+       * If targetMessageId is not provided, this text will be used
+       * for text and vector search
+       */
+      searchText?: string;
+      /**
+       * If provided, it will use this message for text/vector search (if enabled)
+       * and will only fetch messages up to (and including) this message's "order"
+       */
+      targetMessageId?: string;
+      /**
+       * @deprecated use searchText and targetMessageId instead
+       */
+      messages?: (ModelMessage | Message)[];
+      /**
+       * @deprecated use targetMessageId instead
        */
       upToAndIncludingMessageId?: string;
       contextOptions: ContextOptions | undefined;
