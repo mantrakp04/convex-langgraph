@@ -31,7 +31,7 @@ export function fromUIMessages<METADATA = unknown>(
     return modelMessages.map((modelMessage, i) => {
       const message = fromModelMessage(modelMessage);
       const tool = isTool(message);
-      return {
+      const doc: MessageDoc & { streaming: boolean; metadata?: METADATA } = {
         ...commonFields,
         stepOrder: stepOrder + i,
         message,
@@ -40,7 +40,18 @@ export function fromUIMessages<METADATA = unknown>(
         reasoning: extractReasoning(message),
         finishReason: tool ? "tool-calls" : "stop",
         sources: fromSourceParts(uiMessage.parts),
-      } satisfies MessageDoc & { streaming: boolean; metadata?: METADATA };
+      };
+      if (Array.isArray(modelMessage.content)) {
+        const providerOptions = modelMessage.content.find(
+          (c) => c.providerOptions,
+        )?.providerOptions;
+        if (providerOptions) {
+          // convertToModelMessages changes providerMetadata to providerOptions
+          doc.providerMetadata = providerOptions;
+          doc.providerOptions ??= providerOptions;
+        }
+      }
+      return doc;
     });
   });
 }
