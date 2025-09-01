@@ -21,7 +21,6 @@ import { mergedStream } from "convex-helpers/server/stream";
 import { paginator } from "convex-helpers/server/pagination";
 import type { WithoutSystemFields } from "convex/server";
 import { mergeDeltas } from "../deltas.js";
-import { serializeOrThrow } from "../mapping.js";
 
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
@@ -516,72 +515,55 @@ export async function getStreamingMessagesWithMetadata(
   );
   const messages = (
     await Promise.all(
-      streamingMessages.map((m) =>
-        getMessagesWithMetadataForStreamingMessage(
-          ctx,
+      streamingMessages.map(async (streamingMessage) => {
+        const deltas = await ctx.db
+          .query("streamDeltas")
+          .withIndex("streamId_start_end", (q) =>
+            q.eq("streamId", streamingMessage._id),
+          )
+          .take(1000);
+        const [messageDocs] = mergeDeltas(
           threadId,
-          stepOrder,
-          m,
-          metadata,
-        ),
-      ),
+          [
+            {
+              ...streamingMessage,
+              status: "streaming",
+              streamId: streamingMessage._id,
+            },
+          ],
+          [],
+          deltas,
+        );
+        // We don't save messages that have already been saved
+        const numToSkip = stepOrder - streamingMessage.stepOrder;
+        const messages = await Promise.all(
+          messageDocs
+            .slice(numToSkip)
+            .filter((m) => m.message !== undefined)
+            .map(async (msg) => {
+              return {
+                ...pick(msg, [
+                  "message",
+                  "fileIds",
+                  "status",
+                  "finishReason",
+                  "model",
+                  "provider",
+                  "providerMetadata",
+                  "sources",
+                  "reasoning",
+                  "reasoningDetails",
+                  "usage",
+                  "warnings",
+                  "error",
+                ]),
+                ...metadata,
+              } as MessageWithMetadataInternal;
+            }),
+        );
+        return messages;
+      }),
     )
   ).flat();
-  return messages;
-}
-
-export async function getMessagesWithMetadataForStreamingMessage(
-  ctx: MutationCtx,
-  threadId: Id<"threads">,
-  stepOrder: number,
-  streamingMessage: Doc<"streamingMessages">,
-  metadata: { status: "success" | "failed"; error?: string },
-): Promise<MessageWithMetadataInternal[]> {
-  const deltas = await ctx.db
-    .query("streamDeltas")
-    .withIndex("streamId_start_end", (q) =>
-      q.eq("streamId", streamingMessage._id),
-    )
-    .take(1000);
-  const [messageDocs] = mergeDeltas(
-    threadId,
-    [
-      {
-        ...streamingMessage,
-        status: "streaming",
-        streamId: streamingMessage._id,
-      },
-    ],
-    [],
-    deltas,
-  );
-  // We don't save messages that have already been saved
-  const numToSkip = stepOrder - streamingMessage.stepOrder;
-  const messages = await Promise.all(
-    messageDocs
-      .slice(numToSkip)
-      .filter((m) => m.message !== undefined)
-      .map(async (msg) => {
-        const message = await serializeOrThrow(msg.message!);
-        return {
-          message,
-          ...pick(msg, [
-            "fileIds",
-            "status",
-            "finishReason",
-            "model",
-            "provider",
-            "providerMetadata",
-            "sources",
-            "reasoning",
-            "reasoningDetails",
-            "usage",
-            "warnings",
-            "error",
-          ]),
-          ...metadata,
-        } as MessageWithMetadataInternal;
-      }),
-  );
   return messages;
 }
