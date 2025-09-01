@@ -47,11 +47,6 @@ npm run alpha
 # Idea/ feature backlog:
 
 - Convenience function to create a thread by copying an existing thread (fork)
-- Add a `contextHandler` option to the Agent component, that can be used to see
-  and modify the context passed to the LLM before it's called.
-  - take in { searchMessages, recentMessages, systemMessage, promptMessage }
-  - returns single message[]? - can add / prune / modify or { searchMessages,
-    recentMessages, systemMessage, promptMessage } or something else?
 - Allow aborting normal generateText
 - Improve the demo to show more of the features & have nicer UI
   - Add an example of using tracing / telemetry.
