@@ -31,7 +31,12 @@ export function useStreamingUIMessages<
   Query extends ThreadStreamQuery<any, any>,
 >(
   query: Query,
-  args: (ThreadMessagesArgs<Query> & { startOrder?: number }) | "skip",
+  args:
+    | (ThreadMessagesArgs<Query> & {
+        startOrder?: number;
+        skipStreamIds?: string[];
+      })
+    | "skip",
   // TODO: make generic on metadata, etc.
 ): UIMessage[] | undefined {
   const [uiMessages, setUIMessages] = useState<Record<string, UIMessage>>({});
@@ -42,7 +47,8 @@ export function useStreamingUIMessages<
     Map<string, ReadableStreamDefaultController<UIMessageChunk>>
   >(new Map());
 
-  const queryArgs = args === "skip" ? args : omit(args, ["startOrder"]);
+  const queryArgs =
+    args === "skip" ? args : omit(args, ["startOrder", "skipStreamIds"]);
 
   // Get all the active streams
   const streamList = useQuery(
@@ -61,17 +67,20 @@ export function useStreamingUIMessages<
     | { streams: Extract<SyncStreamsReturnValue, { kind: "list" }> }
     | undefined;
 
+  const skipStreamIds = args === "skip" ? undefined : args.skipStreamIds;
   // Get the cursors for all the active streams
   const cursors = useMemo(() => {
     if (!streamList?.streams) return [];
     if (streamList.streams.kind !== "list") {
       throw new Error("Expected list streams");
     }
-    return streamList.streams.messages.map(({ streamId }) => {
-      const cursor = streamCursors[streamId] ?? 0;
-      return { streamId, cursor };
-    });
-  }, [streamList, streamCursors]);
+    return streamList.streams.messages
+      .filter(({ streamId }) => !skipStreamIds?.includes(streamId))
+      .map(({ streamId }) => {
+        const cursor = streamCursors[streamId] ?? 0;
+        return { streamId, cursor };
+      });
+  }, [streamList, streamCursors, skipStreamIds]);
 
   // Get the deltas for all the active streams, if any.
   const cursorQuery = useQuery(
