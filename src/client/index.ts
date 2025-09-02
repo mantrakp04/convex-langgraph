@@ -242,7 +242,7 @@ export class Agent<
       tools?: AgentTools;
       /**
        * When generating or streaming text with tools available, this
-       * determines when to stop. Defaults to stepCountIs(1).
+       * determines when to stop. Defaults to the AI SDK default.
        */
       stopWhen?: StopCondition<AgentTools> | Array<StopCondition<AgentTools>>;
       /**
@@ -502,7 +502,9 @@ export class Agent<
       stopWhen:
         args.stopWhen ??
         this.options.stopWhen ??
-        stepCountIs(this.options.maxSteps ?? 1),
+        (this.options.maxSteps
+          ? stepCountIs(this.options.maxSteps)
+          : undefined),
       tools,
     } as T & {
       model: LanguageModel;
