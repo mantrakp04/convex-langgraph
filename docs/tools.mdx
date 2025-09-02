@@ -67,7 +67,7 @@ async function createTool(ctx: ActionCtx, teamId: Id<"teams">) {
   const myTool = tool({
     description: "My tool",
     parameters: z.object({...}).describe("The arguments for the tool"),
-    execute: async (args, options) => {
+    execute: async (args, options): Promise<BarReturnType> => {
       return await ctx.runQuery(internal.foo.bar, args);
     },
   });
@@ -76,6 +76,10 @@ async function createTool(ctx: ActionCtx, teamId: Id<"teams">) {
 
 In both cases, the args and options match the underlying AI SDK's `tool`
 function.
+
+If you run into type errors, ensure you're annotating the return type of the
+execute function, and if necessary, the return type of the `handler`s of any
+functions you call with `ctx.run*`.
 
 Note: it's highly recommended to use zod with `.describe` to provide details
 about each parameter. This will be used to provide a description of the tool to
