@@ -55,7 +55,7 @@ describe("DeltaStreamer", () => {
         threadId,
         cursors: [{ cursor: 0, streamId }],
       });
-      const { parts } = getParts({ cursor: 0, streamId }, deltas);
+      const { parts } = getParts(deltas);
       const stream = result.toUIMessageStream();
       for await (const part of stream) {
         const expected = parts.shift();
@@ -88,7 +88,7 @@ describe("DeltaStreamer", () => {
         threadId,
         cursors: [{ cursor: 0, streamId }],
       });
-      const { parts } = getParts({ cursor: 0, streamId }, deltas);
+      const { parts } = getParts(deltas);
       const expected = [
         { type: "start" },
         { type: "start-step" },
@@ -154,7 +154,7 @@ describe("DeltaStreamer", () => {
         threadId,
         cursors: [{ cursor: 0, streamId }],
       });
-      const { parts } = getParts({ cursor: 0, streamId }, deltas);
+      const { parts } = getParts(deltas);
       const expected = [
         { type: "start" },
         { type: "start-step" },

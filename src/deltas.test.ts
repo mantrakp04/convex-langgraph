@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { mergeDeltas, applyDeltasToStreamMessage } from "./deltas.js";
+import { mergeTextChunkDeltas, applyDeltasToStreamMessage } from "./deltas.js";
 import type { StreamMessage, StreamDelta } from "./validators.js";
 import { omit } from "convex-helpers";
 import type { TextStreamPart, ToolSet } from "ai";
@@ -30,7 +30,7 @@ describe("mergeDeltas", () => {
         { type: "text-delta", id: "1", text: "Hello" },
       ]),
     ];
-    const [messages, newStreams, changed] = mergeDeltas(
+    const [messages, newStreams, changed] = mergeTextChunkDeltas(
       "thread1",
       streamMessages,
       [],
@@ -54,7 +54,7 @@ describe("mergeDeltas", () => {
         { type: "text-delta", id: "2", text: " World!" },
       ]),
     ];
-    const [messages, newStreams, changed] = mergeDeltas(
+    const [messages, newStreams, changed] = mergeTextChunkDeltas(
       "thread1",
       streamMessages,
       [],
@@ -88,7 +88,7 @@ describe("mergeDeltas", () => {
         },
       ]),
     ];
-    const [messages, _, changed] = mergeDeltas(
+    const [messages, _, changed] = mergeTextChunkDeltas(
       "thread1",
       streamMessages,
       [],
@@ -118,7 +118,7 @@ describe("mergeDeltas", () => {
     const streamId = "s3";
     const streamMessages = [makeStreamMessage(streamId, 3, 0)];
     const deltas: StreamDelta[] = [];
-    const [messages, newStreams, changed] = mergeDeltas(
+    const [messages, newStreams, changed] = mergeTextChunkDeltas(
       "thread1",
       streamMessages,
       [],
@@ -136,7 +136,12 @@ describe("mergeDeltas", () => {
       makeDelta("s2", 0, 3, [{ type: "text-delta", id: "1", text: "B" }]),
       makeDelta("s1", 0, 3, [{ type: "text-delta", id: "2", text: "A" }]),
     ];
-    const [messages, _, changed] = mergeDeltas("thread1", [s2, s1], [], deltas);
+    const [messages, _, changed] = mergeTextChunkDeltas(
+      "thread1",
+      [s2, s1],
+      [],
+      deltas,
+    );
     expect(messages).toHaveLength(2);
     expect(messages[0].text).toBe("A");
     expect(messages[1].text).toBe("B");
@@ -158,7 +163,12 @@ describe("mergeDeltas", () => {
       ]),
       makeDelta(streamId, 11, 12, [{ type: "text-delta", id: "3", text: "!" }]),
     ];
-    const [messages] = mergeDeltas("thread1", streamMessages, [], deltas);
+    const [messages] = mergeTextChunkDeltas(
+      "thread1",
+      streamMessages,
+      [],
+      deltas,
+    );
     expect(messages).toHaveLength(1);
     expect(messages[0].text).toBe("Hello World!!");
     // There should only be one text part per message
@@ -181,7 +191,12 @@ describe("mergeDeltas", () => {
         { type: "reasoning-delta", id: "2", text: " Still thinking..." },
       ]),
     ];
-    const [messages] = mergeDeltas("thread1", streamMessages, [], deltas);
+    const [messages] = mergeTextChunkDeltas(
+      "thread1",
+      streamMessages,
+      [],
+      deltas,
+    );
     expect(messages).toHaveLength(1);
     if (Array.isArray(messages[0].message?.content)) {
       const reasoningParts = messages[0].message.content.filter(
@@ -270,13 +285,13 @@ describe("mergeDeltas", () => {
     }
     deepFreeze(streamMessages);
     deepFreeze(deltas);
-    const [messages1, streams1, changed1] = mergeDeltas(
+    const [messages1, streams1, changed1] = mergeTextChunkDeltas(
       "thread1",
       streamMessages,
       [],
       deltas,
     );
-    const [messages2, streams2, changed2] = mergeDeltas(
+    const [messages2, streams2, changed2] = mergeTextChunkDeltas(
       "thread1",
       streamMessages,
       [],
