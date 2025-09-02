@@ -583,6 +583,7 @@ export function createStreamingMessage(
     _id: `${streamId}-${index}`,
     _creationTime: Date.now(),
     status: statusFromStreamStatus(message.status),
+    stepOrder: message.stepOrder + index,
     threadId,
     tool: false,
   };
