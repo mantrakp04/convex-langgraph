@@ -105,6 +105,7 @@ export async function start<
     system?: string;
     model: LanguageModel;
     messages: ModelMessage[];
+    prompt?: never;
     tools?: Tools;
   } & CallSettings;
   order: number;
@@ -200,6 +201,7 @@ export async function start<
   } as T & {
     model: LanguageModel;
     messages: ModelMessage[];
+    prompt?: never;
     tools?: Tools;
     _internal?: { generateId?: IdGenerator };
   } & CallSettings;

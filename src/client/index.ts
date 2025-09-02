@@ -427,6 +427,7 @@ export class Agent<
     args: T & {
       system?: string;
       model: LanguageModel;
+      prompt?: never;
       messages: ModelMessage[];
       tools?: TOOLS extends undefined ? AgentTools : TOOLS;
     } & CallSettings;
@@ -1536,10 +1537,7 @@ export class Agent<
    * and stopWhen.
    */
   asObjectAction<T, DataModel extends GenericDataModel>(
-    objectArgs: Omit<
-      Parameters<typeof generateObject<FlexibleSchema<T>>>[0],
-      "model"
-    >,
+    objectArgs: GenerateObjectArgs<FlexibleSchema<T>>,
     options?: Options & MaybeCustomCtx<CustomCtx, DataModel, AgentTools>,
   ) {
     return internalActionGeneric({
@@ -1556,7 +1554,7 @@ export class Agent<
           prompt: Array.isArray(args.prompt)
             ? args.prompt.map(deserializeMessage)
             : args.prompt,
-        } as Omit<Parameters<typeof generateObject>[0], "model">;
+        } as GenerateObjectArgs<FlexibleSchema<T>>;
         const ctx = (
           options?.customCtx
             ? { ...ctx_, ...options.customCtx(ctx_, targetArgs, llmArgs) }

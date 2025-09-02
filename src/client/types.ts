@@ -388,7 +388,7 @@ export type GenerateObjectArgs<
     ? Array<InferSchema<SCHEMA>>
     : InferSchema<SCHEMA>,
 > = Omit<CallSettings, "stopSequences"> &
-  Prompt & {
+  Partial<Prompt> & {
     /**
      * If provided, this message will be used as the "prompt" for the LLM call,
      * instead of the prompt or messages.
