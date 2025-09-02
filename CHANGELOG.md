@@ -2,11 +2,23 @@
 
 ## 0.2.6 alpha
 
+- Splits out the `start` function from the Agent, along with other utilities
+  that can be used without the Agent, e.g. to `saveInputMessages` and
+  fetch context messages combined with input messages.
+- Adds a `contextHandler` option to the Agent, which is a function to modify
+  the context messages before they are passed to the LLM.
+- Adds a `fromUIMessage` function to convert UIMessage[] to MessageDoc[].
+- Fixes asObjectAction being generic on the wrong DataModel.
+- Using `mockModel` works better now for streaming.
+- Search text will use the last message, prompt, or promptMessage string.
+- Fixes the `stepOrder` being off when streaming with tool calls.
+- More readable MessageDoc type.
 - The output of a tool result is now saved differently from the `result`
   and matches the ModelMessage expected format. This also coerces the
   previous `result` format into the new `output` data format.
 - cachedInputTokens is now saved in the usage field
-- The global default for providerOptions is supplied correctly.
+- The global default for providerOptions is supplied correctly, however lmk if
+  you actually want it, otherwise it's deprecated and may be removed.
 - Fix: useSmoothText starts streaming even if no text update happens.
 - The DeltaStreamer class is now generic on the type of part to save,
   and decoupled to make it easier to use on its own.
