@@ -12,6 +12,7 @@ export {
   useThreadMessages,
   useStreamingThreadMessages,
 } from "./useThreadMessages.js";
+export { useStreamingUIMessages } from "./useStreamingUIMessages.js";
 
 /**
  * @deprecated use useThreadMessages or useStreamingThreadMessages instead
