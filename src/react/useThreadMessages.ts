@@ -9,7 +9,8 @@ import {
 import { usePaginatedQuery } from "convex-helpers/react";
 import type { FunctionArgs, PaginationResult } from "convex/server";
 import { useMemo, useRef, useState } from "react";
-import type { MessageDoc } from "../client/index.js";
+import { sorted } from "../shared.js";
+import type { MessageDoc } from "../validators.js";
 import type { SyncStreamsReturnValue } from "../client/types.js";
 import type { StreamArgs } from "../validators.js";
 import { mergeTextChunkDeltas } from "../deltas.js";
@@ -124,35 +125,33 @@ export function useThreadMessages<
       })) ?? [];
     return {
       ...paginated,
-      results: paginated.results
-        .map((m) => ({ ...m, streaming: false }))
-        // Note: this is intentionally after paginated results.
-        .concat(streamListMessages)
-        .sort((a, b) =>
-          a.order === b.order ? a.stepOrder - b.stepOrder : a.order - b.order,
-        )
-        .reduce(
-          (msgs, msg) => {
-            const last = msgs.at(-1);
-            if (!last) {
-              return [msg];
-            }
-            if (last.order !== msg.order || last.stepOrder !== msg.stepOrder) {
-              return [...msgs, msg];
-            }
-            if (
-              last.status === "pending" &&
-              (msg.streaming || msg.status !== "pending")
-            ) {
-              // Let's prefer a streaming or finalized message over a pending
-              // one.
-              return [...msgs.slice(0, -1), msg];
-            }
-            // skip the new one if the previous one (listed) was finalized
-            return msgs;
-          },
-          [] as (ThreadMessagesResult<Query> & { streaming: boolean })[],
-        ),
+      results: sorted(
+        paginated.results
+          .map((m) => ({ ...m, streaming: false }))
+          // Note: this is intentionally after paginated results.
+          .concat(streamListMessages),
+      ).reduce(
+        (msgs, msg) => {
+          const last = msgs.at(-1);
+          if (!last) {
+            return [msg];
+          }
+          if (last.order !== msg.order || last.stepOrder !== msg.stepOrder) {
+            return [...msgs, msg];
+          }
+          if (
+            last.status === "pending" &&
+            (msg.streaming || msg.status !== "pending")
+          ) {
+            // Let's prefer a streaming or finalized message over a pending
+            // one.
+            return [...msgs.slice(0, -1), msg];
+          }
+          // skip the new one if the previous one (listed) was finalized
+          return msgs;
+        },
+        [] as (ThreadMessagesResult<Query> & { streaming: boolean })[],
+      ),
     };
   }, [paginated, streamMessages]);
 
