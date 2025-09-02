@@ -1625,11 +1625,16 @@ export class Agent<
           ?.userId) ??
       undefined;
     // If only a messageId is provided, this will add that message to the end.
+    const searchMsg =
+      promptArray.at(-1) ??
+      (args.promptMessageId ? undefined : messages.at(-1));
+    const searchText = searchMsg ? extractText(searchMsg) : undefined;
+
     const contextMessages: MessageDoc[] = await this.fetchContextMessages(ctx, {
       userId,
       threadId,
-      upToAndIncludingMessageId: args.promptMessageId,
-      messages,
+      targetMessageId: args.promptMessageId,
+      searchText,
       contextOptions,
     });
     // If it was a promptMessageId, pop it off context messages
