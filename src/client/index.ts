@@ -96,7 +96,6 @@ import type {
   UserActionCtx,
   Config,
 } from "./types.js";
-import type { DataModel } from "../component/_generated/dataModel.js";
 import { start } from "./start.js";
 
 export { stepCountIs } from "ai";
