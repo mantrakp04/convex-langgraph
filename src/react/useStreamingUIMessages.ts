@@ -31,12 +31,11 @@ export function useStreamingUIMessages<
   Query extends ThreadStreamQuery<any, any>,
 >(
   query: Query,
-  args:
-    | (ThreadMessagesArgs<Query> & {
-        startOrder?: number;
-        skipStreamIds?: string[];
-      })
-    | "skip",
+  args: ThreadMessagesArgs<Query> | "skip",
+  options?: {
+    startOrder?: number;
+    skipStreamIds?: string[];
+  },
   // TODO: make generic on metadata, etc.
 ): UIMessage[] | undefined {
   const [uiMessages, setUIMessages] = useState<Record<string, UIMessage>>({});
@@ -47,27 +46,23 @@ export function useStreamingUIMessages<
     Map<string, ReadableStreamDefaultController<UIMessageChunk>>
   >(new Map());
 
-  const queryArgs =
-    args === "skip" ? args : omit(args, ["startOrder", "skipStreamIds"]);
-
   // Get all the active streams
   const streamList = useQuery(
     query,
-    queryArgs === "skip"
-      ? queryArgs
+    args === "skip"
+      ? args
       : ({
-          ...queryArgs,
+          ...args,
           paginationOpts: { cursor: null, numItems: 0 },
           streamArgs: {
             kind: "list",
-            startOrder: queryArgs.startOrder ?? 0,
+            startOrder: options?.startOrder ?? 0,
           } as StreamArgs,
         } as FunctionArgs<Query>),
   ) as
     | { streams: Extract<SyncStreamsReturnValue, { kind: "list" }> }
     | undefined;
 
-  const skipStreamIds = args === "skip" ? undefined : args.skipStreamIds;
   // Get the cursors for all the active streams
   const cursors = useMemo(() => {
     if (!streamList?.streams) return [];
@@ -75,20 +70,20 @@ export function useStreamingUIMessages<
       throw new Error("Expected list streams");
     }
     return streamList.streams.messages
-      .filter(({ streamId }) => !skipStreamIds?.includes(streamId))
+      .filter(({ streamId }) => !options?.skipStreamIds?.includes(streamId))
       .map(({ streamId }) => {
         const cursor = streamCursors[streamId] ?? 0;
         return { streamId, cursor };
       });
-  }, [streamList, streamCursors, skipStreamIds]);
+  }, [streamList, streamCursors, options?.skipStreamIds]);
 
   // Get the deltas for all the active streams, if any.
   const cursorQuery = useQuery(
     query,
-    queryArgs === "skip" || !streamList
+    args === "skip" || !streamList
       ? ("skip" as const)
       : ({
-          ...queryArgs,
+          ...args,
           paginationOpts: { cursor: null, numItems: 0 },
           streamArgs: { kind: "deltas", cursors } as StreamArgs,
         } as FunctionArgs<Query>),
