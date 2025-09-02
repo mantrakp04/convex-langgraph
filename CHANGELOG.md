@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.6 alpha
+## 0.2.6
 
 - Splits out the `start` function from the Agent, along with other utilities
   that can be used without the Agent, e.g. to `saveInputMessages` and
