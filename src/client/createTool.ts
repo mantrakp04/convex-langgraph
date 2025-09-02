@@ -125,7 +125,7 @@ export function wrapTools(
     }
     for (const [name, tool] of Object.entries(toolSet)) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      if (!(tool as any).__acceptsCtx) {
+      if (tool && !(tool as any).__acceptsCtx) {
         output[name] = tool;
       } else {
         const out = { ...tool, ctx };
