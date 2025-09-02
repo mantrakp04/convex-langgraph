@@ -139,6 +139,7 @@ export const list = query({
       streamId: m._id,
       status: m.state.kind,
       ...pick(m, [
+        "format",
         "order",
         "stepOrder",
         "userId",
