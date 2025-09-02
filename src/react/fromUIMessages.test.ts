@@ -424,4 +424,45 @@ describe("fromUIMessages functionality tests", () => {
     const toolMessages = result.filter((msg) => msg.tool);
     expect(toolMessages.length).toBeGreaterThan(0);
   });
+
+  it("handles tool calls without responses", () => {
+    const toolUIMessage: UIMessage = {
+      id: "tool-id",
+      _creationTime: Date.now(),
+      order: 0,
+      stepOrder: 0,
+      status: "success",
+      key: "tool-key",
+      text: "",
+      role: "assistant",
+      parts: [
+        { type: "text", text: "Tool call" },
+        {
+          type: "tool-calculator",
+          toolCallId: "call1",
+          input: { a: 1, b: 2 },
+          state: "input-available",
+        },
+      ],
+    };
+
+    const result = fromUIMessages("thread1", [toolUIMessage]);
+    expect(result.length).toBeGreaterThan(0);
+
+    // Should have tool messages
+    const toolMessages = result.filter((msg) => msg.tool);
+    expect(toolMessages.length).toBe(2);
+    expect(toolMessages[0].message?.role).toBe("assistant");
+    expect(toolMessages[0].message?.content[0]).toMatchObject({
+      type: "text",
+      text: "Tool call",
+    });
+    expect(toolMessages[0].message?.content[1]).toMatchObject({
+      args: { a: 1, b: 2 },
+      toolCallId: "call1",
+      toolName: "calculator",
+      type: "tool-call",
+    });
+    expect(toolMessages[1].message?.role).toBe("tool");
+  });
 });
