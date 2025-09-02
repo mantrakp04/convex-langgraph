@@ -1857,7 +1857,7 @@ export class Agent<
    * the normal parameters to {@link generateObject}, plus {@link ContextOptions}
    * and stopWhen.
    */
-  asObjectAction<T>(
+  asObjectAction<T, DataModel extends GenericDataModel>(
     objectArgs: Omit<
       Parameters<typeof generateObject<FlexibleSchema<T>>>[0],
       "model"
