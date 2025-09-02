@@ -442,6 +442,9 @@ export const vStreamMessage = v.object({
     v.literal("finished"),
     v.literal("aborted"),
   ),
+  format: v.optional(
+    v.union(v.literal("UIMessageChunk"), v.literal("TextStreamPart")),
+  ),
   order: v.number(),
   stepOrder: v.number(),
   // metadata

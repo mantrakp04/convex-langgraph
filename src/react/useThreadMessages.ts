@@ -12,7 +12,7 @@ import { useMemo, useRef, useState } from "react";
 import type { MessageDoc } from "../client/index.js";
 import type { SyncStreamsReturnValue } from "../client/types.js";
 import type { StreamArgs } from "../validators.js";
-import { mergeDeltas } from "../deltas.js";
+import { mergeTextChunkDeltas } from "../deltas.js";
 import type {
   ThreadQuery,
   ThreadStreamQuery,
@@ -234,7 +234,7 @@ export function useStreamingThreadMessages<
     if (cursorQuery && cursorQuery.streams?.kind !== "deltas") {
       throw new Error("Expected deltas streams");
     }
-    return mergeDeltas(
+    return mergeTextChunkDeltas(
       threadId,
       streamList.streams.messages,
       streams,

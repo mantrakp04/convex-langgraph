@@ -1,9 +1,10 @@
-import type {
-  JSONValue,
-  ProviderMetadata,
-  TextStreamPart,
-  ToolSet,
-  UIMessageChunk,
+import {
+  readUIMessageStream,
+  type JSONValue,
+  type ProviderMetadata,
+  type TextStreamPart,
+  type ToolSet,
+  type UIMessageChunk,
 } from "ai";
 import type { MessageDoc } from "./client/index.js";
 import {
@@ -22,10 +23,32 @@ import type { Infer } from "convex/values";
 import { normalizeToolOutput, serializeWarnings } from "./mapping.js";
 import { parse } from "convex-helpers/validators";
 import { sorted } from "./shared.js";
+import { type UIMessage } from "./react/toUIMessages.js";
+import { fromUIMessages } from "./react/fromUIMessages.js";
 
 /**
  * Compressing parts when streaming to save bandwidth in deltas.
  */
+
+export function compressUIMessageChunks(
+  parts: UIMessageChunk[],
+): UIMessageChunk[] {
+  const compressed: UIMessageChunk[] = [];
+  for (const part of parts) {
+    const last = compressed.at(-1);
+    if (part.type === "text-delta" && last?.type === "text-delta") {
+      last.delta += part.delta;
+    } else if (
+      part.type === "reasoning-delta" &&
+      last?.type === "reasoning-delta"
+    ) {
+      last.delta += part.delta;
+    } else {
+      compressed.push(part);
+    }
+  }
+  return compressed;
+}
 
 export function compressTextStreamParts(
   parts: TextStreamPart<ToolSet>[],
@@ -56,31 +79,89 @@ export function compressTextStreamParts(
   return compressed;
 }
 
-export function compressUIMessageChunks(
+export function blankUIMessage(streamMessage: StreamMessage, threadId: string) {
+  return {
+    id: `stream:${streamMessage.streamId}`,
+    key: `${threadId}-${streamMessage.order}-${streamMessage.stepOrder}`,
+    order: streamMessage.order,
+    stepOrder: streamMessage.stepOrder,
+    status: statusFromStreamStatus(streamMessage.status),
+    agentName: streamMessage.agentName,
+    text: "",
+    _creationTime: Date.now(),
+    role: "assistant",
+    parts: [],
+    // TODO: allow metadata in StreamMessage?
+  } satisfies UIMessage;
+}
+
+export async function updateUIMessageFromParts(
+  uiMessage: UIMessage,
   parts: UIMessageChunk[],
-): UIMessageChunk[] {
-  const compressed: UIMessageChunk[] = [];
-  for (const part of parts) {
-    const last = compressed.at(-1);
-    if (part.type === "text-delta" && last?.type === "text-delta") {
-      last.delta += part.delta;
-    } else if (
-      part.type === "reasoning-delta" &&
-      last?.type === "reasoning-delta"
-    ) {
-      last.delta += part.delta;
+) {
+  const partsStream = new ReadableStream<UIMessageChunk>({
+    start(controller) {
+      for (const part of parts) {
+        controller.enqueue(part);
+      }
+      controller.close();
+    },
+  });
+  let failed = false;
+  const messageStream = readUIMessageStream({
+    message: uiMessage,
+    stream: partsStream,
+    onError: (e) => {
+      failed = true;
+      console.error("Error in stream", e);
+    },
+    terminateOnError: true,
+  });
+  let message = uiMessage;
+  for await (const messagePart of messageStream) {
+    message = messagePart;
+  }
+  if (failed) {
+    message.status = "failed";
+  }
+  return message;
+}
+
+export async function deriveMessagesFromDeltas(
+  threadId: string,
+  streamMessages: StreamMessage[],
+  allDeltas: StreamDelta[],
+): Promise<MessageDoc[]> {
+  const messages: MessageDoc[] = [];
+  for (const streamMessage of streamMessages) {
+    if (streamMessage.format === "UIMessageChunk") {
+      const { parts } = getParts<UIMessageChunk>(
+        allDeltas.filter((d) => d.streamId === streamMessage.streamId),
+        0,
+      );
+      const uiMessage = await updateUIMessageFromParts(
+        blankUIMessage(streamMessage, threadId),
+        parts,
+      );
+      messages.push(...fromUIMessages(threadId, [uiMessage]));
     } else {
-      compressed.push(part);
+      const [textMessages] = mergeTextChunkDeltas(
+        threadId,
+        [streamMessage],
+        [],
+        allDeltas,
+      );
+      messages.push(...textMessages);
     }
   }
-  return compressed;
+  return sorted(messages);
 }
 
 /**
  *
  */
 
-export function mergeDeltas(
+export function mergeTextChunkDeltas(
   threadId: string,
   streamMessages: StreamMessage[],
   existingStreams: Array<{
@@ -127,13 +208,12 @@ export function mergeDeltas(
   return [messages, newStreams, changed];
 }
 
-export function getParts(
-  stream: { streamId: string; cursor: number },
-  streamDeltas: StreamDelta[],
-) {
-  const deltas = streamDeltas.filter((d) => d.streamId === stream.streamId);
-  const parts: UIMessageChunk[] = [];
-  let cursor = stream.cursor;
+export function getParts<T extends StreamDelta["parts"][number]>(
+  deltas: StreamDelta[],
+  fromCursor?: number,
+): { parts: T[]; cursor: number } {
+  const parts: T[] = [];
+  let cursor = fromCursor ?? 0;
   for (const delta of deltas.sort((a, b) => a.start - b.start)) {
     if (delta.parts.length === 0) {
       console.debug(`Got delta with no parts: ${JSON.stringify(delta)}`);
@@ -162,18 +242,6 @@ export function getParts(
   return { parts, cursor };
 }
 
-// TODO: use readUIMessageStream to produce message docs
-// set extra fields on the UIMessages
-//   key: string;
-//   order: number;
-//   stepOrder: number;
-//   status: "streaming" | MessageStatus;
-//   agentName?: string;
-//   text: string;
-// update status based on whether the message is done, aborted, errored, etc.
-// update stepOrder based on how many messages are wrapped up in the UIMessage
-// using the step-start part
-
 // exported for testing
 export function applyDeltasToStreamMessage(
   threadId: string,
@@ -183,35 +251,11 @@ export function applyDeltasToStreamMessage(
     | undefined,
   deltas: StreamDelta[],
 ): [{ streamId: string; cursor: number; messages: MessageDoc[] }, boolean] {
-  let changed = false;
-  let cursor = existing?.cursor ?? 0;
-  let parts: (UIMessageChunk | TextStreamPart<ToolSet>)[] = [];
-  for (const delta of deltas.sort((a, b) => a.start - b.start)) {
-    if (delta.parts.length === 0) {
-      console.warn(`Got delta with no parts: ${JSON.stringify(delta)}`);
-      continue;
-    }
-    if (cursor !== delta.start) {
-      if (cursor >= delta.end) {
-        console.debug(
-          `Got duplicate delta for stream ${delta.streamId} at ${delta.start}`,
-        );
-        continue;
-      } else if (cursor < delta.start) {
-        console.warn(
-          `Got delta for stream ${delta.streamId} that has a gap ${cursor} -> ${delta.start}`,
-        );
-        continue;
-      } else {
-        throw new Error(
-          `Got unexpected delta for stream ${delta.streamId}: delta: ${delta.start} -> ${delta.end} existing cursor: ${cursor}`,
-        );
-      }
-    }
-    changed = true;
-    cursor = delta.end;
-    parts.push(...delta.parts);
-  }
+  const { cursor, parts } = getParts<UIMessageChunk | TextStreamPart<ToolSet>>(
+    deltas,
+    existing?.cursor,
+  );
+  let changed = parts.length > 0;
   if (existing && existing.messages.length > 0 && !changed) {
     const lastMessage = existing.messages.at(-1)!;
     if (statusFromStreamStatus(streamMessage.status) !== lastMessage.status) {
@@ -237,13 +281,13 @@ export function applyDeltasToStreamMessage(
       status: statusFromStreamStatus(streamMessage.status),
     };
   } else {
+    const firstPart = parts.shift()!;
     const newMessage = createStreamingMessage(
       threadId,
       streamMessage,
-      parts[0]!,
+      firstPart,
       existingMessages.length,
     );
-    parts = parts.slice(1);
     currentMessage = newMessage;
   }
   const newStream = {
