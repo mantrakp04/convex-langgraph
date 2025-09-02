@@ -3,7 +3,8 @@ import type {
   LanguageModelV2Content,
   LanguageModelV2StreamPart,
 } from "@ai-sdk/provider";
-import { simulateReadableStream } from "ai";
+import { simulateReadableStream, type ProviderMetadata } from "ai";
+import { pick } from "convex-helpers";
 
 export const DEFAULT_TEXT = `
 A A A A A A A A A A A A A A A
@@ -25,6 +26,7 @@ export type MockModelArgs = {
   content?: LanguageModelV2Content[];
   doGenerate?: LanguageModelV2["doGenerate"];
   doStream?: LanguageModelV2["doStream"];
+  providerMetadata?: ProviderMetadata;
   fail?:
     | boolean
     | {
@@ -68,6 +70,7 @@ export class MockLanguageModel implements LanguageModelV2 {
     const error =
       (typeof args.fail === "object" && args.fail.error) ||
       "Mock error message";
+    const metadata = pick(args, ["providerMetadata"]);
 
     const chunks: LanguageModelV2StreamPart[] = [
       { type: "stream-start", warnings: [] },
@@ -77,12 +80,14 @@ export class MockLanguageModel implements LanguageModelV2 {
         if (c.type !== "text" && c.type !== "reasoning") {
           return [c];
         }
+        const metadata = pick(c, ["providerMetadata"]);
         const deltas = c.text.split(" ");
         const parts: LanguageModelV2StreamPart[] = [];
         if (c.type === "reasoning") {
           parts.push({
             type: "reasoning-start",
             id: `reasoning-${ci}`,
+            ...metadata,
           });
           parts.push(
             ...deltas.map(
@@ -91,20 +96,20 @@ export class MockLanguageModel implements LanguageModelV2 {
                   type: "reasoning-delta",
                   delta: (di ? " " : "") + delta,
                   id: `reasoning-${ci}`,
-                  providerMetadata: {
-                    mockProvider: { mock: { reasoningDetails: null } },
-                  },
+                  ...metadata,
                 }) satisfies LanguageModelV2StreamPart,
             ),
           );
           parts.push({
             type: "reasoning-end",
             id: `reasoning-${ci}`,
+            ...metadata,
           });
         } else if (c.type === "text") {
           parts.push({
             type: "text-start",
             id: `txt-${ci}`,
+            ...metadata,
           });
           parts.push(
             ...deltas.map(
@@ -113,12 +118,14 @@ export class MockLanguageModel implements LanguageModelV2 {
                   type: "text-delta",
                   delta: (di ? " " : "") + delta,
                   id: `txt-${ci}`,
+                        ...metadata,
                 }) satisfies LanguageModelV2StreamPart,
             ),
           );
           parts.push({
             type: "text-end",
             id: `txt-${ci}`,
+            ...metadata,
           });
         }
         return parts;
@@ -134,9 +141,7 @@ export class MockLanguageModel implements LanguageModelV2 {
       type: "finish",
       finishReason: fail ? "error" : "stop",
       usage: DEFAULT_USAGE,
-      providerMetadata: {
-        mockProvider: { mock: "mock metadata" },
-      },
+      ...metadata,
     });
     this.doGenerate = async (options) => {
       this.doGenerateCalls.push(options);
@@ -153,7 +158,7 @@ export class MockLanguageModel implements LanguageModelV2 {
           content,
           finishReason: "stop",
           usage: DEFAULT_USAGE,
-          providerMetadata: { mockProvider: { mock: "mock metadata" } },
+          ...metadata,
           warnings: [],
         };
       } else {
