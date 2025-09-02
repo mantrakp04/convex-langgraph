@@ -9,8 +9,7 @@ import {
   LightningBoltIcon,
 } from "@radix-ui/react-icons";
 
-const installPlaygroundShell = `npm i @convex-dev/agent-playground`;
-const playgroundCode = `import { definePlaygroundAPI } from "@convex-dev/agent-playground";
+const playgroundCode = `import { definePlaygroundAPI } from "@convex-dev/agent";
 import { components } from "./_generated/api";
 import { weatherAgent, fashionAgent } from "./example";
 
@@ -198,42 +197,6 @@ const Index = () => {
                   1
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900">
-                  Install the Package
-                </h3>
-              </div>
-              <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center space-x-2">
-                      <div className="w-3 h-3 bg-red-400 rounded-full"></div>
-                      <div className="w-3 h-3 bg-yellow-400 rounded-full"></div>
-                      <div className="w-3 h-3 bg-green-400 rounded-full"></div>
-                    </div>
-                    <div className="text-sm text-gray-500">Terminal</div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-6 w-6 p-0 hover:bg-gray-200"
-                      onClick={() => copyToClipboard(installPlaygroundShell)}
-                    >
-                      <Copy className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-                <div className="p-4">
-                  <pre className="text-sm text-gray-800">
-                    <code>{installPlaygroundShell}</code>
-                  </pre>
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div className="flex items-center mb-4">
-                <div className="w-8 h-8 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-4">
-                  2
-                </div>
-                <h3 className="text-xl font-semibold text-gray-900">
                   Set Up Your Playground API
                 </h3>
               </div>
@@ -276,7 +239,7 @@ const Index = () => {
             <div>
               <div className="flex items-center mb-4">
                 <div className="w-8 h-8 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-4">
-                  3
+                  2
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900">
                   Generate an API Key
@@ -312,12 +275,16 @@ const Index = () => {
             <div>
               <div className="flex items-center mb-4">
                 <div className="w-8 h-8 bg-gray-900 text-white rounded-full flex items-center justify-center text-sm font-semibold mr-4">
-                  4
+                  3
                 </div>
                 <h3 className="text-xl font-normal text-gray-900">
-                  Launch the Playground
+                  Use the Hosted Playground (Or run it locally)
                 </h3>
               </div>
+              <p className="text-gray-600 mb-4">
+                You can use this hosted playground to access your own data. Or
+                run it locally from the CLI via:
+              </p>
               <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
                 <div className="bg-gray-50 px-4 py-3 border-b border-gray-200">
                   <div className="flex items-center justify-between">
