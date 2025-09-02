@@ -3,25 +3,32 @@ import { extractReasoning, extractText, isTool } from "../shared.js";
 import type { MessageDoc, vSource } from "../validators.js";
 import type { UIMessage } from "./toUIMessages.js";
 import type { ProviderOptions } from "@ai-sdk/provider-utils";
-import { omit } from "convex-helpers";
+import { omit, pick } from "convex-helpers";
 import { fromModelMessage } from "../mapping.js";
 import type { Infer } from "convex/values";
 
 export function fromUIMessages<METADATA = unknown>(
-  threadId: string,
-  messages: (UIMessage<METADATA> & {
+  messages: UIMessage<METADATA>[],
+  meta: {
+    threadId: string;
     userId?: string;
     model?: string;
     provider?: string;
     providerOptions?: ProviderOptions;
-  })[],
+  },
 ): (MessageDoc & { streaming: boolean; metadata?: METADATA })[] {
   return messages.flatMap((uiMessage) => {
     const stepOrder = uiMessage.stepOrder;
     const commonFields = {
       _id: uiMessage.id,
+      ...pick(meta, [
+        "threadId",
+        "userId",
+        "model",
+        "provider",
+        "providerOptions",
+      ]),
       ...omit(uiMessage, ["parts", "role", "key", "text"]),
-      threadId,
       status: uiMessage.status === "streaming" ? "pending" : "success",
       streaming: uiMessage.status === "streaming",
       // to override

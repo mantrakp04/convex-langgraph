@@ -31,7 +31,9 @@ describe("fromUIMessages round-trip tests", () => {
     ];
 
     const uiMessages = toUIMessages(originalMessages);
-    const backToMessageDocs = fromUIMessages("thread1", uiMessages);
+    const backToMessageDocs = fromUIMessages(uiMessages, {
+      threadId: "thread1",
+    });
 
     expect(uiMessages).toHaveLength(1);
     expect(uiMessages[0].role).toBe("user");
@@ -63,7 +65,9 @@ describe("fromUIMessages round-trip tests", () => {
     ];
 
     const uiMessages = toUIMessages(originalMessages);
-    const backToMessageDocs = fromUIMessages("thread1", uiMessages);
+    const backToMessageDocs = fromUIMessages(uiMessages, {
+      threadId: "thread1",
+    });
 
     expect(uiMessages).toHaveLength(1);
     expect(uiMessages[0].role).toBe("assistant");
@@ -85,7 +89,9 @@ describe("fromUIMessages round-trip tests", () => {
     ];
 
     const uiMessages = toUIMessages(originalMessages);
-    const backToMessageDocs = fromUIMessages("thread1", uiMessages);
+    const backToMessageDocs = fromUIMessages(uiMessages, {
+      threadId: "thread1",
+    });
 
     expect(uiMessages).toHaveLength(1);
     expect(uiMessages[0].role).toBe("system");
@@ -123,7 +129,9 @@ describe("fromUIMessages round-trip tests", () => {
     ];
 
     const uiMessages = toUIMessages(originalMessages);
-    const backToMessageDocs = fromUIMessages("thread1", uiMessages);
+    const backToMessageDocs = fromUIMessages(uiMessages, {
+      threadId: "thread1",
+    });
 
     expect(uiMessages).toHaveLength(1);
     expect(uiMessages[0].text).toBe("Here's my response.");
@@ -186,7 +194,9 @@ describe("fromUIMessages round-trip tests", () => {
     ];
 
     const uiMessages = toUIMessages(originalMessages);
-    const backToMessageDocs = fromUIMessages("thread1", uiMessages);
+    const backToMessageDocs = fromUIMessages(uiMessages, {
+      threadId: "thread1",
+    });
 
     // Should be grouped into single UI message
     expect(uiMessages).toHaveLength(1);
@@ -237,7 +247,9 @@ describe("fromUIMessages round-trip tests", () => {
     ];
 
     const uiMessages = toUIMessages(originalMessages);
-    const backToMessageDocs = fromUIMessages("thread1", uiMessages);
+    const backToMessageDocs = fromUIMessages(uiMessages, {
+      threadId: "thread1",
+    });
 
     expect(uiMessages).toHaveLength(1);
     expect(uiMessages[0].role).toBe("user");
@@ -298,7 +310,9 @@ describe("fromUIMessages round-trip tests", () => {
     ];
 
     const uiMessages = toUIMessages(originalMessages);
-    const backToMessageDocs = fromUIMessages("thread1", uiMessages);
+    const backToMessageDocs = fromUIMessages(uiMessages, {
+      threadId: "thread1",
+    });
 
     expect(uiMessages).toHaveLength(1);
 
@@ -337,7 +351,9 @@ describe("fromUIMessages round-trip tests", () => {
     ];
 
     const uiMessages = toUIMessages(originalMessages);
-    const backToMessageDocs = fromUIMessages("thread1", uiMessages);
+    const backToMessageDocs = fromUIMessages(uiMessages, {
+      threadId: "thread1",
+    });
 
     expect(uiMessages).toHaveLength(1);
     expect(uiMessages[0].metadata).toEqual(testMetadata);
@@ -360,7 +376,9 @@ describe("fromUIMessages round-trip tests", () => {
     ];
 
     const uiMessages = toUIMessages(originalMessages);
-    const backToMessageDocs = fromUIMessages("thread1", uiMessages);
+    const backToMessageDocs = fromUIMessages(uiMessages, {
+      threadId: "thread1",
+    });
 
     expect(uiMessages).toHaveLength(1);
     expect(uiMessages[0].status).toBe("streaming");
@@ -374,7 +392,7 @@ describe("fromUIMessages round-trip tests", () => {
 describe("fromUIMessages functionality tests", () => {
   it("handles empty messages array", () => {
     const uiMessages: UIMessage[] = [];
-    const result = fromUIMessages("thread1", uiMessages);
+    const result = fromUIMessages(uiMessages, { threadId: "thread1" });
     expect(result).toHaveLength(0);
   });
 
@@ -391,7 +409,9 @@ describe("fromUIMessages functionality tests", () => {
       parts: [{ type: "text", text: "Hello" }],
     };
 
-    const result = fromUIMessages("custom-thread-id", [uiMessage]);
+    const result = fromUIMessages([uiMessage], {
+      threadId: "custom-thread-id",
+    });
     expect(result).toHaveLength(1);
     expect(result[0].threadId).toBe("custom-thread-id");
   });
@@ -417,7 +437,7 @@ describe("fromUIMessages functionality tests", () => {
       ],
     };
 
-    const result = fromUIMessages("thread1", [toolUIMessage]);
+    const result = fromUIMessages([toolUIMessage], { threadId: "thread1" });
     expect(result.length).toBeGreaterThan(0);
 
     // Should have tool messages
@@ -446,7 +466,7 @@ describe("fromUIMessages functionality tests", () => {
       ],
     };
 
-    const result = fromUIMessages("thread1", [toolUIMessage]);
+    const result = fromUIMessages([toolUIMessage], { threadId: "thread1" });
     expect(result.length).toBeGreaterThan(0);
 
     // Should have tool messages

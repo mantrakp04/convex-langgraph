@@ -197,7 +197,10 @@ export function useStreamingUIMessages<
                   {
                     streamId,
                     cursor: streamCursors[streamId] ?? 0,
-                    messages: fromUIMessages(threadId, [existingUIMessage]),
+                    messages: fromUIMessages([existingUIMessage], {
+                      threadId,
+                      ...streamMessage,
+                    }),
                   },
                 ]
               : [],

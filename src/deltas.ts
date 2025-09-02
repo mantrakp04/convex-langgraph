@@ -143,7 +143,10 @@ export async function deriveMessagesFromDeltas(
         blankUIMessage(streamMessage, threadId),
         parts,
       );
-      messages.push(...fromUIMessages(threadId, [uiMessage]));
+      // TODO: this fails on partial tool calls
+      messages.push(
+        ...fromUIMessages([uiMessage], { threadId, ...streamMessage }),
+      );
     } else {
       const [textMessages] = mergeTextChunkDeltas(
         threadId,
