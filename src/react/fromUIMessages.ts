@@ -28,31 +28,36 @@ export function fromUIMessages<METADATA = unknown>(
       tool: false,
     } satisfies MessageDoc & { streaming: boolean; metadata?: METADATA };
     const modelMessages = convertToModelMessages([uiMessage]);
-    return modelMessages.map((modelMessage, i) => {
-      const message = fromModelMessage(modelMessage);
-      const tool = isTool(message);
-      const doc: MessageDoc & { streaming: boolean; metadata?: METADATA } = {
-        ...commonFields,
-        stepOrder: stepOrder + i,
-        message,
-        tool,
-        text: extractText(message),
-        reasoning: extractReasoning(message),
-        finishReason: tool ? "tool-calls" : "stop",
-        sources: fromSourceParts(uiMessage.parts),
-      };
-      if (Array.isArray(modelMessage.content)) {
-        const providerOptions = modelMessage.content.find(
-          (c) => c.providerOptions,
-        )?.providerOptions;
-        if (providerOptions) {
-          // convertToModelMessages changes providerMetadata to providerOptions
-          doc.providerMetadata = providerOptions;
-          doc.providerOptions ??= providerOptions;
+    return modelMessages
+      .map((modelMessage, i) => {
+        if (modelMessage.content.length === 0) {
+          return undefined;
         }
-      }
-      return doc;
-    });
+        const message = fromModelMessage(modelMessage);
+        const tool = isTool(message);
+        const doc: MessageDoc & { streaming: boolean; metadata?: METADATA } = {
+          ...commonFields,
+          stepOrder: stepOrder + i,
+          message,
+          tool,
+          text: extractText(message),
+          reasoning: extractReasoning(message),
+          finishReason: tool ? "tool-calls" : "stop",
+          sources: fromSourceParts(uiMessage.parts),
+        };
+        if (Array.isArray(modelMessage.content)) {
+          const providerOptions = modelMessage.content.find(
+            (c) => c.providerOptions,
+          )?.providerOptions;
+          if (providerOptions) {
+            // convertToModelMessages changes providerMetadata to providerOptions
+            doc.providerMetadata = providerOptions;
+            doc.providerOptions ??= providerOptions;
+          }
+        }
+        return doc;
+      })
+      .filter((d) => d !== undefined);
   });
 }
 

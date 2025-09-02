@@ -451,7 +451,7 @@ describe("fromUIMessages functionality tests", () => {
 
     // Should have tool messages
     const toolMessages = result.filter((msg) => msg.tool);
-    expect(toolMessages.length).toBe(2);
+    expect(toolMessages.length).toBe(1);
     expect(toolMessages[0].message?.role).toBe("assistant");
     expect(toolMessages[0].message?.content[0]).toMatchObject({
       type: "text",
@@ -463,6 +463,5 @@ describe("fromUIMessages functionality tests", () => {
       toolName: "calculator",
       type: "tool-call",
     });
-    expect(toolMessages[1].message?.role).toBe("tool");
   });
 });
