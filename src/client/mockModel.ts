@@ -82,8 +82,7 @@ export class MockLanguageModel implements LanguageModelV2 {
         if (c.type === "reasoning") {
           parts.push({
             type: "reasoning-start",
-
-            id: `${ci}-reasoning`,
+            id: `reasoning-${ci}`,
           });
           parts.push(
             ...deltas.map(
@@ -91,7 +90,7 @@ export class MockLanguageModel implements LanguageModelV2 {
                 ({
                   type: "reasoning-delta",
                   delta: (di ? " " : "") + delta,
-                  id: `${ci}-reasoning`,
+                  id: `reasoning-${ci}`,
                   providerMetadata: {
                     mockProvider: { mock: { reasoningDetails: null } },
                   },
@@ -100,12 +99,12 @@ export class MockLanguageModel implements LanguageModelV2 {
           );
           parts.push({
             type: "reasoning-end",
-            id: `${ci}-reasoning`,
+            id: `reasoning-${ci}`,
           });
         } else if (c.type === "text") {
           parts.push({
             type: "text-start",
-            id: `${ci}-text`,
+            id: `txt-${ci}`,
           });
           parts.push(
             ...deltas.map(
@@ -113,13 +112,13 @@ export class MockLanguageModel implements LanguageModelV2 {
                 ({
                   type: "text-delta",
                   delta: (di ? " " : "") + delta,
-                  id: `${ci}-text`,
+                  id: `txt-${ci}`,
                 }) satisfies LanguageModelV2StreamPart,
             ),
           );
           parts.push({
             type: "text-end",
-            id: `${ci}-text`,
+            id: `txt-${ci}`,
           });
         }
         return parts;
@@ -178,8 +177,11 @@ export class MockLanguageModel implements LanguageModelV2 {
           initialDelayInMs,
           chunkDelayInMs,
         });
+
         if (options.abortSignal) {
-          throw new Error("abortSignal in mock model");
+          options.abortSignal.addEventListener("abort", () => {
+            console.warn("abortSignal in mock model not supported");
+          });
         }
         return {
           stream,
