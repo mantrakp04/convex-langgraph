@@ -95,7 +95,6 @@ export const listThreadMessages = query({
     const streams = await syncStreams(ctx, components.agent, {
       threadId,
       streamArgs,
-      includeStatuses: ["aborted", "streaming"],
     });
     // Here you could filter out / modify the stream of deltas / filter out
     // deltas.
