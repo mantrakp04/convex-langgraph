@@ -4,9 +4,9 @@ import {
   createThread,
   listMessages,
   syncStreams,
+  toUIMessages,
   vStreamArgs,
 } from "@convex-dev/agent";
-import { toUIMessages } from "@convex-dev/agent/react";
 import { components, internal } from "../_generated/api";
 import {
   action,

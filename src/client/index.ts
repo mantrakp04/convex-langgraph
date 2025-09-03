@@ -14,7 +14,7 @@ import type {
   StreamTextResult,
   ToolChoice,
   ToolSet,
-  UIMessage,
+  UIMessage as AIUIMessage,
 } from "ai";
 import {
   generateObject,
@@ -171,6 +171,8 @@ export {
   searchThreadTitles,
   updateThreadMetadata,
 } from "./threads.js";
+export { toUIMessages, fromUIMessages, type UIMessage } from "../UIMessages.js";
+
 export type {
   AgentComponent,
   Config,
@@ -662,7 +664,7 @@ export class Agent<
       PARTIAL_OUTPUT
     >;
     const stream = streamer?.consumeStream(
-      result.toUIMessageStream<UIMessage<Tools>>(),
+      result.toUIMessageStream<AIUIMessage<Tools>>(),
     );
     if (
       (typeof options?.saveStreamDeltas === "object" &&

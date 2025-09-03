@@ -1,6 +1,6 @@
 "use client";
 import { useMemo, useState } from "react";
-export { toUIMessages, fromUIMessages, type UIMessage } from "../UIMessages.js";
+export { toUIMessages, type UIMessage } from "../UIMessages.js";
 
 export { optimisticallySendMessage } from "./optimisticallySendMessage.js";
 export { useSmoothText } from "./useSmoothText.js";
