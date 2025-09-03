@@ -84,10 +84,10 @@ export type UIMessagesQueryResult<
  *   },
  *   handler: async (ctx, args) => {
  *     // await authorizeThreadAccess(ctx, threadId);
- *     const paginated = listUIMessages(ctx, components.agent, args);
+ *     const paginated = listMessages(ctx, components.agent, args);
  *     const streams = await syncStreams(ctx, components.agent, args);
  *     // Here you could filter out / modify the documents & stream deltas.
- *     return { ...paginated, streams };
+ *     return { ...paginated, page: toUIMessages(paginated.page), streams };
  *   },
  * });
  * ```
