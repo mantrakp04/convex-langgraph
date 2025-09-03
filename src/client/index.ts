@@ -485,7 +485,15 @@ export class Agent<
   >(
     ctx: ActionCtx & CustomCtx,
     threadOpts: { userId?: string | null; threadId?: string },
-    generateTextArgs: TextArgs<AgentTools, TOOLS, OUTPUT, OUTPUT_PARTIAL>,
+    generateTextArgs: TextArgs<AgentTools, TOOLS, OUTPUT, OUTPUT_PARTIAL> & {
+      /**
+       * If provided, this message will be used as the "prompt" for the LLM call,
+       * instead of the prompt or messages.
+       * This is useful if you want to first save a user message, then use it as
+       * the prompt for the LLM call in another call.
+       */
+      promptMessageId?: string;
+    },
     options?: Options,
   ): Promise<
     GenerateTextResult<TOOLS extends undefined ? AgentTools : TOOLS, OUTPUT> &
@@ -548,7 +556,15 @@ export class Agent<
       TOOLS,
       OUTPUT,
       PARTIAL_OUTPUT
-    >,
+    > & {
+      /**
+       * If provided, this message will be used as the "prompt" for the LLM call,
+       * instead of the prompt or messages.
+       * This is useful if you want to first save a user message, then use it as
+       * the prompt for the LLM call in another call.
+       */
+      promptMessageId?: string;
+    },
     /**
      * The {@link ContextOptions} and {@link StorageOptions}
      * options to use for fetching contextual messages and saving input/output messages.
@@ -682,7 +698,15 @@ export class Agent<
     /**
      * The arguments to the generateObject function, similar to the ai.generateObject function.
      */
-    generateObjectArgs: GenerateObjectArgs<SCHEMA, OUTPUT, RESULT>,
+    generateObjectArgs: GenerateObjectArgs<SCHEMA, OUTPUT, RESULT> & {
+      /**
+       * If provided, this message will be used as the "prompt" for the LLM call,
+       * instead of the prompt or messages.
+       * This is useful if you want to first save a user message, then use it as
+       * the prompt for the LLM call in another call.
+       */
+      promptMessageId?: string;
+    },
     /**
      * The {@link ContextOptions} and {@link StorageOptions}
      * options to use for fetching contextual messages and saving input/output messages.
@@ -740,15 +764,6 @@ export class Agent<
        * the prompt for the LLM call in another call.
        */
       promptMessageId?: string;
-      /**
-       * The model to use for the LLM calls. This will override the model specified
-       * in the Agent constructor.
-       */
-      model?: LanguageModel;
-      /**
-       * The tools to use for the tool calls. This will override tools specified
-       * in the Agent constructor or createThread / continueThread.
-       */
     },
     /**
      * The {@link ContextOptions} and {@link StorageOptions}

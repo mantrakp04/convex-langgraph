@@ -555,7 +555,15 @@ export interface Thread<DefaultTools extends ToolSet> {
       TOOLS,
       OUTPUT,
       OUTPUT_PARTIAL
-    >,
+    > & {
+      /**
+       * If provided, this message will be used as the "prompt" for the LLM call,
+       * instead of the prompt or messages.
+       * This is useful if you want to first save a user message, then use it as
+       * the prompt for the LLM call in another call.
+       */
+      promptMessageId?: string;
+    },
     options?: Options,
   ): Promise<
     GenerateTextResult<TOOLS extends undefined ? DefaultTools : TOOLS, OUTPUT> &
@@ -582,7 +590,15 @@ export interface Thread<DefaultTools extends ToolSet> {
       TOOLS,
       OUTPUT,
       PARTIAL_OUTPUT
-    >,
+    > & {
+      /**
+       * If provided, this message will be used as the "prompt" for the LLM call,
+       * instead of the prompt or messages.
+       * This is useful if you want to first save a user message, then use it as
+       * the prompt for the LLM call in another call.
+       */
+      promptMessageId?: string;
+    },
     options?: Options & {
       /**
        * Whether to save incremental data (deltas) from streaming responses.
@@ -630,15 +646,6 @@ export interface Thread<DefaultTools extends ToolSet> {
        * the prompt for the LLM call in another call.
        */
       promptMessageId?: string;
-      /**
-       * The model to use for the LLM calls. This will override the model specified
-       * in the Agent constructor.
-       */
-      model?: LanguageModel;
-      /**
-       * The tools to use for the tool calls. This will override tools specified
-       * in the Agent constructor or createThread / continueThread.
-       */
     },
     options?: Options,
   ): Promise<GenerateObjectResult<RESULT> & ThreadOutputMetadata>;
@@ -672,15 +679,6 @@ export interface Thread<DefaultTools extends ToolSet> {
        * the prompt for the LLM call in another call.
        */
       promptMessageId?: string;
-      /**
-       * The model to use for the LLM calls. This will override the model specified
-       * in the Agent constructor.
-       */
-      model?: LanguageModel;
-      /**
-       * The tools to use for the tool calls. This will override tools specified
-       * in the Agent constructor or createThread / continueThread.
-       */
     },
     options?: Options,
   ): Promise<
