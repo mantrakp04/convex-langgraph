@@ -279,28 +279,32 @@ export function updateFromTextStreamParts(
     message.parts
       .filter(
         (p): p is ToolUIPart | DynamicToolUIPart =>
-          p.type === "tool-call" || p.type === "dynamic-tool",
+          p.type.startsWith("tool-") || p.type === "dynamic-tool",
       )
       .map((p) => [p.toolCallId, p]),
   );
   const reasoningPartsById = new Map<string, ReasoningUIPart>();
 
   for (const part of parts) {
-    const lastContent = message.parts.at(-1);
     switch (part.type) {
+      case "text-start":
       case "text-delta": {
-        if (!textPartsById.has(part.id) && lastContent?.type !== "text") {
-          const newPart = {
-            type: "text",
-            text: part.text,
-            providerMetadata: part.providerMetadata,
-          } satisfies TextUIPart;
-          textPartsById.set(part.id, newPart);
-          message.parts.push(newPart);
-        } else {
-          const textPart =
-            textPartsById.get(part.id) ??
-            (lastContent?.type === "text" ? lastContent : undefined)!;
+        if (!textPartsById.has(part.id)) {
+          const lastPart = message.parts.at(-1);
+          if (lastPart?.type === "text") {
+            textPartsById.set(part.id, lastPart);
+          } else {
+            const newPart = {
+              type: "text",
+              text: "",
+              providerMetadata: part.providerMetadata,
+            } satisfies TextUIPart;
+            textPartsById.set(part.id, newPart);
+            message.parts.push(newPart);
+          }
+        }
+        if (part.type === "text-delta") {
+          const textPart = textPartsById.get(part.id)!;
           textPart.text += part.text;
           textPart.providerMetadata = mergeProviderMetadata(
             textPart.providerMetadata,
@@ -422,35 +426,31 @@ export function updateFromTextStreamParts(
         Object.assign(toolCall, newPart);
         break;
       }
-      case "reasoning-start": {
-        if (
-          !reasoningPartsById.has(part.id) &&
-          lastContent?.type !== "reasoning"
-        ) {
-          const newPart = {
-            type: "reasoning",
-            state: "streaming",
-            text: "",
-            providerMetadata: part.providerMetadata,
-          } satisfies ReasoningUIPart;
-          reasoningPartsById.set(part.id, newPart);
-          message.parts.push(newPart);
-        }
-        break;
-      }
+      case "reasoning-start":
       case "reasoning-delta": {
-        const reasoningPart =
-          reasoningPartsById.get(part.id) ??
-          (lastContent?.type === "reasoning" ? lastContent : undefined)!;
-        assert(
-          reasoningPart,
-          `Expected to find reasoning part ${part.id} to update with delta`,
-        );
-        reasoningPart.text += part.text;
-        reasoningPart.providerMetadata = mergeProviderMetadata(
-          reasoningPart.providerMetadata,
-          part.providerMetadata,
-        );
+        if (!reasoningPartsById.has(part.id)) {
+          const lastPart = message.parts.at(-1);
+          if (lastPart?.type === "reasoning") {
+            reasoningPartsById.set(part.id, lastPart);
+          } else {
+            const newPart = {
+              type: "reasoning",
+              state: "streaming",
+              text: "",
+              providerMetadata: part.providerMetadata,
+            } satisfies ReasoningUIPart;
+            reasoningPartsById.set(part.id, newPart);
+            message.parts.push(newPart);
+          }
+        }
+        const reasoningPart = reasoningPartsById.get(part.id)!;
+        if (part.type === "reasoning-delta") {
+          reasoningPart.text += part.text;
+          reasoningPart.providerMetadata = mergeProviderMetadata(
+            reasoningPart.providerMetadata,
+            part.providerMetadata,
+          );
+        }
         break;
       }
       case "reasoning-end": {
@@ -499,18 +499,15 @@ export function updateFromTextStreamParts(
         console.warn("Generation failed with error", part.error);
         break;
       case "tool-error":
-        if (
-          lastContent?.type === "dynamic-tool" ||
-          lastContent?.type.startsWith("tool-")
-        ) {
-          (lastContent as ToolUIPart | DynamicToolUIPart).errorText =
+        const toolPart = toolPartsById.get(part.toolCallId);
+        if (toolPart) {
+          toolPart.errorText =
             part.error instanceof Error
               ? part.error.message.toString()
               : String(part.error);
         }
         break;
       case "file":
-      case "text-start":
       case "text-end":
       case "finish-step":
       case "finish":
@@ -525,6 +522,13 @@ export function updateFromTextStreamParts(
         console.warn(`Received unexpected part: ${JSON.stringify(part)}`);
         break;
       }
+    }
+  }
+  // Consider reasoning done once something else happens
+  for (let i = 0; i < message.parts.length - 1; i++) {
+    const part = message.parts[i];
+    if (part.type === "reasoning") {
+      part.state = "done";
     }
   }
   message.text = message.parts
