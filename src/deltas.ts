@@ -7,10 +7,7 @@ import {
   type TextUIPart,
   type ToolSet,
   type ToolUIPart,
-  type UIDataTypes,
   type UIMessageChunk,
-  type UIMessagePart,
-  type UITools,
 } from "ai";
 import { assert, pick } from "convex-helpers";
 import { type UIMessage } from "./UIMessages.js";
@@ -520,7 +517,7 @@ export function updateFromTextStreamParts(
         message.status = "failed";
         console.warn("Generation failed with error", part.error);
         break;
-      case "tool-error":
+      case "tool-error": {
         const toolPart = toolPartsById.get(part.toolCallId);
         if (toolPart) {
           toolPart.errorText =
@@ -529,6 +526,7 @@ export function updateFromTextStreamParts(
               : String(part.error);
         }
         break;
+      }
       case "file":
       case "text-end":
       case "finish-step":
