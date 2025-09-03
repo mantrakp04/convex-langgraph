@@ -344,7 +344,7 @@ export const finalizeMessage = mutation({
     const message = await ctx.db.get(messageId);
     assert(message, `Message ${messageId} not found`);
     if (message.status !== "pending") {
-      console.log(
+      console.debug(
         "Trying to finalize a message that's already",
         message.status,
       );

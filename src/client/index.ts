@@ -514,15 +514,6 @@ export class Agent<
           call.updateModel(result?.model ?? options.model);
           return result;
         },
-        // _internal: {
-        //   generateId: () => {
-        //     console.log("generateId");
-        //     // or keep track of uuids we generate
-        //     // consumedPendingMessageId = true;
-        //     // return pendingMessageId
-        //     return crypto.randomUUID();
-        //   }
-        // },
         onStepFinish: async (step) => {
           steps.push(step);
           await call.save({ step }, await willContinue(steps, args.stopWhen));
