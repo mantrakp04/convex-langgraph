@@ -1,8 +1,13 @@
 import { insertAtTop } from "convex/react";
-import type { MessageDoc } from "../validators.js";
+import type { MessageDoc, StreamArgs } from "../validators.js";
 import type { OptimisticLocalStore } from "convex/browser";
-import type { ThreadQuery } from "./types.js";
-import type { UIMessage } from "./types.js";
+import type { UIMessage } from "../UIMessages.js";
+import type {
+  FunctionReference,
+  PaginationOptions,
+  PaginationResult,
+} from "convex/server";
+import type { SyncStreamsReturnValue } from "@convex-dev/agent";
 
 /**
  * Adds a sent message to the end of a list of messages, so it shows up until
@@ -30,7 +35,18 @@ import type { UIMessage } from "./types.js";
  * ```
  */
 export function optimisticallySendMessage(
-  query: ThreadQuery<unknown, MessageDoc | UIMessage>,
+  query: FunctionReference<
+    "query",
+    "public",
+    {
+      threadId: string;
+      paginationOpts: PaginationOptions;
+      streamArgs?: StreamArgs;
+    },
+    PaginationResult<MessageDoc | UIMessage> & {
+      streams?: SyncStreamsReturnValue;
+    }
+  >,
 ): (
   store: OptimisticLocalStore,
   args: { threadId: string; prompt: string },

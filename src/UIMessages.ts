@@ -1,25 +1,157 @@
-import type {
-  DeepPartial,
-  ReasoningUIPart,
-  SourceDocumentUIPart,
-  SourceUrlUIPart,
-  StepStartUIPart,
-  TextUIPart,
-  ToolUIPart,
-  UIDataTypes,
-  UITools,
+import {
+  convertToModelMessages,
+  type UIMessage as AIUIMessage,
+  type DeepPartial,
+  type ReasoningUIPart,
+  type SourceDocumentUIPart,
+  type SourceUrlUIPart,
+  type StepStartUIPart,
+  type TextUIPart,
+  type ToolUIPart,
+  type UIDataTypes,
+  type UITools,
 } from "ai";
-import { deserializeMessage, toUIFilePart } from "../mapping.js";
-import type { MessageDoc, SourcePart, vSource } from "../validators.js";
-import { extractText, sorted } from "../shared.js";
 import type { Infer } from "convex/values";
-import type { UIMessage } from "./types.js";
+import {
+  deserializeMessage,
+  fromModelMessage,
+  toUIFilePart,
+} from "./mapping.js";
+import { extractReasoning, extractText, isTool, sorted } from "./shared.js";
+import type {
+  MessageDoc,
+  MessageStatus,
+  ProviderOptions,
+  SourcePart,
+  vSource,
+} from "./validators.js";
+import { omit, pick } from "convex-helpers";
+
+export type UIMessage<
+  METADATA = unknown,
+  DATA_PARTS extends UIDataTypes = UIDataTypes,
+  TOOLS extends UITools = UITools,
+> = AIUIMessage<METADATA, DATA_PARTS, TOOLS> & {
+  key: string;
+  order: number;
+  stepOrder: number;
+  status: "streaming" | MessageStatus;
+  agentName?: string;
+  text: string;
+  _creationTime: number;
+};
+
+/**
+ * Converts a list of UIMessages to MessageDocs, along with extra metadata that
+ * may be available to associate with the MessageDocs.
+ * @param messages - The UIMessages to convert to MessageDocs.
+ * @param meta - The metadata to add to the MessageDocs.
+ * @returns
+ */
+export function fromUIMessages<METADATA = unknown>(
+  messages: UIMessage<METADATA>[],
+  meta: {
+    threadId: string;
+    userId?: string;
+    model?: string;
+    provider?: string;
+    providerOptions?: ProviderOptions;
+    metadata?: METADATA;
+  },
+): (MessageDoc & { streaming: boolean; metadata?: METADATA })[] {
+  return messages.flatMap((uiMessage) => {
+    const stepOrder = uiMessage.stepOrder;
+    const commonFields = {
+      ...pick(meta, [
+        "threadId",
+        "userId",
+        "model",
+        "provider",
+        "providerOptions",
+        "metadata",
+      ]),
+      ...omit(uiMessage, ["parts", "role", "key", "text"]),
+      status: uiMessage.status === "streaming" ? "pending" : "success",
+      streaming: uiMessage.status === "streaming",
+      // to override
+      _id: uiMessage.id,
+      tool: false,
+    } satisfies MessageDoc & { streaming: boolean; metadata?: METADATA };
+    const modelMessages = convertToModelMessages([uiMessage]);
+    return modelMessages
+      .map((modelMessage, i) => {
+        if (modelMessage.content.length === 0) {
+          return undefined;
+        }
+        const message = fromModelMessage(modelMessage);
+        const tool = isTool(message);
+        const doc: MessageDoc & { streaming: boolean; metadata?: METADATA } = {
+          ...commonFields,
+          _id: uiMessage.id + `-${i}`,
+          stepOrder: stepOrder + i,
+          message,
+          tool,
+          text: extractText(message),
+          reasoning: extractReasoning(message),
+          finishReason: tool ? "tool-calls" : "stop",
+          sources: fromSourceParts(uiMessage.parts),
+        };
+        if (Array.isArray(modelMessage.content)) {
+          const providerOptions = modelMessage.content.find(
+            (c) => c.providerOptions,
+          )?.providerOptions;
+          if (providerOptions) {
+            // convertToModelMessages changes providerMetadata to providerOptions
+            doc.providerMetadata = providerOptions;
+            doc.providerOptions ??= providerOptions;
+          }
+        }
+        return doc;
+      })
+      .filter((d) => d !== undefined);
+  });
+}
+
+function fromSourceParts(parts: UIMessage["parts"]): Infer<typeof vSource>[] {
+  return parts
+    .map((part) => {
+      if (part.type === "source-url") {
+        return {
+          type: "source",
+          sourceType: "url",
+          url: part.url,
+          id: part.sourceId,
+          providerMetadata: part.providerMetadata,
+          title: part.title,
+        } satisfies Infer<typeof vSource>;
+      }
+      if (part.type === "source-document") {
+        return {
+          type: "source",
+          sourceType: "document",
+          mediaType: part.mediaType,
+          id: part.sourceId,
+          providerMetadata: part.providerMetadata,
+          title: part.title,
+        } satisfies Infer<typeof vSource>;
+      }
+      return undefined;
+    })
+    .filter((p) => p !== undefined);
+}
 
 type ExtraFields<METADATA = unknown> = {
   streaming?: boolean;
   metadata?: METADATA;
 };
 
+/**
+ * Converts a list of MessageDocs to UIMessages.
+ * This is somewhat lossy, as many fields are not supported by UIMessages, e.g.
+ * the model, provider, userId, etc.
+ * The UIMessage type is the augmented type that includes more fields such as
+ * key, order, stepOrder, status, agentName, text, etc.
+ */
 export function toUIMessages<
   METADATA = unknown,
   DATA_PARTS extends UIDataTypes = UIDataTypes,

@@ -1,11 +1,12 @@
-import { describe, it, expect } from "vitest";
-import { toUIMessages } from "./toUIMessages.js";
-import { fromUIMessages } from "./fromUIMessages.js";
-import type { MessageDoc } from "../client/index.js";
-import type { UIMessage } from "./types.js";
+import { describe, expect, it } from "vitest";
+import type { MessageDoc } from "./client/index.js";
+import type { UIMessage } from "./UIMessages.js";
+import { fromUIMessages, toUIMessages } from "./UIMessages.js";
 
 // Helper to create a base message doc
-function baseMessageDoc<T = unknown>(overrides: Partial<MessageDoc & { streaming?: boolean; metadata?: T }> = {}): MessageDoc & { streaming?: boolean; metadata?: T } {
+function baseMessageDoc<T = unknown>(
+  overrides: Partial<MessageDoc & { streaming?: boolean; metadata?: T }> = {},
+): MessageDoc & { streaming?: boolean; metadata?: T } {
   return {
     _id: "msg1",
     _creationTime: Date.now(),

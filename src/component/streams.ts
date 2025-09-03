@@ -21,7 +21,7 @@ import { mergedStream } from "convex-helpers/server/stream";
 import { paginator } from "convex-helpers/server/pagination";
 import type { WithoutSystemFields } from "convex/server";
 import { deriveUIMessagesFromDeltas } from "../deltas.js";
-import { fromUIMessages } from "../react/fromUIMessages.js";
+import { fromUIMessages } from "../UIMessages.js";
 
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;

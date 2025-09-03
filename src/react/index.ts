@@ -1,16 +1,20 @@
 "use client";
 import { useMemo, useState } from "react";
-export { toUIMessages } from "./toUIMessages.js";
-export type { ThreadQuery, UIMessage } from "./types.js";
+export { toUIMessages, fromUIMessages, type UIMessage } from "../UIMessages.js";
 
 export { optimisticallySendMessage } from "./optimisticallySendMessage.js";
 export { useSmoothText } from "./useSmoothText.js";
 export { SmoothText } from "./SmoothText.js";
 export {
+  type ThreadMessagesQuery,
   useThreadMessages,
   useStreamingThreadMessages,
 } from "./useThreadMessages.js";
-export { useStreamingUIMessages } from "./useUIMessages.js";
+export {
+  type UIMessagesQuery,
+  useUIMessages,
+  useStreamingUIMessages,
+} from "./useUIMessages.js";
 
 /**
  * @deprecated use useThreadMessages or useStreamingThreadMessages instead

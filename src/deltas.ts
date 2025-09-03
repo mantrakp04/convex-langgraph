@@ -13,7 +13,7 @@ import {
   type UITools,
 } from "ai";
 import { assert, pick } from "convex-helpers";
-import { type UIMessage } from "./react/types.js";
+import { type UIMessage } from "./UIMessages.js";
 import { sorted } from "./shared.js";
 import {
   type MessageStatus,
