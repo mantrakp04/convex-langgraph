@@ -144,6 +144,7 @@ export {
 export { getFile, storeFile } from "./files.js";
 export {
   listMessages,
+  listUIMessages,
   saveMessage,
   saveMessages,
   type SaveMessageArgs,

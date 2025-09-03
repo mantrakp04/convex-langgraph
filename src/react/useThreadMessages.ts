@@ -85,6 +85,7 @@ export type ThreadMessagesResult<
  *   },
  *   handler: async (ctx, args) => {
  *     // await authorizeThreadAccess(ctx, threadId);
+ *     // NOTE: listMessages returns MessageDocs, not UIMessages.
  *     const paginated = await listMessages(ctx, components.agent, args);
  *     const streams = await syncStreams(ctx, components.agent, args);
  *     // Here you could filter out / modify the documents & stream deltas.

@@ -10,7 +10,8 @@ import {
   type MessageStatus,
   type MessageWithMetadata,
 } from "../validators.js";
-import { serializeMessage } from "./index.js";
+import { serializeMessage } from "../mapping.js";
+import { toUIMessages, type UIMessage } from "../UIMessages.js";
 import type { AgentComponent, RunMutationCtx, RunQueryCtx } from "./types.js";
 import { parse } from "convex-helpers/validators";
 
@@ -54,6 +55,18 @@ export async function listMessages(
     excludeToolMessages,
     statuses,
   });
+}
+
+export async function listUIMessages(
+  ctx: RunQueryCtx,
+  component: AgentComponent,
+  args: {
+    threadId: string;
+    paginationOpts: PaginationOptions;
+  },
+): Promise<PaginationResult<UIMessage>> {
+  const result = await listMessages(ctx, component, args);
+  return { ...result, page: toUIMessages(result.page) };
 }
 
 export type SaveMessagesArgs = {
