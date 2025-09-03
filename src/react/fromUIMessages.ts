@@ -15,23 +15,25 @@ export function fromUIMessages<METADATA = unknown>(
     model?: string;
     provider?: string;
     providerOptions?: ProviderOptions;
+    metadata?: METADATA;
   },
 ): (MessageDoc & { streaming: boolean; metadata?: METADATA })[] {
   return messages.flatMap((uiMessage) => {
     const stepOrder = uiMessage.stepOrder;
     const commonFields = {
-      _id: uiMessage.id,
       ...pick(meta, [
         "threadId",
         "userId",
         "model",
         "provider",
         "providerOptions",
+        "metadata",
       ]),
       ...omit(uiMessage, ["parts", "role", "key", "text"]),
       status: uiMessage.status === "streaming" ? "pending" : "success",
       streaming: uiMessage.status === "streaming",
       // to override
+      _id: uiMessage.id,
       tool: false,
     } satisfies MessageDoc & { streaming: boolean; metadata?: METADATA };
     const modelMessages = convertToModelMessages([uiMessage]);
@@ -44,6 +46,7 @@ export function fromUIMessages<METADATA = unknown>(
         const tool = isTool(message);
         const doc: MessageDoc & { streaming: boolean; metadata?: METADATA } = {
           ...commonFields,
+          _id: uiMessage.id + `-${i}`,
           stepOrder: stepOrder + i,
           message,
           tool,

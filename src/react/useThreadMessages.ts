@@ -8,12 +8,16 @@ import {
 } from "convex/react";
 import { usePaginatedQuery } from "convex-helpers/react";
 import type { FunctionArgs, PaginationResult } from "convex/server";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { sorted } from "../shared.js";
 import type { MessageDoc } from "../validators.js";
 import type { SyncStreamsReturnValue } from "../client/types.js";
 import type { StreamArgs } from "../validators.js";
-import { mergeTextChunkDeltas } from "../deltas.js";
+import {
+  blankUIMessage,
+  deriveUIMessagesFromTextStreamParts,
+  getParts,
+} from "../deltas.js";
 import type {
   ThreadQuery,
   ThreadStreamQuery,
@@ -21,6 +25,9 @@ import type {
   ThreadMessagesResult,
   MessageLike,
 } from "./types.js";
+import { readUIMessageStream, type UIMessageChunk } from "ai";
+import { fromUIMessages } from "./fromUIMessages.js";
+import { toUIMessages } from "./toUIMessages.js";
 
 /**
  * A hook that fetches messages from a thread.
@@ -175,15 +182,29 @@ export function useStreamingThreadMessages<
   Query extends ThreadStreamQuery<any, any>,
 >(
   query: Query,
-  args: (ThreadMessagesArgs<Query> & { startOrder?: number }) | "skip",
-): Array<ThreadMessagesResult<Query>> | undefined {
-  // Invariant: streamMessages[streamId] is comprised of all deltas up to the
-  // cursor. There can be multiple messages in the same stream, e.g. for tool
-  // calls.
-  const [streams, setStreams] = useState<
-    Array<{ streamId: string; cursor: number; messages: MessageDoc[] }>
-  >([]);
+  args:
+    | (ThreadMessagesArgs<Query> & {
+        /** @deprecated use the options parameter (third argument) instead */
+        startOrder?: number;
+      })
+    | "skip",
+  options?: {
+    startOrder?: number;
+    skipStreamIds?: string[];
+  },
+): Array<MessageDoc> | undefined {
+  const [messages, setMessages] = useState<Record<string, MessageDoc[]>>({});
+  const [streamCursors, setStreamCursors] = useState<Record<string, number>>(
+    {},
+  );
+  const uiMessageStreamControllers = useRef<
+    Map<string, ReadableStreamDefaultController<UIMessageChunk>>
+  >(new Map());
+
+  const startOrder =
+    (options?.startOrder ?? args === "skip") ? 0 : (args.startOrder ?? 0);
   const queryArgs = args === "skip" ? args : omit(args, ["startOrder"]);
+
   // Get all the active streams
   const streamList = useQuery(
     query,
@@ -194,24 +215,27 @@ export function useStreamingThreadMessages<
           paginationOpts: { cursor: null, numItems: 0 },
           streamArgs: {
             kind: "list",
-            startOrder: queryArgs.startOrder ?? 0,
+            startOrder,
           } as StreamArgs,
         } as FunctionArgs<Query>),
   ) as
     | { streams: Extract<SyncStreamsReturnValue, { kind: "list" }> }
     | undefined;
+
   // Get the cursors for all the active streams
   const cursors = useMemo(() => {
     if (!streamList?.streams) return [];
     if (streamList.streams.kind !== "list") {
       throw new Error("Expected list streams");
     }
-    return streamList.streams.messages.map(({ streamId }) => {
-      const stream = streams.find((s) => s.streamId === streamId);
-      const cursor = stream?.cursor ?? 0;
-      return { streamId, cursor };
-    });
-  }, [streamList, streams]);
+    return streamList.streams.messages
+      .filter(({ streamId }) => !options?.skipStreamIds?.includes(streamId))
+      .map(({ streamId }) => {
+        const cursor = streamCursors[streamId] ?? 0;
+        return { streamId, cursor };
+      });
+  }, [streamList, streamCursors, options?.skipStreamIds]);
+
   // Get the deltas for all the active streams, if any.
   const cursorQuery = useQuery(
     query,
@@ -225,27 +249,170 @@ export function useStreamingThreadMessages<
   ) as
     | { streams: Extract<SyncStreamsReturnValue, { kind: "deltas" }> }
     | undefined;
-  // Merge any deltas into the streamChunks, keeping it unmodified if unchanged.
-  const threadId = args === "skip" ? undefined : args.threadId;
-  const [messages, newStreams, changed] = useMemo(() => {
-    if (!threadId) return [undefined, [], false];
-    if (!streamList) return [undefined, [], false];
-    if (cursorQuery && cursorQuery.streams?.kind !== "deltas") {
-      throw new Error("Expected deltas streams");
+
+  const threadId = queryArgs === "skip" ? undefined : queryArgs.threadId;
+
+  // Process new deltas and convert to UIMessageChunks, then use readUIMessageStream
+  useEffect(() => {
+    if (!cursorQuery?.streams?.deltas || !threadId) return;
+
+    const deltasByStream = new Map<string, typeof cursorQuery.streams.deltas>();
+
+    // Group deltas by streamId
+    for (const delta of cursorQuery.streams.deltas) {
+      if (!deltasByStream.has(delta.streamId)) {
+        deltasByStream.set(delta.streamId, []);
+      }
+      deltasByStream.get(delta.streamId)!.push(delta);
     }
-    return mergeTextChunkDeltas(
-      threadId,
-      streamList.streams.messages,
-      streams,
-      cursorQuery?.streams?.deltas ?? [],
+
+    // Process each stream's deltas
+    for (const [streamId, deltas] of deltasByStream.entries()) {
+      const streamMessage = streamList?.streams?.messages.find(
+        (m) => m.streamId === streamId,
+      );
+      if (!streamMessage) continue;
+      if (streamMessage.format === "UIMessageChunk") {
+        setStreamCursors((streamCursors) => {
+          const currentCursor = streamCursors[streamId] ?? 0;
+
+          const { parts, cursor } = getParts<UIMessageChunk>(
+            deltas,
+            currentCursor,
+          );
+
+          const newStreamCursors =
+            cursor === currentCursor
+              ? streamCursors
+              : { ...streamCursors, [streamId]: cursor };
+
+          if (parts.length === 0) return newStreamCursors;
+
+          // Get existing message for this stream as starting point
+          const existingStream =
+            uiMessageStreamControllers.current.get(streamId);
+          if (existingStream) {
+            for (const part of parts) {
+              existingStream.enqueue(part);
+            }
+          } else {
+            const stream = new ReadableStream<UIMessageChunk>({
+              start(controller) {
+                uiMessageStreamControllers.current.set(streamId, controller);
+                for (const part of parts) {
+                  controller.enqueue(part);
+                }
+              },
+            });
+            const initialMessage = blankUIMessage(streamMessage, threadId);
+            setMessages((prev) => ({
+              ...prev,
+              [streamId]: fromUIMessages([initialMessage], {
+                threadId,
+                ...streamMessage,
+              }),
+            }));
+
+            const messageStream = readUIMessageStream({
+              message: initialMessage,
+              stream,
+              onError: (error) => {
+                setMessages((prev) => ({
+                  ...prev,
+                  [streamId]: {
+                    ...prev[streamId],
+                    status: "failed",
+                  },
+                }));
+                console.error(`Error in stream ${streamId}:`, error);
+              },
+              terminateOnError: false,
+            });
+
+            // Process the async iterator
+            void (async () => {
+              for await (const message of messageStream) {
+                // If we don't have a ui message assume we've aborted.
+                setMessages((prev) =>
+                  prev[streamId]
+                    ? {
+                        ...prev,
+                        [streamId]: fromUIMessages([message], {
+                          threadId,
+                          ...streamMessage,
+                        }),
+                      }
+                    : prev,
+                );
+              }
+            })().catch((error) => {
+              console.error(`Error processing stream ${streamId}:`, error);
+            });
+          }
+          return newStreamCursors;
+        });
+      } else {
+        setMessages((uiMessages) => {
+          const existingUIMessage = uiMessages[streamId];
+          const [[uiMessage], [streamMetadata], changed] =
+            deriveUIMessagesFromTextStreamParts(
+              threadId,
+              [streamMessage],
+              existingUIMessage
+                ? [
+                    {
+                      streamId,
+                      cursor: streamCursors[streamId] ?? 0,
+                      message: toUIMessages(existingUIMessage)[0],
+                    },
+                  ]
+                : [],
+              deltas,
+            );
+          if (changed) {
+            setStreamCursors((prev) => ({
+              ...prev,
+              [streamId]: streamMetadata.cursor,
+            }));
+            return {
+              ...uiMessages,
+              [streamId]: fromUIMessages([uiMessage], {
+                threadId,
+                ...streamMessage,
+              }),
+            };
+          }
+          return uiMessages;
+        });
+      }
+    }
+  }, [cursorQuery, streamCursors, threadId, streamList?.streams?.messages]);
+
+  // Clean up finished streams
+  useEffect(() => {
+    const activeStreamIds = new Set(
+      streamList?.streams.messages.map((m) => m.streamId) ?? [],
     );
-  }, [threadId, cursorQuery, streams, streamList]);
-  // Now assemble the chunks into messages
-  if (!threadId) {
-    return undefined;
-  }
-  if (changed) {
-    setStreams(newStreams);
-  }
-  return messages as ThreadMessagesResult<Query>[] | undefined;
+    setMessages((prev) => {
+      const toRemove = Object.keys(prev).filter(
+        (streamId) => !activeStreamIds.has(streamId),
+      );
+      return toRemove.length ? omit(prev, toRemove) : prev;
+    });
+    for (const [
+      streamId,
+      controller,
+    ] of uiMessageStreamControllers.current.entries()) {
+      if (!activeStreamIds.has(streamId)) {
+        controller.close();
+        uiMessageStreamControllers.current.delete(streamId);
+      }
+    }
+  }, [streamList]);
+
+  const loading = !streamList;
+  return useMemo(() => {
+    if (loading) return undefined;
+    return sorted(Array.from(Object.values(messages)).flat());
+  }, [messages, loading]);
 }

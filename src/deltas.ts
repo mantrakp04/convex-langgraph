@@ -1,30 +1,25 @@
 import {
   readUIMessageStream,
-  type JSONValue,
+  type DynamicToolUIPart,
   type ProviderMetadata,
+  type ReasoningUIPart,
   type TextStreamPart,
+  type TextUIPart,
   type ToolSet,
+  type ToolUIPart,
+  type UIDataTypes,
   type UIMessageChunk,
+  type UIMessagePart,
+  type UITools,
 } from "ai";
-import type { MessageDoc } from "./client/index.js";
+import { assert, pick } from "convex-helpers";
+import { type UIMessage } from "./react/toUIMessages.js";
+import { sorted } from "./shared.js";
 import {
-  vSource,
-  type Message,
   type MessageStatus,
   type StreamDelta,
   type StreamMessage,
-  type vFilePart,
-  type vReasoningPart,
-  type vTextPart,
-  type vToolCallPart,
-  type vToolResultPart,
 } from "./validators.js";
-import type { Infer } from "convex/values";
-import { normalizeToolOutput, serializeWarnings } from "./mapping.js";
-import { parse } from "convex-helpers/validators";
-import { sorted } from "./shared.js";
-import { type UIMessage } from "./react/toUIMessages.js";
-import { fromUIMessages } from "./react/fromUIMessages.js";
 
 /**
  * Compressing parts when streaming to save bandwidth in deltas.
@@ -79,7 +74,10 @@ export function compressTextStreamParts(
   return compressed;
 }
 
-export function blankUIMessage(streamMessage: StreamMessage, threadId: string) {
+export function blankUIMessage<METADATA = unknown>(
+  streamMessage: StreamMessage & { metadata?: METADATA },
+  threadId: string,
+): UIMessage<METADATA> {
   return {
     id: `stream:${streamMessage.streamId}`,
     key: `${threadId}-${streamMessage.order}-${streamMessage.stepOrder}`,
@@ -91,11 +89,11 @@ export function blankUIMessage(streamMessage: StreamMessage, threadId: string) {
     _creationTime: Date.now(),
     role: "assistant",
     parts: [],
-    // TODO: allow metadata in StreamMessage?
-  } satisfies UIMessage;
+    ...(streamMessage.metadata ? { metadata: streamMessage.metadata } : {}),
+  };
 }
 
-export async function updateUIMessageFromParts(
+export async function updateFromUIMessageChunks(
   uiMessage: UIMessage,
   parts: UIMessageChunk[],
 ) {
@@ -127,34 +125,32 @@ export async function updateUIMessageFromParts(
   return message;
 }
 
-export async function deriveMessagesFromDeltas(
+export async function deriveUIMessagesFromDeltas(
   threadId: string,
   streamMessages: StreamMessage[],
   allDeltas: StreamDelta[],
-): Promise<MessageDoc[]> {
-  const messages: MessageDoc[] = [];
+): Promise<UIMessage[]> {
+  const messages: UIMessage[] = [];
   for (const streamMessage of streamMessages) {
     if (streamMessage.format === "UIMessageChunk") {
       const { parts } = getParts<UIMessageChunk>(
         allDeltas.filter((d) => d.streamId === streamMessage.streamId),
         0,
       );
-      const uiMessage = await updateUIMessageFromParts(
+      const uiMessage = await updateFromUIMessageChunks(
         blankUIMessage(streamMessage, threadId),
         parts,
       );
       // TODO: this fails on partial tool calls
-      messages.push(
-        ...fromUIMessages([uiMessage], { threadId, ...streamMessage }),
-      );
+      messages.push(uiMessage);
     } else {
-      const [textMessages] = mergeTextChunkDeltas(
+      const [uiMessages] = deriveUIMessagesFromTextStreamParts(
         threadId,
         [streamMessage],
         [],
         allDeltas,
       );
-      messages.push(...textMessages);
+      messages.push(...uiMessages);
     }
   }
   return sorted(messages);
@@ -164,24 +160,24 @@ export async function deriveMessagesFromDeltas(
  *
  */
 
-export function mergeTextChunkDeltas(
+export function deriveUIMessagesFromTextStreamParts(
   threadId: string,
   streamMessages: StreamMessage[],
   existingStreams: Array<{
     streamId: string;
     cursor: number;
-    messages: MessageDoc[];
+    message: UIMessage;
   }>,
   allDeltas: StreamDelta[],
 ): [
-  MessageDoc[],
-  Array<{ streamId: string; cursor: number; messages: MessageDoc[] }>,
+  UIMessage[],
+  Array<{ streamId: string; cursor: number; message: UIMessage }>,
   boolean,
 ] {
   const newStreams: Array<{
     streamId: string;
     cursor: number;
-    messages: MessageDoc[];
+    message: UIMessage;
   }> = [];
   // Seed the existing chunks
   let changed = false;
@@ -192,7 +188,7 @@ export function mergeTextChunkDeltas(
     const existing = existingStreams.find(
       (s) => s.streamId === streamMessage.streamId,
     );
-    const [newStream, messageChanged] = applyDeltasToStreamMessage(
+    const [newStream, messageChanged] = updateFromTextStreamParts(
       threadId,
       streamMessage,
       existing,
@@ -207,7 +203,7 @@ export function mergeTextChunkDeltas(
       changed = true;
     }
   }
-  const messages = sorted(newStreams.map((s) => s.messages).flat());
+  const messages = sorted(newStreams.map((s) => s.message));
   return [messages, newStreams, changed];
 }
 
@@ -246,391 +242,303 @@ export function getParts<T extends StreamDelta["parts"][number]>(
 }
 
 // exported for testing
-export function applyDeltasToStreamMessage(
+export function updateFromTextStreamParts(
   threadId: string,
   streamMessage: StreamMessage,
   existing:
-    | { streamId: string; cursor: number; messages: MessageDoc[] }
+    | { streamId: string; cursor: number; message: UIMessage }
     | undefined,
   deltas: StreamDelta[],
-): [{ streamId: string; cursor: number; messages: MessageDoc[] }, boolean] {
-  const { cursor, parts } = getParts<UIMessageChunk | TextStreamPart<ToolSet>>(
+): [{ streamId: string; cursor: number; message: UIMessage }, boolean] {
+  const { cursor, parts } = getParts<TextStreamPart<ToolSet>>(
     deltas,
     existing?.cursor,
   );
-  let changed = parts.length > 0;
-  if (existing && existing.messages.length > 0 && !changed) {
-    const lastMessage = existing.messages.at(-1)!;
-    if (statusFromStreamStatus(streamMessage.status) !== lastMessage.status) {
-      changed = true;
-    }
-  }
+  const changed =
+    parts.length > 0 ||
+    (existing &&
+      statusFromStreamStatus(streamMessage.status) !== existing.message.status);
+  const existingMessage =
+    existing?.message ?? blankUIMessage(streamMessage, threadId);
   if (!changed) {
     return [
-      existing ?? { streamId: streamMessage.streamId, cursor, messages: [] },
+      existing ?? {
+        streamId: streamMessage.streamId,
+        cursor,
+        message: existingMessage,
+      },
       false,
     ];
   }
 
-  const existingMessages = existing?.messages ?? [];
+  const message: UIMessage = structuredClone(existingMessage);
+  message.status = statusFromStreamStatus(streamMessage.status);
 
-  let currentMessage: MessageDoc;
-  if (existingMessages.length > 0) {
-    // replace the last message with a new one
-    const lastMessage = existingMessages.at(-1)!;
-    currentMessage = {
-      ...lastMessage,
-      message: cloneMessageAndContent(lastMessage.message),
-      status: statusFromStreamStatus(streamMessage.status),
-    };
-  } else {
-    const firstPart = parts.shift()!;
-    const newMessage = createStreamingMessage(
-      threadId,
-      streamMessage,
-      firstPart,
-      existingMessages.length,
-    );
-    currentMessage = newMessage;
-  }
-  const newStream = {
-    streamId: streamMessage.streamId,
-    cursor,
-    messages: [...existingMessages.slice(0, -1), currentMessage],
-  };
-  let lastContent = getLastContent(currentMessage);
+  const textPartsById = new Map<string, TextUIPart>();
+  const toolPartsById = new Map<string, ToolUIPart | DynamicToolUIPart>(
+    message.parts
+      .filter(
+        (p): p is ToolUIPart | DynamicToolUIPart =>
+          p.type === "tool-call" || p.type === "dynamic-tool",
+      )
+      .map((p) => [p.toolCallId, p]),
+  );
+  const reasoningPartsById = new Map<string, ReasoningUIPart>();
+
   for (const part of parts) {
-    let contentToAdd:
-      | Infer<typeof vTextPart>
-      | Infer<typeof vToolCallPart>
-      | Infer<typeof vToolResultPart>
-      | Infer<typeof vReasoningPart>
-      | Infer<typeof vFilePart>
-      | undefined;
-    const isToolRole = part.type === "source" || part.type === "tool-result";
-    if (isToolRole !== (currentMessage.message!.role === "tool")) {
-      currentMessage = createStreamingMessage(
-        threadId,
-        streamMessage,
-        part,
-        newStream.messages.length,
-      );
-      lastContent = getLastContent(currentMessage);
-      newStream.messages.push(currentMessage);
-      continue;
-    }
+    const lastContent = message.parts.at(-1);
     switch (part.type) {
       case "text-delta": {
-        const text = "text" in part ? part.text : part.delta;
-        if (!text) {
-          console.warn("Got text delta with no text", part);
-        }
-        currentMessage.text = (currentMessage.text ?? "") + text;
-        if (lastContent?.type === "text") {
-          lastContent.text = (lastContent.text ?? "") + text;
-          lastContent.providerMetadata = mergeProviderMetadata(
-            lastContent.providerMetadata,
-            part.providerMetadata,
-          );
-        } else {
-          contentToAdd = {
+        if (!textPartsById.has(part.id) && lastContent?.type !== "text") {
+          const newPart = {
             type: "text",
+            text: part.text,
             providerMetadata: part.providerMetadata,
-            text,
-          } satisfies Infer<typeof vTextPart>;
-        }
-        break;
-      }
-      case "tool-input-available": {
-        if (
-          lastContent?.type === "tool-call" &&
-          lastContent.toolCallId === part.toolCallId
-        ) {
-          lastContent.args = part.input;
-          lastContent.providerExecuted ??= part.providerExecuted;
-          lastContent.providerMetadata = mergeProviderMetadata(
-            lastContent.providerMetadata,
+          } satisfies TextUIPart;
+          textPartsById.set(part.id, newPart);
+          message.parts.push(newPart);
+        } else {
+          const textPart =
+            textPartsById.get(part.id) ??
+            (lastContent?.type === "text" ? lastContent : undefined)!;
+          textPart.text += part.text;
+          textPart.providerMetadata = mergeProviderMetadata(
+            textPart.providerMetadata,
             part.providerMetadata,
           );
-        } else {
-          contentToAdd = toolCallContent(part);
         }
         break;
       }
       case "tool-input-start": {
-        const toolCallId = "id" in part ? part.id : part.toolCallId;
-        currentMessage.tool = true;
-        contentToAdd = {
-          type: "tool-call",
-          toolCallId,
-          toolName: part.toolName,
-          args: "",
-          providerMetadata:
-            "providerMetadata" in part ? part.providerMetadata : undefined,
-          providerExecuted:
-            "providerExecuted" in part ? part.providerExecuted : undefined,
-        } satisfies Infer<typeof vToolCallPart>;
+        let newPart: ToolUIPart | DynamicToolUIPart;
+        if (part.dynamic) {
+          newPart = {
+            type: "dynamic-tool",
+            toolCallId: part.id,
+            toolName: part.toolName,
+            state: "input-streaming",
+            input: "",
+          } satisfies DynamicToolUIPart;
+        } else {
+          newPart = {
+            type: `tool-${part.toolName}`,
+            toolCallId: part.id,
+            state: "input-streaming",
+            input: "",
+            providerExecuted: part.providerExecuted,
+          } satisfies ToolUIPart;
+        }
+        toolPartsById.set(part.id, newPart);
+        message.parts.push(newPart);
         break;
       }
       case "tool-input-delta":
         {
-          currentMessage.tool = true;
-          if (lastContent?.type !== "tool-call") {
-            throw new Error("Expected last content to be a tool call");
+          const toUpdate = toolPartsById.get(part.id);
+          assert(
+            toUpdate,
+            `Expected to find tool call part ${part.id} to update`,
+          );
+          toUpdate.input = (toUpdate.input ?? "") + part.delta;
+        }
+        break;
+      case "tool-input-end":
+        {
+          const toUpdate = toolPartsById.get(part.id);
+          assert(
+            toUpdate,
+            `Expected to find tool call part ${part.id} to update`,
+          );
+          toUpdate.state = "input-available";
+          if (part.providerMetadata) {
+            const updatable = toUpdate as Extract<
+              ToolUIPart | DynamicToolUIPart,
+              { state: "input-available" }
+            >;
+            updatable.callProviderMetadata = mergeProviderMetadata(
+              updatable.callProviderMetadata,
+              part.providerMetadata,
+            );
           }
-          if (typeof lastContent.args !== "string") {
-            lastContent.args = lastContent.args?.toString() ?? "";
-          }
-          const delta =
-            "inputTextDelta" in part
-              ? part.inputTextDelta
-              : "delta" in part
-                ? part.delta
-                : "";
-          lastContent.args = lastContent.args + delta;
-          lastContent.providerMetadata =
-            "providerMetadata" in part
-              ? mergeProviderMetadata(
-                  lastContent.providerMetadata,
-                  part.providerMetadata,
-                )
-              : undefined;
         }
         break;
       case "tool-call": {
-        currentMessage.tool = true;
-        contentToAdd = toolCallContent(part);
-        break;
-      }
-      case "tool-output-available":
-        if (
-          lastContent?.type === "tool-call" &&
-          lastContent.toolCallId === part.toolCallId
-        ) {
-          contentToAdd = {
-            type: "tool-result",
+        let newPart: ToolUIPart | DynamicToolUIPart;
+        if (part.dynamic) {
+          newPart = {
+            type: "dynamic-tool",
             toolCallId: part.toolCallId,
-            toolName: lastContent.toolName,
-            args: lastContent.args,
-            result: part.output,
-            providerExecuted: part.providerExecuted,
-          } satisfies Infer<typeof vToolResultPart>;
-        } else if (
-          lastContent?.type === "tool-result" &&
-          lastContent.toolCallId === part.toolCallId
-        ) {
-          lastContent.output = normalizeToolOutput(
-            part.output as string | JSONValue | undefined,
-          );
-          lastContent.providerExecuted = part.providerExecuted;
+            toolName: part.toolName,
+            input: part.input,
+            state: "input-available",
+          };
         } else {
-          console.warn(
-            "Got tool output available part for unknown tool call",
-            part,
-          );
+          newPart = {
+            type: `tool-${part.toolName}`,
+            toolCallId: part.toolCallId,
+            input: part.input,
+            state: "input-available",
+          };
+          if (part.providerExecuted) {
+            newPart.providerExecuted = part.providerExecuted;
+          }
+        }
+        if (part.providerMetadata) {
+          newPart.callProviderMetadata = part.providerMetadata;
+        }
+        if (toolPartsById.has(part.toolCallId)) {
+          const toUpdate = toolPartsById.get(part.toolCallId)!;
+          Object.assign(toUpdate, newPart);
+        } else {
+          toolPartsById.set(part.toolCallId, newPart);
+          message.parts.push(newPart);
         }
         break;
+      }
       case "tool-result": {
-        contentToAdd = toolResultContent(part);
+        const toolCall = toolPartsById.get(part.toolCallId);
+        assert(
+          toolCall,
+          `Expected to find tool call part ${part.toolCallId} to update with result`,
+        );
+        let newPart: ToolUIPart | DynamicToolUIPart;
+        if (toolCall.type === "dynamic-tool") {
+          newPart = {
+            ...toolCall,
+            state: "output-available",
+            input: part.input ?? toolCall.input,
+            output: part.output ?? toolCall.output,
+            ...pick(part, ["preliminary"]),
+          } as DynamicToolUIPart;
+        } else {
+          newPart = {
+            ...toolCall,
+            state: "output-available",
+            input: part.input ?? toolCall.input,
+            output: part.output ?? toolCall.output,
+            preliminary: part.preliminary,
+          } as ToolUIPart;
+        }
+        Object.assign(toolCall, newPart);
+        break;
+      }
+      case "reasoning-start": {
+        if (
+          !reasoningPartsById.has(part.id) &&
+          lastContent?.type !== "reasoning"
+        ) {
+          const newPart = {
+            type: "reasoning",
+            state: "streaming",
+            text: "",
+            providerMetadata: part.providerMetadata,
+          } satisfies ReasoningUIPart;
+          reasoningPartsById.set(part.id, newPart);
+          message.parts.push(newPart);
+        }
         break;
       }
       case "reasoning-delta": {
-        const text = "text" in part ? part.text : part.delta;
-        currentMessage.reasoning = (currentMessage.reasoning ?? "") + text;
-        if (lastContent?.type === "reasoning") {
-          lastContent.text = (lastContent.text ?? "") + text;
-          lastContent.providerMetadata = mergeProviderMetadata(
-            lastContent.providerMetadata,
-            part.providerMetadata,
-          );
+        const reasoningPart =
+          reasoningPartsById.get(part.id) ??
+          (lastContent?.type === "reasoning" ? lastContent : undefined)!;
+        assert(
+          reasoningPart,
+          `Expected to find reasoning part ${part.id} to update with delta`,
+        );
+        reasoningPart.text += part.text;
+        reasoningPart.providerMetadata = mergeProviderMetadata(
+          reasoningPart.providerMetadata,
+          part.providerMetadata,
+        );
+        break;
+      }
+      case "reasoning-end": {
+        const reasoningPart =
+          reasoningPartsById.get(part.id) ??
+          message.parts.find(
+            (p): p is ReasoningUIPart =>
+              p.type === "reasoning" && p.state === "streaming",
+          )!;
+        if (reasoningPart) {
+          reasoningPart.state = "done";
         } else {
-          contentToAdd = {
-            type: "reasoning",
-            text,
-            providerMetadata: part.providerMetadata,
-          } satisfies Infer<typeof vReasoningPart>;
+          console.warn(
+            `Expected to find reasoning part ${part.id} to finish, but found none`,
+          );
         }
         break;
       }
       case "source":
-        if (!currentMessage.sources) {
-          currentMessage.sources = [];
+        if (part.sourceType === "url") {
+          message.parts.push({
+            type: "source-url",
+            url: part.url,
+            sourceId: part.id,
+            providerMetadata: part.providerMetadata,
+            title: part.title,
+          });
+        } else if (part.sourceType === "document") {
+          message.parts.push({
+            type: "source-document",
+            mediaType: part.mediaType,
+            sourceId: part.id,
+            title: part.title,
+            filename: part.filename,
+            providerMetadata: part.providerMetadata,
+          });
+        } else {
+          console.warn("Got source part with unknown source type", part);
         }
-        currentMessage.sources.push(parse(vSource, part));
-        console.warn("Got source part with unknown source type", part);
         break;
       case "abort":
-        currentMessage.status = "failed";
-        currentMessage.error = "abort";
+        message.status = "failed";
         break;
       case "error":
-        currentMessage.status = "failed";
-        currentMessage.error =
-          "error" in part ? part.error?.toString() : part.errorText;
-        break;
-      case "message-metadata":
-        currentMessage.providerMetadata ??= {};
-        currentMessage.providerMetadata["metadata"] = {
-          parts: [part.messageMetadata],
-        };
-        console.warn(
-          "Putting message metadata part in providerMetadata. Use useUIMessages or useStreamingUIMessages instead.",
-          part,
-        );
-        break;
-      case "source-document":
-        contentToAdd = {
-          type: "file",
-          data: part.sourceId,
-          mimeType: part.mediaType,
-          filename: part.title ?? part.filename,
-          providerMetadata: part.providerMetadata,
-        } satisfies Infer<typeof vFilePart>;
-        break;
-      case "source-url":
-        contentToAdd = {
-          type: "file",
-          data: part.url,
-          filename: part.title,
-          mimeType: "text/plain", // What do we do here?
-          providerMetadata: part.providerMetadata,
-        } satisfies Infer<typeof vFilePart>;
-        break;
-      case "tool-input-error":
-        if (
-          lastContent?.type === "tool-call" &&
-          lastContent.toolCallId === part.toolCallId
-        ) {
-          lastContent.args ||= part.input;
-          lastContent.providerExecuted ??= part.providerExecuted;
-          lastContent.providerMetadata = mergeProviderMetadata(
-            lastContent.providerMetadata,
-            part.providerMetadata,
-          );
-        } else {
-          if (
-            lastContent?.type === "tool-result" &&
-            lastContent.toolCallId === part.toolCallId
-          ) {
-            lastContent.isError = true;
-            lastContent.providerExecuted ??= part.providerExecuted;
-            lastContent.providerMetadata = mergeProviderMetadata(
-              lastContent.providerMetadata,
-              part.providerMetadata,
-            );
-          } else {
-            contentToAdd = toolCallContent(part);
-          }
-        }
-        currentMessage.error = part.errorText;
-        break;
-      case "tool-output-error":
-        if (
-          lastContent?.type === "tool-result" &&
-          lastContent.toolCallId === part.toolCallId
-        ) {
-          lastContent.isError = true;
-          lastContent.output = {
-            type: "error-text",
-            value: part.errorText,
-          };
-          lastContent.providerExecuted = part.providerExecuted;
-        } else if (
-          lastContent?.type === "tool-call" &&
-          lastContent.toolCallId === part.toolCallId
-        ) {
-          console.warn(
-            "Got tool output error part for unknown tool result",
-            part,
-          );
-          contentToAdd = {
-            type: "tool-result",
-            toolCallId: part.toolCallId,
-            toolName: lastContent.toolName,
-            args: lastContent.args,
-            output: {
-              type: "error-text",
-              value: part.errorText,
-            },
-            providerExecuted: part.providerExecuted,
-            isError: true,
-          } satisfies Infer<typeof vToolResultPart>;
-        } else {
-          console.warn(
-            "Got tool output error part for unknown tool call",
-            part,
-          );
-        }
+        message.status = "failed";
+        console.warn("Generation failed with error", part.error);
         break;
       case "tool-error":
         if (
-          lastContent?.type === "tool-result" &&
-          lastContent.toolCallId === part.toolCallId
+          lastContent?.type === "dynamic-tool" ||
+          lastContent?.type.startsWith("tool-")
         ) {
-          lastContent.isError = true;
-          lastContent.output = {
-            type: "error-json",
-            value: part.error,
-          };
-          lastContent.providerExecuted = part.providerExecuted;
-        } else {
-          if (
-            lastContent?.type === "tool-call" &&
-            lastContent.toolCallId === part.toolCallId
-          ) {
-            lastContent.args ||= part.input;
-            lastContent.providerExecuted ??= part.providerExecuted;
-          }
-          currentMessage.error = part.error?.toString();
-          contentToAdd = {
-            type: "tool-result",
-            toolCallId: part.toolCallId,
-            toolName: part.toolName,
-            result: part.error,
-            providerExecuted: part.providerExecuted,
-            isError: true,
-            args: part.input,
-          } satisfies Infer<typeof vToolResultPart>;
+          (lastContent as ToolUIPart | DynamicToolUIPart).errorText =
+            part.error instanceof Error
+              ? part.error.message.toString()
+              : String(part.error);
         }
         break;
-      case "tool-input-end":
+      case "file":
+      case "text-start":
       case "text-end":
-      case "reasoning-end":
       case "finish-step":
       case "finish":
-      case "file":
       case "raw":
       case "start-step":
-      case "text-start":
-      case "reasoning-start":
       case "start":
         // ignore
         break;
       default: {
-        if (!part.type.startsWith("data-")) {
-          console.warn(`Received unexpected part: ${JSON.stringify(part)}`);
-        } else {
-          console.warn(
-            "Dropping a data part. Use useUIMessages or useStreamingUIMessages instead for full UIMessage streaming support.",
-            part,
-          );
-        }
+        // Should never happen
+        const _: never = part;
+        console.warn(`Received unexpected part: ${JSON.stringify(part)}`);
         break;
       }
     }
-    if (contentToAdd) {
-      if (!currentMessage.message!.content) {
-        currentMessage.message!.content = [];
-      }
-      if (!Array.isArray(currentMessage.message?.content)) {
-        throw new Error("Expected message content to be an array");
-      }
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      currentMessage.message.content.push(contentToAdd as any);
-      lastContent = contentToAdd;
-    }
   }
-  return [newStream, true];
+  message.text = message.parts
+    .filter((p) => p.type === "text")
+    .map((p) => p.text)
+    .join("");
+  return [
+    {
+      streamId: streamMessage.streamId,
+      cursor,
+      message,
+    },
+    true,
+  ];
 }
 
 function mergeProviderMetadata(
@@ -656,56 +564,6 @@ function mergeProviderMetadata(
   return merged;
 }
 
-function toolCallContent(
-  part:
-    | Extract<TextStreamPart<ToolSet>, { type: "tool-call" }>
-    | Extract<UIMessageChunk, { type: "tool-input-error" }>
-    | Extract<UIMessageChunk, { type: "tool-input-available" }>,
-): Infer<typeof vToolCallPart> {
-  const args = "args" in part ? part.args : part.input;
-  return {
-    type: "tool-call",
-    toolCallId: part.toolCallId,
-    toolName: part.toolName,
-    args,
-    providerMetadata: part.providerMetadata,
-    providerExecuted: part.providerExecuted,
-  } satisfies Infer<typeof vToolCallPart>;
-}
-
-function toolResultContent(
-  part: Extract<TextStreamPart<ToolSet>, { type: "tool-result" }>,
-): Infer<typeof vToolResultPart> {
-  return {
-    type: "tool-result",
-    toolCallId: part.toolCallId,
-    toolName: part.toolName,
-    result: part.output,
-    args: part.input,
-    providerExecuted: part.providerExecuted,
-  } satisfies Infer<typeof vToolResultPart>;
-}
-function cloneMessageAndContent(
-  message: Message | undefined,
-): Message | undefined {
-  return (
-    message &&
-    ({
-      ...message,
-      content: Array.isArray(message.content)
-        ? [...message.content]
-        : message.content,
-    } as typeof message)
-  );
-}
-
-function getLastContent(message: MessageDoc) {
-  if (Array.isArray(message.message?.content)) {
-    return message.message.content.at(-1);
-  }
-  return undefined;
-}
-
 function statusFromStreamStatus(
   status: StreamMessage["status"],
 ): MessageStatus {
@@ -718,208 +576,5 @@ function statusFromStreamStatus(
       return "failed";
     default:
       return "pending";
-  }
-}
-
-// TODO: share more code with applyDeltasToStreamMessage
-export function createStreamingMessage(
-  threadId: string,
-  message: StreamMessage,
-  part: UIMessageChunk | TextStreamPart<ToolSet>,
-  index: number,
-): MessageDoc {
-  const { streamId, ...rest } = message;
-  const metadata: MessageDoc = {
-    ...rest,
-    _id: `${streamId}-${index}`,
-    _creationTime: Date.now(),
-    status: statusFromStreamStatus(message.status),
-    stepOrder: message.stepOrder + index,
-    threadId,
-    tool: false,
-  };
-  const providerMetadata =
-    "providerMetadata" in part ? part.providerMetadata : undefined;
-  metadata.providerMetadata = providerMetadata;
-
-  switch (part.type) {
-    case "text-delta": {
-      const text = "text" in part ? part.text : part.delta;
-      return {
-        ...metadata,
-        message: {
-          role: "assistant",
-          content: [{ type: "text", text, providerMetadata }],
-        },
-        text,
-      };
-    }
-    case "tool-input-start": {
-      return {
-        ...metadata,
-        tool: true,
-        message: {
-          role: "assistant",
-          content: [
-            {
-              type: "tool-call",
-              toolName: part.toolName,
-              toolCallId: "id" in part ? part.id : part.toolCallId,
-              args: "", // when it's a string, it's a partial call
-              providerExecuted:
-                "providerExecuted" in part ? part.providerExecuted : undefined,
-              providerMetadata,
-            },
-          ],
-        },
-      };
-    }
-    case "tool-input-delta": {
-      console.warn("Received tool call delta part first??");
-      const delta = "delta" in part ? part.delta : part.inputTextDelta;
-      const toolCallId = "id" in part ? part.id : part.toolCallId;
-      const toolName = part.type.slice("tool-".length);
-      return {
-        ...metadata,
-        tool: true,
-        message: {
-          role: "assistant",
-          content: [
-            {
-              type: "tool-call",
-              toolCallId,
-              toolName,
-              args: delta,
-              providerMetadata,
-            },
-          ],
-        },
-      };
-    }
-    case "tool-call": {
-      return {
-        ...metadata,
-        tool: true,
-        message: { role: "assistant", content: [toolCallContent(part)] },
-      };
-    }
-    case "tool-result":
-      return {
-        ...metadata,
-        tool: true,
-        message: { role: "tool", content: [toolResultContent(part)] },
-      };
-    case "reasoning-delta": {
-      const text = "text" in part ? part.text : part.delta;
-      return {
-        ...metadata,
-        message: {
-          role: "assistant",
-          content: [
-            {
-              type: "reasoning",
-              text,
-              providerMetadata,
-            },
-          ],
-        },
-        reasoning: text,
-      };
-    }
-    case "source":
-      console.warn("Received source part first??");
-      return {
-        ...metadata,
-        tool: true,
-        message: { role: "tool", content: [] },
-        sources: [part],
-      };
-    case "raw":
-    case "start":
-      return {
-        ...metadata,
-        tool: false,
-        message: { role: "assistant", content: [] },
-      };
-    case "start-step":
-      return {
-        ...metadata,
-        message: { role: "assistant", content: [] },
-        ...("warnings" in part && part.warnings?.length > 0
-          ? { warnings: serializeWarnings(part.warnings) }
-          : {}),
-      };
-    case "reasoning-start":
-      return {
-        ...metadata,
-        message: { role: "assistant", content: [] },
-        reasoning: "",
-      };
-    case "abort":
-      return {
-        ...metadata,
-        message: { role: "assistant", content: [] },
-        status: "failed",
-        error: "abort",
-      };
-    case "tool-error":
-      return {
-        ...metadata,
-        message: {
-          role: "assistant",
-          content: [
-            {
-              type: "tool-call",
-              toolCallId: part.toolCallId,
-              args: part.input,
-              toolName: part.toolName,
-              providerExecuted: part.providerExecuted,
-              providerMetadata,
-            },
-            {
-              type: "tool-result",
-              result: part.error,
-              toolCallId: part.toolCallId,
-              isError: true,
-              args: part.input,
-              toolName: part.toolName,
-              providerExecuted: part.providerExecuted,
-            },
-          ],
-        },
-        error: part.error?.toString(),
-      };
-    case "text-start":
-      return {
-        ...metadata,
-        message: { role: "assistant", content: [] },
-        providerMetadata,
-        id: part.id,
-        _id: part.id,
-      };
-    case "error": {
-      const errorMessage: MessageDoc = {
-        ...metadata,
-        message: {
-          role: "assistant",
-          content: [],
-        },
-      };
-      if ("error" in part) {
-        errorMessage.error = part.error?.toString();
-      } else if (part.errorText) {
-        errorMessage.error = part.errorText;
-      } else {
-        console.warn("Got an error delta with no error", part);
-      }
-      return errorMessage;
-    }
-    // case "raw":
-    //   return {
-    //     ...metadata,
-    //     message: { role: "assistant", content: [part.rawValue] },
-    //   };
-    default:
-      throw new Error(`Unexpected part type: ${JSON.stringify(part)}`);
   }
 }

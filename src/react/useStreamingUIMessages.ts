@@ -3,14 +3,26 @@ import { omit } from "convex-helpers";
 import { useQuery } from "convex/react";
 import type { FunctionArgs } from "convex/server";
 import { useMemo, useState, useEffect, useRef } from "react";
-import { readUIMessageStream, type UIMessageChunk } from "ai";
+import {
+  readUIMessageStream,
+  type UIDataTypes,
+  type UIMessageChunk,
+  type UITools,
+} from "ai";
 import type { SyncStreamsReturnValue } from "../client/types.js";
 import type { StreamArgs } from "../validators.js";
-import type { ThreadStreamQuery, ThreadMessagesArgs } from "./types.js";
-import { toUIMessages, type UIMessage } from "./toUIMessages.js";
-import { blankUIMessage, getParts, mergeTextChunkDeltas } from "../deltas.js";
+import type {
+  ThreadStreamQuery,
+  ThreadMessagesArgs,
+  MessageLike,
+} from "./types.js";
+import { type UIMessage } from "./toUIMessages.js";
+import {
+  blankUIMessage,
+  getParts,
+  deriveUIMessagesFromTextStreamParts,
+} from "../deltas.js";
 import { sorted } from "../shared.js";
-import { fromUIMessages } from "./fromUIMessages.js";
 
 /**
  * A hook that fetches streaming messages from a thread and converts them to UIMessages
@@ -27,8 +39,14 @@ import { fromUIMessages } from "./fromUIMessages.js";
  * @returns The streaming UIMessages.
  */
 export function useStreamingUIMessages<
+  METADATA = unknown,
+  DATA_PARTS extends UIDataTypes = UIDataTypes,
+  TOOLS extends UITools = UITools,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  Query extends ThreadStreamQuery<any, any>,
+  Query extends ThreadStreamQuery<any, any> = ThreadStreamQuery<
+    object,
+    MessageLike
+  >,
 >(
   query: Query,
   args: ThreadMessagesArgs<Query> | "skip",
@@ -37,8 +55,10 @@ export function useStreamingUIMessages<
     skipStreamIds?: string[];
   },
   // TODO: make generic on metadata, etc.
-): UIMessage[] | undefined {
-  const [uiMessages, setUIMessages] = useState<Record<string, UIMessage>>({});
+): UIMessage<METADATA, DATA_PARTS, TOOLS>[] | undefined {
+  const [uiMessages, setUIMessages] = useState<
+    Record<string, UIMessage<METADATA, DATA_PARTS, TOOLS>>
+  >({});
   const [streamCursors, setStreamCursors] = useState<Record<string, number>>(
     {},
   );
@@ -148,7 +168,11 @@ export function useStreamingUIMessages<
             const initialMessage = blankUIMessage(streamMessage, threadId);
             setUIMessages((prev) => ({
               ...prev,
-              [streamId]: initialMessage,
+              [streamId]: initialMessage as UIMessage<
+                METADATA,
+                DATA_PARTS,
+                TOOLS
+              >,
             }));
 
             const messageStream = readUIMessageStream({
@@ -175,7 +199,11 @@ export function useStreamingUIMessages<
                   prev[streamId]
                     ? {
                         ...prev,
-                        [streamId]: message,
+                        [streamId]: message as UIMessage<
+                          METADATA,
+                          DATA_PARTS,
+                          TOOLS
+                        >,
                       }
                     : prev,
                 );
@@ -189,23 +217,21 @@ export function useStreamingUIMessages<
       } else {
         setUIMessages((uiMessages) => {
           const existingUIMessage = uiMessages[streamId];
-          const [messageDocs, [streamMetadata], changed] = mergeTextChunkDeltas(
-            threadId,
-            [streamMessage],
-            existingUIMessage
-              ? [
-                  {
-                    streamId,
-                    cursor: streamCursors[streamId] ?? 0,
-                    messages: fromUIMessages([existingUIMessage], {
-                      threadId,
-                      ...streamMessage,
-                    }),
-                  },
-                ]
-              : [],
-            deltas,
-          );
+          const [[uiMessage], [streamMetadata], changed] =
+            deriveUIMessagesFromTextStreamParts(
+              threadId,
+              [streamMessage],
+              existingUIMessage
+                ? [
+                    {
+                      streamId,
+                      cursor: streamCursors[streamId] ?? 0,
+                      message: existingUIMessage,
+                    },
+                  ]
+                : [],
+              deltas,
+            );
           if (changed) {
             setStreamCursors((prev) => ({
               ...prev,
@@ -213,7 +239,7 @@ export function useStreamingUIMessages<
             }));
             return {
               ...uiMessages,
-              [streamId]: toUIMessages(messageDocs)[0],
+              [streamId]: uiMessage as UIMessage<METADATA, DATA_PARTS, TOOLS>,
             };
           }
           return uiMessages;

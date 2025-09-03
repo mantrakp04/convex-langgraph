@@ -20,7 +20,8 @@ import { stream } from "convex-helpers/server/stream";
 import { mergedStream } from "convex-helpers/server/stream";
 import { paginator } from "convex-helpers/server/pagination";
 import type { WithoutSystemFields } from "convex/server";
-import { deriveMessagesFromDeltas } from "../deltas.js";
+import { deriveUIMessagesFromDeltas } from "../deltas.js";
+import { fromUIMessages } from "../react/fromUIMessages.js";
 
 const SECOND = 1000;
 const MINUTE = 60 * SECOND;
@@ -523,7 +524,7 @@ export async function getStreamingMessagesWithMetadata(
             q.eq("streamId", streamingMessage._id),
           )
           .take(1000);
-        const messageDocs = await deriveMessagesFromDeltas(
+        const uiMessages = await deriveUIMessagesFromDeltas(
           threadId,
           [
             {
@@ -537,7 +538,7 @@ export async function getStreamingMessagesWithMetadata(
         // We don't save messages that have already been saved
         const numToSkip = stepOrder - streamingMessage.stepOrder;
         const messages = await Promise.all(
-          messageDocs
+          fromUIMessages(uiMessages, streamingMessage)
             .slice(numToSkip)
             .filter((m) => m.message !== undefined)
             .map(async (msg) => {

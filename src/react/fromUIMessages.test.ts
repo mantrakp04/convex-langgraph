@@ -192,37 +192,41 @@ describe("fromUIMessages round-trip tests", () => {
         tool: true,
       }),
     ];
+    const toTest = [originalMessages, [...originalMessages].reverse()];
+    for (const messages of toTest) {
+      const uiMessages = toUIMessages(messages);
+      const backToMessageDocs = fromUIMessages(uiMessages, {
+        threadId: "thread1",
+      });
 
-    const uiMessages = toUIMessages(originalMessages);
-    const backToMessageDocs = fromUIMessages(uiMessages, {
-      threadId: "thread1",
-    });
+      // Should be grouped into single UI message
+      expect(uiMessages).toHaveLength(1);
+      const uiMessage = uiMessages[0];
+      expect(uiMessage.role).toBe("assistant");
+      expect(uiMessage.id).toBe("msg1");
 
-    // Should be grouped into single UI message
-    expect(uiMessages).toHaveLength(1);
-    expect(uiMessages[0].role).toBe("assistant");
+      // Check tool parts exist
+      const toolParts = uiMessage.parts.filter(
+        (part) => part.type === "tool-calculator",
+      );
+      expect(toolParts).toHaveLength(1);
+      expect(toolParts[0]).toMatchObject({
+        type: "tool-calculator",
+        toolCallId: "call1",
+        state: "output-available",
+        input: { operation: "add", a: 2, b: 3 },
+        output: { result: 5 },
+      });
 
-    // Check tool parts exist
-    const toolParts = uiMessages[0].parts.filter(
-      (part) => part.type === "tool-calculator",
-    );
-    expect(toolParts).toHaveLength(1);
-    expect(toolParts[0]).toMatchObject({
-      type: "tool-calculator",
-      toolCallId: "call1",
-      state: "output-available",
-      input: { operation: "add", a: 2, b: 3 },
-      output: { result: 5 },
-    });
+      // Should expand back to multiple message docs
+      expect(backToMessageDocs.length).toBeGreaterThanOrEqual(1);
 
-    // Should expand back to multiple message docs
-    expect(backToMessageDocs.length).toBeGreaterThanOrEqual(1);
-
-    // Check that tool information is preserved
-    const toolMessages = backToMessageDocs.filter((msg) => msg.tool);
-    expect(toolMessages.length).toBeGreaterThan(0);
-    expect(toolMessages[0].stepOrder).toBe(1);
-    expect(toolMessages[1].stepOrder).toBe(2);
+      // Check that tool information is preserved
+      const toolMessages = backToMessageDocs.filter((msg) => msg.tool);
+      expect(toolMessages.length).toBeGreaterThan(0);
+      expect(toolMessages[0].stepOrder).toBe(1);
+      expect(toolMessages[1].stepOrder).toBe(2);
+    }
   });
 
   it("preserves file attachments in user messages", () => {
