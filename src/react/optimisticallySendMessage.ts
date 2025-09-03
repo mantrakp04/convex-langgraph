@@ -1,8 +1,8 @@
 import { insertAtTop } from "convex/react";
-import type { MessageDoc } from "../client/index.js";
+import type { MessageDoc } from "../validators.js";
 import type { OptimisticLocalStore } from "convex/browser";
 import type { ThreadQuery } from "./types.js";
-import type { UIMessage } from "./toUIMessages.js";
+import type { UIMessage } from "./types.js";
 
 /**
  * Adds a sent message to the end of a list of messages, so it shows up until

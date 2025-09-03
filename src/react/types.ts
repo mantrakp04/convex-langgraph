@@ -7,6 +7,21 @@ import type {
 } from "convex/server";
 import type { SyncStreamsReturnValue } from "../client/types.js";
 import type { MessageStatus, StreamArgs } from "../validators.js";
+import type { UIMessage as AIUIMessage, UIDataTypes, UITools } from "ai";
+
+export type UIMessage<
+  METADATA = unknown,
+  DATA_PARTS extends UIDataTypes = UIDataTypes,
+  TOOLS extends UITools = UITools,
+> = AIUIMessage<METADATA, DATA_PARTS, TOOLS> & {
+  key: string;
+  order: number;
+  stepOrder: number;
+  status: "streaming" | MessageStatus;
+  agentName?: string;
+  text: string;
+  _creationTime: number;
+};
 
 export type MessageLike = {
   order: number;

@@ -1,5 +1,4 @@
 import type {
-  UIMessage as AIUIMessage,
   DeepPartial,
   ReasoningUIPart,
   SourceDocumentUIPart,
@@ -10,25 +9,11 @@ import type {
   UIDataTypes,
   UITools,
 } from "ai";
-import { extractText, type MessageDoc } from "../client/index.js";
 import { deserializeMessage, toUIFilePart } from "../mapping.js";
-import type { MessageStatus, SourcePart, vSource } from "../validators.js";
-import { sorted } from "../shared.js";
+import type { MessageDoc, SourcePart, vSource } from "../validators.js";
+import { extractText, sorted } from "../shared.js";
 import type { Infer } from "convex/values";
-
-export type UIMessage<
-  METADATA = unknown,
-  DATA_PARTS extends UIDataTypes = UIDataTypes,
-  TOOLS extends UITools = UITools,
-> = AIUIMessage<METADATA, DATA_PARTS, TOOLS> & {
-  key: string;
-  order: number;
-  stepOrder: number;
-  status: "streaming" | MessageStatus;
-  agentName?: string;
-  text: string;
-  _creationTime: number;
-};
+import type { UIMessage } from "./types.js";
 
 type ExtraFields<METADATA = unknown> = {
   streaming?: boolean;

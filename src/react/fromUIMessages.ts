@@ -1,7 +1,7 @@
 import { convertToModelMessages } from "ai";
 import { extractReasoning, extractText, isTool } from "../shared.js";
 import type { MessageDoc, vSource } from "../validators.js";
-import type { UIMessage } from "./toUIMessages.js";
+import type { UIMessage } from "./types.js";
 import type { ProviderOptions } from "@ai-sdk/provider-utils";
 import { omit, pick } from "convex-helpers";
 import { fromModelMessage } from "../mapping.js";

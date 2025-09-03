@@ -13,7 +13,7 @@ import {
 import type { SyncStreamsReturnValue } from "../client/types.js";
 import type { StreamArgs } from "../validators.js";
 import type { StreamQuery, StreamMessagesArgs } from "./types.js";
-import { type UIMessage } from "./toUIMessages.js";
+import { type UIMessage } from "./types.js";
 import {
   blankUIMessage,
   getParts,
