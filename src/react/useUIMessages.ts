@@ -164,7 +164,7 @@ export function useUIMessages<
     const streamListMessages =
       streamMessages?.map((m) => ({
         ...m,
-        streaming: !m.status || m.status === "pending",
+        streaming: m.status === "streaming",
       })) ?? [];
     return {
       ...paginated,
