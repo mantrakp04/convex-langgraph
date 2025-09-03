@@ -122,6 +122,10 @@ export async function updateFromUIMessageChunks(
   if (failed) {
     message.status = "failed";
   }
+  message.text = message.parts
+    .filter((p) => p.type === "text")
+    .map((p) => p.text)
+    .join("");
   return message;
 }
 

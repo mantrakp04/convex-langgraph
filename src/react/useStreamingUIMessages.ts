@@ -194,8 +194,12 @@ export function useStreamingUIMessages<
             // Process the async iterator
             void (async () => {
               for await (const message of messageStream) {
-                // If we don't have a ui message assume we've aborted.
+                message.text = message.parts
+                  .filter((p) => p.type === "text")
+                  .map((p) => p.text)
+                  .join("");
                 setUIMessages((prev) =>
+                  // If we don't have a ui message assume we've aborted.
                   prev[streamId]
                     ? {
                         ...prev,
