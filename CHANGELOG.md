@@ -5,6 +5,7 @@
 - Adds useUIMessages and useUIStreamingMessages for UIMessage-first client
   usage. These have more metadata around reasoning streaming status, and
   provide support for metadata and custom data parts.
+- Adds a `listUIMessages` akin to `listMessages` converted to UIMessages.
 - Uses the UIMessageChunk stream when streaming text, which fixes many bugs
   which stemmed from the AI SDK's onChunk callback.
 - Enables having streaming hooks skip streamIds so you can stream via HTTP
