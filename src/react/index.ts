@@ -4,7 +4,10 @@ import type { UIMessage } from "./toUIMessages.js";
 import { toUIMessages } from "./toUIMessages.js";
 import type { ThreadQuery } from "./types.js";
 
-export { optimisticallySendMessage } from "./optimisticallySendMessage.js";
+export {
+  optimisticallySendMessage,
+  optimisticallySendUIMessage,
+} from "./optimisticallySendMessage.js";
 export { useSmoothText } from "./useSmoothText.js";
 export { SmoothText } from "./SmoothText.js";
 export { toUIMessages, type UIMessage, type ThreadQuery };
