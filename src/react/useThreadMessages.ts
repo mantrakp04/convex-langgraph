@@ -27,7 +27,7 @@ import type {
   StreamArgs,
 } from "../validators.js";
 import type { StreamMessagesArgs, StreamQuery } from "./types.js";
-import { useStreamingUIMessages } from "./useUIMessages.js";
+import { useStreamingUIMessages } from "./useStreamingUIMessages.js";
 
 export type MessageDocLike = {
   order: number;
@@ -204,6 +204,7 @@ export function useThreadMessages<
 }
 
 /**
+ * @deprecated FYI `useStreamingUIMessages` is likely better for you.
  * A hook that fetches streaming messages from a thread.
  * This ONLY returns streaming messages. To get both, use `useThreadMessages`.
  *

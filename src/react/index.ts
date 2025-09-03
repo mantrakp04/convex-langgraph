@@ -10,11 +10,8 @@ export {
   useThreadMessages,
   useStreamingThreadMessages,
 } from "./useThreadMessages.js";
-export {
-  type UIMessagesQuery,
-  useUIMessages,
-  useStreamingUIMessages,
-} from "./useUIMessages.js";
+export { type UIMessagesQuery, useUIMessages } from "./useUIMessages.js";
+export { useStreamingUIMessages } from "./useStreamingUIMessages.js";
 
 /**
  * @deprecated use useThreadMessages or useStreamingThreadMessages instead
