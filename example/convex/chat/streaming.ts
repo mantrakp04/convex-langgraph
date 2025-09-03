@@ -6,6 +6,7 @@ import {
   syncStreams,
   vStreamArgs,
 } from "@convex-dev/agent";
+import { toUIMessages } from "@convex-dev/agent/react";
 import { components, internal } from "../_generated/api";
 import {
   action,
@@ -111,6 +112,7 @@ export const listThreadMessages = query({
     return {
       ...paginated,
       streams,
+      page: toUIMessages(paginated.page),
 
       // ... you can return other metadata here too.
       // note: this function will be called with various permutations of delta
