@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.7
+
+- Updates types to match the latest `ai` package types - note: you should update
+  the `ai` package to 5.0.29 or above.
+
 ## 0.2.6
 
 - Splits out the `start` function from the Agent, along with other utilities
