@@ -5,6 +5,7 @@ import type { FunctionArgs } from "convex/server";
 import { useMemo, useState, useEffect, useRef } from "react";
 import {
   readUIMessageStream,
+  type TextUIPart,
   type UIDataTypes,
   type UIMessageChunk,
   type UITools,
@@ -21,6 +22,7 @@ import {
   blankUIMessage,
   getParts,
   deriveUIMessagesFromTextStreamParts,
+  statusFromStreamStatus,
 } from "../deltas.js";
 import { sorted } from "../shared.js";
 
@@ -274,9 +276,24 @@ export function useStreamingUIMessages<
     }
   }, [streamList]);
 
-  const loading = !streamList;
   return useMemo(() => {
-    if (loading) return undefined;
-    return sorted(Array.from(Object.values(uiMessages)));
-  }, [uiMessages, loading]);
+    if (!streamList) return undefined;
+    return sorted(
+      Array.from(
+        Object.entries(uiMessages).map(([streamId, uiMessage]) => {
+          const streamMessage = streamList?.streams.messages.find(
+            (m) => m.streamId === streamId,
+          );
+          uiMessage.status = statusFromStreamStatus(
+            streamMessage?.status ?? "finished",
+          );
+          uiMessage.text = uiMessage.parts
+            .filter((p): p is TextUIPart => p.type === "text")
+            .map((p) => p.text)
+            .join("");
+          return uiMessage;
+        }),
+      ),
+    );
+  }, [uiMessages, streamList]);
 }
