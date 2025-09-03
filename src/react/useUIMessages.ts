@@ -12,11 +12,7 @@ import {
 } from "ai";
 import type { SyncStreamsReturnValue } from "../client/types.js";
 import type { StreamArgs } from "../validators.js";
-import type {
-  ThreadStreamQuery,
-  ThreadMessagesArgs,
-  MessageLike,
-} from "./types.js";
+import type { StreamQuery, StreamMessagesArgs } from "./types.js";
 import { type UIMessage } from "./toUIMessages.js";
 import {
   blankUIMessage,
@@ -45,13 +41,10 @@ export function useStreamingUIMessages<
   DATA_PARTS extends UIDataTypes = UIDataTypes,
   TOOLS extends UITools = UITools,
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  Query extends ThreadStreamQuery<any, any> = ThreadStreamQuery<
-    object,
-    MessageLike
-  >,
+  Query extends StreamQuery<any> = StreamQuery<object>,
 >(
   query: Query,
-  args: ThreadMessagesArgs<Query> | "skip",
+  args: StreamMessagesArgs<Query> | "skip",
   options?: {
     startOrder?: number;
     skipStreamIds?: string[];
@@ -75,7 +68,6 @@ export function useStreamingUIMessages<
       ? args
       : ({
           ...args,
-          paginationOpts: { cursor: null, numItems: 0 },
           streamArgs: {
             kind: "list",
             startOrder: options?.startOrder ?? 0,

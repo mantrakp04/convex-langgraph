@@ -20,10 +20,11 @@ import {
 } from "../deltas.js";
 import type {
   ThreadQuery,
-  ThreadStreamQuery,
+  StreamQuery,
   ThreadMessagesArgs,
   ThreadMessagesResult,
   MessageLike,
+  StreamMessagesArgs,
 } from "./types.js";
 import { readUIMessageStream, type UIMessageChunk } from "ai";
 import { fromUIMessages } from "./fromUIMessages.js";
@@ -88,7 +89,7 @@ export function useThreadMessages<
   options: {
     initialNumItems: number;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    stream?: Query extends ThreadStreamQuery
+    stream?: Query extends StreamQuery
       ? boolean
       : ErrorMessage<"To enable streaming, your query must take in streamArgs: vStreamArgs and return a streams object returned from agent.syncStreams. See docs.">;
   },
@@ -113,15 +114,13 @@ export function useThreadMessages<
   }
   // These are streaming messages that will not include full messages.
   const streamMessages = useStreamingThreadMessages(
-    query as ThreadStreamQuery<
-      ThreadMessagesArgs<Query>,
-      ThreadMessagesResult<Query>
-    >,
+    query as StreamQuery<ThreadMessagesArgs<Query>>,
     !options.stream ||
       args === "skip" ||
       paginated.status === "LoadingFirstPage"
       ? "skip"
-      : { ...args, startOrder },
+      : ({ ...args, paginationOpts: { cursor: null, numItems: 0 } } as any),
+    { startOrder },
   );
 
   const merged = useMemo(() => {
@@ -179,15 +178,10 @@ export function useThreadMessages<
  */
 export function useStreamingThreadMessages<
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  Query extends ThreadStreamQuery<any, any>,
+  Query extends StreamQuery<any>,
 >(
   query: Query,
-  args:
-    | (ThreadMessagesArgs<Query> & {
-        /** @deprecated use the options parameter (third argument) instead */
-        startOrder?: number;
-      })
-    | "skip",
+  args: StreamMessagesArgs<Query> | "skip",
   options?: {
     startOrder?: number;
     skipStreamIds?: string[];
@@ -212,7 +206,6 @@ export function useStreamingThreadMessages<
       ? queryArgs
       : ({
           ...queryArgs,
-          paginationOpts: { cursor: null, numItems: 0 },
           streamArgs: {
             kind: "list",
             startOrder,

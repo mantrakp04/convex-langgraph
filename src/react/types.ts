@@ -33,25 +33,26 @@ export type ThreadQuery<
   PaginationResult<M> & { streams?: SyncStreamsReturnValue }
 >;
 
-export type ThreadStreamQuery<
-  Args = Record<string, unknown>,
-  M extends MessageLike = MessageLike,
-> = FunctionReference<
-  "query",
-  "public",
-  {
-    threadId: string;
-    paginationOpts: PaginationOptions;
-    streamArgs?: StreamArgs; // required for stream query
-  } & Args,
-  PaginationResult<M> & { streams: SyncStreamsReturnValue }
->;
-
 export type ThreadMessagesArgs<
   Query extends ThreadQuery<unknown, MessageLike>,
 > =
   Query extends ThreadQuery<unknown, MessageLike>
     ? Expand<BetterOmit<FunctionArgs<Query>, "paginationOpts" | "streamArgs">>
+    : never;
+
+export type StreamQuery<Args = Record<string, unknown>> = FunctionReference<
+  "query",
+  "public",
+  {
+    threadId: string;
+    streamArgs?: StreamArgs; // required for stream query
+  } & Args,
+  { streams: SyncStreamsReturnValue }
+>;
+
+export type StreamMessagesArgs<Query extends StreamQuery<unknown>> =
+  Query extends StreamQuery<unknown>
+    ? Expand<BetterOmit<FunctionArgs<Query>, "streamArgs">>
     : never;
 
 export type ThreadMessagesResult<
