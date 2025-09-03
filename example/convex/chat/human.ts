@@ -1,9 +1,9 @@
 // See the docs at https://docs.convex.dev/agents/human-agents
 import {
   saveMessage,
-  listMessages,
   syncStreams,
   vStreamArgs,
+  listUIMessages,
 } from "@convex-dev/agent";
 import {
   action,
@@ -165,7 +165,7 @@ export const getMessages = query({
     streamArgs: vStreamArgs,
   },
   handler: async (ctx, args) => {
-    const messages = await listMessages(ctx, components.agent, {
+    const messages = await listUIMessages(ctx, components.agent, {
       threadId: args.threadId,
       paginationOpts: args.paginationOpts,
     });
