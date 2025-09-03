@@ -202,6 +202,15 @@ function Message({ message }: { message: UIMessage }) {
     // wouldn't start streaming until the second chunk was received.
     startStreaming: message.status === "streaming",
   });
+  const [reasoningText] = useSmoothText(
+    message.parts
+      .filter((p) => p.type === "reasoning")
+      .map((p) => p.text)
+      .join("\n") ?? "",
+    {
+      startStreaming: message.status === "streaming",
+    },
+  );
   return (
     <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
       <div
@@ -214,6 +223,9 @@ function Message({ message }: { message: UIMessage }) {
           },
         )}
       >
+        {reasoningText && (
+          <div className="text-xs text-gray-500">💭{reasoningText}</div>
+        )}
         {visibleText || "..."}
       </div>
     </div>
