@@ -31,13 +31,12 @@ export function compressUIMessageChunks(
   const compressed: UIMessageChunk[] = [];
   for (const part of parts) {
     const last = compressed.at(-1);
-    if (part.type === "text-delta" && last?.type === "text-delta") {
-      last.delta += part.delta;
-    } else if (
-      part.type === "reasoning-delta" &&
-      last?.type === "reasoning-delta"
-    ) {
-      last.delta += part.delta;
+    if (part.type === "text-delta" || part.type === "reasoning-delta") {
+      if (last?.type === part.type && part.id === last.id) {
+        last.delta += part.delta;
+      } else {
+        compressed.push(part);
+      }
     } else {
       compressed.push(part);
     }
@@ -51,13 +50,12 @@ export function compressTextStreamParts(
   const compressed: TextStreamPart<ToolSet>[] = [];
   for (const part of parts) {
     const last = compressed.at(-1);
-    if (part.type === "text-delta" && last?.type === "text-delta") {
-      last.text += part.text;
-    } else if (
-      part.type === "reasoning-delta" &&
-      last?.type === "reasoning-delta"
-    ) {
-      last.text += part.text;
+    if (part.type === "text-delta" || part.type === "reasoning-delta") {
+      if (last?.type === part.type && part.id === last.id) {
+        last.text += part.text;
+      } else {
+        compressed.push(part);
+      }
     } else {
       if (part.type === "file") {
         compressed.push({
@@ -91,6 +89,21 @@ export function blankUIMessage<METADATA = unknown>(
     parts: [],
     ...(streamMessage.metadata ? { metadata: streamMessage.metadata } : {}),
   };
+}
+
+export function statusFromStreamStatus(
+  status: StreamMessage["status"],
+): MessageStatus | "streaming" {
+  switch (status) {
+    case "streaming":
+      return "streaming";
+    case "finished":
+      return "success";
+    case "aborted":
+      return "failed";
+    default:
+      return "pending";
+  }
 }
 
 export async function updateFromUIMessageChunks(
@@ -244,6 +257,11 @@ export function getParts<T extends StreamDelta["parts"][number]>(
   }
   return { parts, cursor };
 }
+
+/**
+ * This is historically from when we would use the onChunk callback instead of
+ * consuming the full UIMessageStream.
+ */
 
 // exported for testing
 export function updateFromTextStreamParts(
@@ -570,19 +588,4 @@ function mergeProviderMetadata(
     };
   }
   return merged;
-}
-
-function statusFromStreamStatus(
-  status: StreamMessage["status"],
-): MessageStatus {
-  switch (status) {
-    case "streaming":
-      return "pending";
-    case "finished":
-      return "success";
-    case "aborted":
-      return "failed";
-    default:
-      return "pending";
-  }
 }
