@@ -1,5 +1,20 @@
 # Changelog
 
+## 0.2.8 alpha
+
+- Adds useUIMessages and useUIStreamingMessages for UIMessage-first client
+  usage. These have more metadata around reasoning streaming status, and
+  provide support for metadata and custom data parts.
+- Uses the UIMessageChunk stream when streaming text, which fixes many bugs
+  which stemmed from the AI SDK's onChunk callback.
+- Enables having streaming hooks skip streamIds so you can stream via HTTP
+  for some clients and have others get the deltas.
+- Compresses the deltas saved to the DB - combining text deltas & reasoning
+  deltas that come from the same part `id`.
+- `optimisticallySendMessage` will set fields for both MessageDoc and
+  UIMessage, so it should transparently work for either hook strategy, though
+  you may see more fields than you expect.
+
 ## 0.2.7
 
 - Updates types to match the latest `ai` package types - note: you should update

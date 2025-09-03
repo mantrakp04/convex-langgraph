@@ -21,7 +21,6 @@ import type {
   Options,
   UserActionCtx,
 } from "./types.js";
-import { saveMessages } from "./messages.js";
 import type { Message, MessageDoc } from "../validators.js";
 import {
   getModelName,

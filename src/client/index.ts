@@ -14,6 +14,7 @@ import type {
   StreamTextResult,
   ToolChoice,
   ToolSet,
+  UIMessage as AIUIMessage,
 } from "ai";
 import {
   generateObject,
@@ -34,6 +35,7 @@ import {
 import { convexToJson, v, type Value } from "convex/values";
 import type { threadFieldsSupportingPatch } from "../component/threads.js";
 import { type VectorDimension } from "../component/vector/tables.js";
+import { compressUIMessageChunks } from "../deltas.js";
 import {
   deserializeMessage,
   serializeMessage,
@@ -69,22 +71,20 @@ import {
 import { start } from "./start.js";
 import {
   DeltaStreamer,
+  mergeTransforms,
   syncStreams,
   type StreamingOptions,
 } from "./streaming.js";
-import {
-  mergeTransforms,
-  serializeTextStreamingPartsV5,
-} from "./textStreamParts.js";
 import { createThread, getThreadMetadata } from "./threads.js";
 import type {
   ActionCtx,
   AgentComponent,
+  Config,
   ContextOptions,
   DefaultObjectSchema,
+  GenerateObjectArgs,
   GenerationOutputMetadata,
   MaybeCustomCtx,
-  GenerateObjectArgs,
   ObjectMode,
   ObjectSchema,
   Options,
@@ -100,26 +100,28 @@ import type {
   Thread,
   UsageHandler,
   UserActionCtx,
-  Config,
 } from "./types.js";
 
 export { stepCountIs } from "ai";
 export {
   deserializeMessage,
+  guessMimeType,
   serializeDataOrUrl,
   serializeMessage,
-  guessMimeType,
   toUIFilePart,
 } from "../mapping.js";
 // NOTE: these are also exported via @convex-dev/agent/validators
 // a future version may put them all here or move these over there
+export { extractText, isTool, sorted } from "../shared.js";
 export {
   vAssistantMessage,
+  vContent,
   vContextOptions,
   vMessage,
   vMessageDoc,
   vPaginationResult,
   vProviderMetadata,
+  vSource,
   vStorageOptions,
   vStreamArgs,
   vSystemMessage,
@@ -127,15 +129,13 @@ export {
   vToolMessage,
   vUsage,
   vUserMessage,
-  vSource,
-  vContent,
   type Message,
   type MessageDoc,
   type SourcePart,
   type ThreadDoc,
   type Usage,
 } from "../validators.js";
-export type { ToolCtx } from "./createTool.js";
+export { createTool, type ToolCtx } from "./createTool.js";
 export {
   definePlaygroundAPI,
   type AgentsFn,
@@ -149,6 +149,7 @@ export {
   type SaveMessageArgs,
   type SaveMessagesArgs,
 } from "./messages.js";
+export { mockModel } from "./mockModel.js";
 export {
   fetchContextMessages,
   filterOutOrphanedToolMessages,
@@ -158,6 +159,7 @@ export {
   embedMany,
 } from "./search.js";
 export {
+  DEFAULT_STREAMING_OPTIONS,
   abortStream,
   listStreams,
   syncStreams,
@@ -166,11 +168,11 @@ export {
 export {
   createThread,
   getThreadMetadata,
-  updateThreadMetadata,
   searchThreadTitles,
+  updateThreadMetadata,
 } from "./threads.js";
-export { extractText, isTool, sorted } from "../shared.js";
-export { createTool } from "./createTool.js";
+export { toUIMessages, fromUIMessages, type UIMessage } from "../UIMessages.js";
+
 export type {
   AgentComponent,
   Config,
@@ -183,7 +185,6 @@ export type {
   Thread,
   UsageHandler,
 };
-export { mockModel } from "./mockModel.js";
 
 export class Agent<
   /**
@@ -603,9 +604,12 @@ export class Agent<
             this.component,
             ctx,
             {
-              stream: opts.saveStreamDeltas,
+              throttleMs:
+                typeof opts.saveStreamDeltas === "object"
+                  ? opts.saveStreamDeltas.throttleMs
+                  : undefined,
               onAsyncAbort: call.fail,
-              compress: serializeTextStreamingPartsV5,
+              compress: compressUIMessageChunks,
               abortSignal: args.abortSignal,
             },
             {
@@ -615,6 +619,7 @@ export class Agent<
               model: getModelName(args.model),
               provider: getProviderName(args.model),
               providerOptions: args.providerOptions,
+              format: "UIMessageChunk",
               order,
               stepOrder,
             },
@@ -628,11 +633,6 @@ export class Agent<
         options?.saveStreamDeltas,
         streamTextArgs.experimental_transform,
       ),
-      onChunk: async (event) => {
-        await streamer?.addParts([event.chunk]);
-        // console.log("onChunk", chunk);
-        return streamTextArgs.onChunk?.(event);
-      },
       onError: async (error) => {
         console.error("onError", error);
         await call.fail(errorToString(error.error));
@@ -644,6 +644,11 @@ export class Agent<
         if (result) {
           const model = result.model ?? options.model;
           call.updateModel(model);
+          // streamer?.updateMetadata({
+          //   model: getModelName(model),
+          //   provider: getProviderName(model),
+          //   providerOptions: options.messages.at(-1)?.providerOptions,
+          // });
           return result;
         }
         return undefined;
@@ -652,20 +657,21 @@ export class Agent<
         steps.push(step);
         const createPendingMessage = await willContinue(steps, args.stopWhen);
         await call.save({ step }, createPendingMessage);
-        if (!createPendingMessage) {
-          await streamer?.finish();
-        }
         return args.onStepFinish?.(step);
       },
     }) as StreamTextResult<
       TOOLS extends undefined ? AgentTools : TOOLS,
       PARTIAL_OUTPUT
     >;
+    const stream = streamer?.consumeStream(
+      result.toUIMessageStream<AIUIMessage<Tools>>(),
+    );
     if (
       (typeof options?.saveStreamDeltas === "object" &&
         !options.saveStreamDeltas.returnImmediately) ||
       options?.saveStreamDeltas === true
     ) {
+      await stream;
       await result.consumeStream();
     }
     const metadata: GenerationOutputMetadata = {

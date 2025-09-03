@@ -2189,6 +2189,7 @@ export type Mounts = {
       "public",
       {
         agentName?: string;
+        format?: "UIMessageChunk" | "TextStreamPart";
         model?: string;
         order: number;
         provider?: string;
@@ -2253,6 +2254,7 @@ export type Mounts = {
       },
       Array<{
         agentName?: string;
+        format?: "UIMessageChunk" | "TextStreamPart";
         model?: string;
         order: number;
         provider?: string;

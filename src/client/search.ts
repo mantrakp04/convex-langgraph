@@ -180,6 +180,8 @@ export async function fetchRecentAndSearchMessages(
         embeddingModel = embeddingFields.textEmbeddingModel
           ? getModelName(embeddingFields.textEmbeddingModel)
           : undefined;
+        // TODO: if the text matches the target message, save the embedding
+        // for the target message and return the embeddingId on the message.
       }
     }
     const searchResults = await ctx.runAction(

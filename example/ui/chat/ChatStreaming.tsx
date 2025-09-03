@@ -3,9 +3,8 @@ import { Toaster } from "../components/ui/toaster";
 import { api } from "../../convex/_generated/api";
 import {
   optimisticallySendMessage,
-  toUIMessages,
   useSmoothText,
-  useThreadMessages,
+  useUIMessages,
   type UIMessage,
 } from "@convex-dev/agent/react";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -68,11 +67,27 @@ export default function ChatStreaming() {
 }
 
 function Story({ threadId, reset }: { threadId: string; reset: () => void }) {
-  const messages = useThreadMessages(
+  const { results: messages } = useUIMessages(
     api.chat.streaming.listThreadMessages,
     { threadId },
     { initialNumItems: 10, stream: true },
   );
+
+  // If you don't want to use UIMessages, you can use this hook:
+  // (note: you'll need to return MessageDoc from listThreadMessages)
+  // const { results } = useThreadMessages(
+  //   api.chat.streaming.listThreadMessages,
+  //   { threadId },
+  //   { initialNumItems: 10, stream: true },
+  // );
+  // const messages = toUIMessages(results ?? []);
+
+  // If you only want to show streaming messages, you can use this hook:
+  // const messages =
+  //   useStreamingUIMessages(api.chat.streaming.listThreadMessages, {
+  //     threadId,
+  //     paginationOpts: { numItems: 10, cursor: null },
+  //   }) ?? [];
   const sendMessage = useMutation(
     api.chat.streaming.initiateAsyncStreaming,
   ).withOptimisticUpdate(
@@ -90,12 +105,12 @@ function Story({ threadId, reset }: { threadId: string; reset: () => void }) {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages.results]);
+  }, [messages]);
 
   function onSendClicked() {
     if (prompt.trim() === "") return;
     void sendMessage({ threadId, prompt }).catch(() => setPrompt(prompt));
-    setPrompt("");
+    setPrompt("Continue the story...");
   }
 
   return (
@@ -103,9 +118,9 @@ function Story({ threadId, reset }: { threadId: string; reset: () => void }) {
       <div className="h-full flex flex-col max-w-4xl mx-auto w-full">
         {/* Messages area - scrollable */}
         <div className="flex-1 overflow-y-auto p-6">
-          {messages.results?.length > 0 ? (
+          {messages.length > 0 ? (
             <div className="flex flex-col gap-4 whitespace-pre">
-              {toUIMessages(messages.results ?? []).map((m) => (
+              {messages.map((m) => (
                 <Message key={m.key} message={m} />
               ))}
               <div ref={messagesEndRef} />
@@ -132,17 +147,17 @@ function Story({ threadId, reset }: { threadId: string; reset: () => void }) {
               onChange={(e) => setPrompt(e.target.value)}
               className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50"
               placeholder={
-                messages.results?.length > 0
+                messages.length > 0
                   ? "Continue the story..."
                   : "Tell me a story..."
               }
             />
-            {messages.results.find((m) => m.streaming) ? (
+            {messages.find((m) => m.status === "streaming") ? (
               <button
                 className="px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition font-medium self-end"
                 onClick={() => {
                   const order =
-                    messages.results.find((m) => m.streaming)?.order ?? 0;
+                    messages.find((m) => m.status === "streaming")?.order ?? 0;
                   void abortStreamByOrder({ threadId, order });
                 }}
                 type="button"
@@ -158,7 +173,7 @@ function Story({ threadId, reset }: { threadId: string; reset: () => void }) {
                 Send
               </button>
             )}
-            {messages.results?.length > 0 && (
+            {messages.length > 0 && (
               <button
                 className="px-4 py-2 rounded-lg bg-red-100 text-red-700 hover:bg-red-200 transition font-medium self-end"
                 onClick={() => {
@@ -187,6 +202,15 @@ function Message({ message }: { message: UIMessage }) {
     // wouldn't start streaming until the second chunk was received.
     startStreaming: message.status === "streaming",
   });
+  const [reasoningText] = useSmoothText(
+    message.parts
+      .filter((p) => p.type === "reasoning")
+      .map((p) => p.text)
+      .join("\n") ?? "",
+    {
+      startStreaming: message.status === "streaming",
+    },
+  );
   return (
     <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
       <div
@@ -199,6 +223,9 @@ function Message({ message }: { message: UIMessage }) {
           },
         )}
       >
+        {reasoningText && (
+          <div className="text-xs text-gray-500">💭{reasoningText}</div>
+        )}
         {visibleText || "..."}
       </div>
     </div>

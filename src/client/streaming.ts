@@ -1,4 +1,10 @@
-import { type ChunkDetector } from "ai";
+import {
+  type ChunkDetector,
+  type AsyncIterableStream,
+  type StreamTextTransform,
+  type ToolSet,
+  smoothStream,
+} from "ai";
 import {
   vStreamDelta,
   vStreamMessage,
@@ -153,6 +159,36 @@ export const DEFAULT_STREAMING_OPTIONS = {
 } satisfies StreamingOptions;
 
 /**
+ *
+ * @param options The options passed to `agent.streamText` to decide whether to
+ * save deltas while streaming.
+ * @param existing The transforms passed to `agent.streamText` to merge with.
+ * @returns The merged transforms to pass to the underlying `streamText` call.
+ */
+export function mergeTransforms<TOOLS extends ToolSet>(
+  options: { chunking?: StreamingOptions["chunking"] } | boolean | undefined,
+  existing:
+    | StreamTextTransform<TOOLS>
+    | Array<StreamTextTransform<TOOLS>>
+    | undefined,
+) {
+  if (!options) {
+    return existing;
+  }
+  const chunking =
+    typeof options === "boolean"
+      ? DEFAULT_STREAMING_OPTIONS.chunking
+      : options.chunking;
+  const transforms = Array.isArray(existing)
+    ? existing
+    : existing
+      ? [existing]
+      : [];
+  transforms.push(smoothStream({ delayInMs: null, chunking }));
+  return transforms;
+}
+
+/**
  * DeltaStreamer can be used to save a stream of "parts" by writing
  * batches of them in "deltas" to the database so clients can subscribe
  * (using the syncStreams utility and client hooks) and re-hydrate the stream.
@@ -162,7 +198,7 @@ export const DEFAULT_STREAMING_OPTIONS = {
 export class DeltaStreamer<T> {
   public streamId: string | undefined;
   public readonly config: {
-    stream: Required<StreamingOptions>;
+    throttleMs: number;
     onAsyncAbort: (reason: string) => Promise<void>;
     compress: ((parts: T[]) => T[]) | null;
   };
@@ -176,7 +212,7 @@ export class DeltaStreamer<T> {
     public readonly component: AgentComponent,
     public readonly ctx: RunMutationCtx,
     config: {
-      stream: true | StreamingOptions;
+      throttleMs: number | undefined;
       onAsyncAbort: (reason: string) => Promise<void>;
       abortSignal: AbortSignal | undefined;
       compress: ((parts: T[]) => T[]) | null;
@@ -190,13 +226,11 @@ export class DeltaStreamer<T> {
       model?: string;
       provider?: string;
       providerOptions?: ProviderOptions;
+      format: "UIMessageChunk" | "TextStreamPart" | undefined;
     },
   ) {
     this.config = {
-      stream:
-        config.stream === true
-          ? DEFAULT_STREAMING_OPTIONS
-          : { ...DEFAULT_STREAMING_OPTIONS, ...config },
+      throttleMs: config.throttleMs ?? DEFAULT_STREAMING_OPTIONS.throttleMs,
       onAsyncAbort: config.onAsyncAbort,
       compress: config.compress,
     };
@@ -232,10 +266,17 @@ export class DeltaStreamer<T> {
     this.#nextParts.push(...parts);
     if (
       !this.#ongoingWrite &&
-      Date.now() - this.#latestWrite >= this.config.stream.throttleMs
+      Date.now() - this.#latestWrite >= this.config.throttleMs
     ) {
       this.#ongoingWrite = this.#sendDelta();
     }
+  }
+
+  public async consumeStream(stream: AsyncIterableStream<T>) {
+    for await (const chunk of stream) {
+      await this.addParts([chunk]);
+    }
+    await this.finish();
   }
 
   async #sendDelta() {
@@ -267,7 +308,7 @@ export class DeltaStreamer<T> {
     // Now that we've sent the delta, check if we need to send another one.
     if (
       this.#nextParts.length > 0 &&
-      Date.now() - this.#latestWrite >= this.config.stream.throttleMs
+      Date.now() - this.#latestWrite >= this.config.throttleMs
     ) {
       // We send again immediately with the accumulated deltas.
       this.#ongoingWrite = this.#sendDelta();

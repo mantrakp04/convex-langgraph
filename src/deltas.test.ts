@@ -1,8 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { mergeDeltas, applyDeltasToStreamMessage } from "./deltas.js";
-import type { StreamMessage, StreamDelta } from "../validators.js";
+import {
+  deriveUIMessagesFromTextStreamParts,
+  updateFromTextStreamParts,
+} from "./deltas.js";
+import type { StreamMessage, StreamDelta } from "./validators.js";
 import { omit } from "convex-helpers";
-import type { TextStreamPart, ToolSet } from "ai";
+import type { TextStreamPart, ToolSet, ToolUIPart } from "ai";
 
 function makeStreamMessage(
   streamId: string,
@@ -30,7 +33,7 @@ describe("mergeDeltas", () => {
         { type: "text-delta", id: "1", text: "Hello" },
       ]),
     ];
-    const [messages, newStreams, changed] = mergeDeltas(
+    const [messages, newStreams, changed] = deriveUIMessagesFromTextStreamParts(
       "thread1",
       streamMessages,
       [],
@@ -38,7 +41,7 @@ describe("mergeDeltas", () => {
     );
     expect(messages).toHaveLength(1);
     expect(messages[0].text).toBe("Hello");
-    expect(messages[0].message?.role).toBe("assistant");
+    expect(messages[0].role).toBe("assistant");
     expect(changed).toBe(true);
     expect(newStreams[0].cursor).toBe(5);
   });
@@ -54,7 +57,7 @@ describe("mergeDeltas", () => {
         { type: "text-delta", id: "2", text: " World!" },
       ]),
     ];
-    const [messages, newStreams, changed] = mergeDeltas(
+    const [messages, newStreams, changed] = deriveUIMessagesFromTextStreamParts(
       "thread1",
       streamMessages,
       [],
@@ -75,7 +78,7 @@ describe("mergeDeltas", () => {
           type: "tool-call",
           toolCallId: "call1",
           toolName: "myTool",
-          input: "",
+          input: "What's the meaning of life?",
         },
       ]),
       makeDelta(streamId, 1, 2, [
@@ -88,28 +91,23 @@ describe("mergeDeltas", () => {
         },
       ]),
     ];
-    const [messages, _, changed] = mergeDeltas(
+    const [[message], _, changed] = deriveUIMessagesFromTextStreamParts(
       "thread1",
       streamMessages,
       [],
       deltas,
     );
-    expect(messages).toHaveLength(2);
-    expect(messages[0].message?.role).toBe("assistant");
-    expect(messages[0].tool).toBe(true);
-    const content = messages[0].message?.content;
+    expect(message).toBeDefined();
+    expect(message.role).toBe("assistant");
+    const content = message.parts;
     expect(content).toEqual([
-      { type: "tool-call", toolCallId: "call1", toolName: "myTool", args: "" },
-    ]);
-    expect(messages[1].message?.role).toBe("tool");
-    expect(messages[1].tool).toBe(true);
-    expect(messages[1].message?.content).toEqual([
       {
-        type: "tool-result",
+        type: "tool-myTool",
         toolCallId: "call1",
-        toolName: "myTool",
-        result: "42",
-      },
+        input: "What's the meaning of life?",
+        output: "42",
+        state: "output-available",
+      } satisfies ToolUIPart,
     ]);
     expect(changed).toBe(true);
   });
@@ -118,13 +116,12 @@ describe("mergeDeltas", () => {
     const streamId = "s3";
     const streamMessages = [makeStreamMessage(streamId, 3, 0)];
     const deltas: StreamDelta[] = [];
-    const [messages, newStreams, changed] = mergeDeltas(
+    const [, newStreams, changed] = deriveUIMessagesFromTextStreamParts(
       "thread1",
       streamMessages,
       [],
       deltas,
     );
-    expect(messages).toHaveLength(0);
     expect(changed).toBe(false);
     expect(newStreams[0].cursor).toBe(0);
   });
@@ -136,7 +133,12 @@ describe("mergeDeltas", () => {
       makeDelta("s2", 0, 3, [{ type: "text-delta", id: "1", text: "B" }]),
       makeDelta("s1", 0, 3, [{ type: "text-delta", id: "2", text: "A" }]),
     ];
-    const [messages, _, changed] = mergeDeltas("thread1", [s2, s1], [], deltas);
+    const [messages, _, changed] = deriveUIMessagesFromTextStreamParts(
+      "thread1",
+      [s2, s1],
+      [],
+      deltas,
+    );
     expect(messages).toHaveLength(2);
     expect(messages[0].text).toBe("A");
     expect(messages[1].text).toBe("B");
@@ -158,11 +160,16 @@ describe("mergeDeltas", () => {
       ]),
       makeDelta(streamId, 11, 12, [{ type: "text-delta", id: "3", text: "!" }]),
     ];
-    const [messages] = mergeDeltas("thread1", streamMessages, [], deltas);
+    const [messages] = deriveUIMessagesFromTextStreamParts(
+      "thread1",
+      streamMessages,
+      [],
+      deltas,
+    );
     expect(messages).toHaveLength(1);
     expect(messages[0].text).toBe("Hello World!!");
     // There should only be one text part per message
-    const content = messages[0].message?.content;
+    const content = messages[0].parts;
     if (Array.isArray(content)) {
       const textParts = content.filter((p) => p.type === "text");
       expect(textParts).toHaveLength(1);
@@ -175,20 +182,28 @@ describe("mergeDeltas", () => {
     const streamMessages = [makeStreamMessage(streamId, 6, 0)];
     const deltas = [
       makeDelta(streamId, 0, 1, [
+        { type: "reasoning-start", id: "1" },
         { type: "reasoning-delta", id: "1", text: "I'm thinking..." },
       ]),
       makeDelta(streamId, 1, 2, [
-        { type: "reasoning-delta", id: "2", text: " Still thinking..." },
+        { type: "reasoning-delta", id: "1", text: " Still thinking..." },
       ]),
+      makeDelta(streamId, 2, 3, [{ type: "reasoning-end", id: "1" }]),
     ];
-    const [messages] = mergeDeltas("thread1", streamMessages, [], deltas);
+    const [messages] = deriveUIMessagesFromTextStreamParts(
+      "thread1",
+      streamMessages,
+      [],
+      deltas,
+    );
     expect(messages).toHaveLength(1);
-    if (Array.isArray(messages[0].message?.content)) {
-      const reasoningParts = messages[0].message.content.filter(
+    if (Array.isArray(messages[0].parts)) {
+      const reasoningParts = messages[0].parts.filter(
         (p) => p.type === "reasoning",
       );
       expect(reasoningParts).toHaveLength(1);
       expect(reasoningParts[0].text).toBe("I'm thinking... Still thinking...");
+      expect(reasoningParts[0].state).toBe("done");
     }
   });
 
@@ -204,47 +219,43 @@ describe("mergeDeltas", () => {
       ]),
     ];
     // First call: apply both deltas
-    let [result, changed] = applyDeltasToStreamMessage(
+    let [result, changed] = updateFromTextStreamParts(
       "thread1",
       streamMessage,
       undefined,
       deltas,
     );
-    expect(result.messages).toHaveLength(1);
-    expect(result.messages[0].text).toBe("Hello World!");
+    expect(result.message.text).toBe("Hello World!");
     // Second call: re-apply the same deltas (should not duplicate)
-    [result, changed] = applyDeltasToStreamMessage(
+    [result, changed] = updateFromTextStreamParts(
       "thread1",
       streamMessage,
       result,
       deltas,
     );
-    expect(result.messages).toHaveLength(1);
-    expect(result.messages[0].text).toBe("Hello World!");
+    expect(result.message.text).toBe("Hello World!");
     // Third call: add a new delta
     const moreDeltas = [
       ...deltas,
       makeDelta(streamId, 11, 12, [{ type: "text-delta", id: "3", text: "!" }]),
     ];
-    [result, changed] = applyDeltasToStreamMessage(
+    [result, changed] = updateFromTextStreamParts(
       "thread1",
       streamMessage,
       result,
       moreDeltas,
     );
     expect(changed).toBe(true);
-    expect(result.messages).toHaveLength(1);
-    expect(result.messages[0].text).toBe("Hello World!!");
+    expect(result.message.text).toBe("Hello World!!");
     // Re-apply all deltas again (should still not duplicate)
-    [result, changed] = applyDeltasToStreamMessage(
+    [result, changed] = updateFromTextStreamParts(
       "thread1",
       streamMessage,
       result,
       moreDeltas,
     );
     expect(changed).toBe(false);
-    expect(result.messages).toHaveLength(1);
-    expect(result.messages[0].text).toBe("Hello World!!");
+    expect(result.message.text).toBe("Hello World!!");
   });
 
   it("mergeDeltas is pure and does not mutate inputs", () => {
@@ -270,13 +281,13 @@ describe("mergeDeltas", () => {
     }
     deepFreeze(streamMessages);
     deepFreeze(deltas);
-    const [messages1, streams1, changed1] = mergeDeltas(
+    const [messages1, streams1, changed1] = deriveUIMessagesFromTextStreamParts(
       "thread1",
       streamMessages,
       [],
       deltas,
     );
-    const [messages2, streams2, changed2] = mergeDeltas(
+    const [messages2, streams2, changed2] = deriveUIMessagesFromTextStreamParts(
       "thread1",
       streamMessages,
       [],
@@ -288,12 +299,12 @@ describe("mergeDeltas", () => {
     expect(
       streams1.map((s) => ({
         ...s,
-        messages: s.messages.map((m) => omit(m, ["_creationTime"])),
+        message: omit(s.message, ["_creationTime"]),
       })),
     ).toEqual(
       streams2.map((s) => ({
         ...s,
-        messages: s.messages.map((m) => omit(m, ["_creationTime"])),
+        message: omit(s.message, ["_creationTime"]),
       })),
     );
     expect(changed1).toBe(changed2);
