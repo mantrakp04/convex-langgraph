@@ -67,7 +67,11 @@ export default function ChatStreaming() {
 }
 
 function Story({ threadId, reset }: { threadId: string; reset: () => void }) {
-  const { results: messages } = useUIMessages(
+  const {
+    results: messages,
+    status,
+    loadMore,
+  } = useUIMessages(
     api.chat.streaming.listThreadMessages,
     { threadId },
     { initialNumItems: 10, stream: true },
@@ -120,6 +124,9 @@ function Story({ threadId, reset }: { threadId: string; reset: () => void }) {
         <div className="flex-1 overflow-y-auto p-6">
           {messages.length > 0 ? (
             <div className="flex flex-col gap-4 whitespace-pre">
+              {status === "CanLoadMore" && (
+                <button onClick={() => loadMore(4)}>Load more</button>
+              )}
               {messages.map((m) => (
                 <Message key={m.key} message={m} />
               ))}

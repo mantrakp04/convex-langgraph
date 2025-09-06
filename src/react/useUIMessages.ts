@@ -4,8 +4,8 @@ import {
   type ErrorMessage,
   type Expand,
 } from "convex-helpers";
+import { usePaginatedQuery } from "convex-helpers/react";
 import {
-  usePaginatedQuery,
   type PaginatedQueryArgs,
   type UsePaginatedQueryResult,
 } from "convex/react";
