@@ -61,6 +61,11 @@ export function useStreamingUIMessages<
     Map<string, ReadableStreamDefaultController<UIMessageChunk>>
   >(new Map());
 
+  const startOrder = options?.startOrder
+    ? // round down to the nearest 10 for some cache benefits
+      options.startOrder - (options.startOrder % 10)
+    : 0;
+
   // Get all the active streams
   const streamList = useQuery(
     query,
@@ -70,12 +75,19 @@ export function useStreamingUIMessages<
           ...args,
           streamArgs: {
             kind: "list",
-            startOrder: options?.startOrder ?? 0,
+            startOrder,
           } as StreamArgs,
         } as FunctionArgs<Query>),
   ) as
     | { streams: Extract<SyncStreamsReturnValue, { kind: "list" }> }
     | undefined;
+
+  const minOrder = Math.max(
+    options?.startOrder ?? 0,
+    streamList?.streams.messages.length
+      ? Math.min(...streamList.streams.messages.map(({ order }) => order))
+      : 0,
+  );
 
   // Get the cursors for all the active streams
   const cursors = useMemo(() => {
@@ -85,11 +97,12 @@ export function useStreamingUIMessages<
     }
     return streamList.streams.messages
       .filter(({ streamId }) => !options?.skipStreamIds?.includes(streamId))
+      .filter(({ order }) => order >= minOrder)
       .map(({ streamId }) => {
         const cursor = streamCursors[streamId] ?? 0;
         return { streamId, cursor };
       });
-  }, [streamList, streamCursors, options?.skipStreamIds]);
+  }, [streamList, streamCursors, options?.skipStreamIds, minOrder]);
 
   // Get the deltas for all the active streams, if any.
   const cursorQuery = useQuery(

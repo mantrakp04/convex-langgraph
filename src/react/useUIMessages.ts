@@ -141,15 +141,9 @@ export function useUIMessages<
     { initialNumItems: options.initialNumItems },
   );
 
-  let startOrder = paginated.results.at(-1)?.order ?? 0;
-  for (let i = paginated.results.length - 1; i >= 0; i--) {
-    const m = paginated.results[i];
-    if (!m.streaming && m.status === "pending") {
-      // round down to the nearest 10 for some cache benefits
-      startOrder = m.order - (m.order % 10);
-      break;
-    }
-  }
+  const startOrder = paginated.results.length
+    ? Math.min(...paginated.results.map((m) => m.order))
+    : 0;
   // These are streaming messages that will not include full messages.
   const streamMessages = useStreamingUIMessages(
     query as StreamQuery<UIMessagesQueryArgs<Query>>,
