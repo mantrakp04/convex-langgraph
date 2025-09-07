@@ -129,6 +129,7 @@ export function useUIMessages<
     stream?: Query extends StreamQuery
       ? boolean
       : ErrorMessage<"To enable streaming, your query must take in streamArgs: vStreamArgs and return a streams object returned from syncStreams. See docs.">;
+    skipStreamIds?: string[];
   },
 ): UsePaginatedQueryResult<
   UIMessagesQueryResult<Query> & { streaming: boolean }
@@ -158,7 +159,7 @@ export function useUIMessages<
       ? "skip"
       : // eslint-disable-next-line @typescript-eslint/no-explicit-any
         ({ ...args, paginationOpts: { cursor: null, numItems: 0 } } as any),
-    { startOrder },
+    { startOrder, skipStreamIds: options.skipStreamIds },
   );
 
   const merged = useMemo(() => {
