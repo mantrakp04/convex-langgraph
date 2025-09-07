@@ -27,6 +27,8 @@ import type {
 } from "./validators.js";
 import { omit, pick } from "convex-helpers";
 
+export type UIStatus = "streaming" | MessageStatus;
+
 export type UIMessage<
   METADATA = unknown,
   DATA_PARTS extends UIDataTypes = UIDataTypes,
@@ -35,7 +37,7 @@ export type UIMessage<
   key: string;
   order: number;
   stepOrder: number;
-  status: "streaming" | MessageStatus;
+  status: UIStatus;
   agentName?: string;
   text: string;
   _creationTime: number;

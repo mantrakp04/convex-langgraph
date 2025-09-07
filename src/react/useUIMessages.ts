@@ -19,14 +19,14 @@ import { useMemo } from "react";
 import type { SyncStreamsReturnValue } from "../client/types.js";
 import type { MessageStatus, StreamArgs } from "../validators.js";
 import type { StreamQuery } from "./types.js";
-import { type UIMessage } from "../UIMessages.js";
+import { type UIMessage, type UIStatus } from "../UIMessages.js";
 import { sorted } from "../shared.js";
 import { useStreamingUIMessages } from "./useStreamingUIMessages.js";
 
 export type UIMessageLike = {
   order: number;
   stepOrder: number;
-  status: MessageStatus | "streaming";
+  status: UIStatus;
   parts: UIMessage["parts"];
   role: UIMessage["role"];
 };
