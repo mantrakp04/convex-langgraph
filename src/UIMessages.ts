@@ -294,7 +294,7 @@ function createSystemUIMessage<
 
 function extractTextFromMessageDoc(message: MessageDoc): string {
   return (
-    message.text || (message.message && extractText(message.message)) || ""
+    (message.message && extractText(message.message)) || message.text || ""
   );
 }
 
@@ -393,8 +393,7 @@ function createAssistantUIMessage<
     const content = coreMessage.content;
     const nonStringContent =
       content && typeof content !== "string" ? content : [];
-    const text =
-      message.text || ((message.message && extractText(message.message)) ?? "");
+    const text = extractTextFromMessageDoc(message);
 
     const partCommon = {
       state: message.streaming ? ("streaming" as const) : ("done" as const),
