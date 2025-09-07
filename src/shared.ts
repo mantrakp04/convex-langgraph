@@ -25,11 +25,13 @@ export function extractText(message: Message | ModelMessage) {
     case "assistant":
       if (typeof message.content === "string") {
         return message.content;
+      } else {
+        const textParts = message.content.filter((c) => c.type === "text");
+        if (!textParts.length) {
+          return undefined;
+        }
+        return textParts.map((c) => c.text).join("");
       }
-      return message.content
-        .filter((c) => c.type === "text")
-        .map((c) => c.text)
-        .join("");
     case "system":
       return message.content;
     // we don't extract text from tool messages
