@@ -3,6 +3,7 @@ import { v } from "convex/values";
 import {
   type MessageWithMetadataInternal,
   type StreamDelta,
+  type StreamMessage,
   vStreamDelta,
   vStreamMessage,
 } from "../validators.js";
@@ -136,22 +137,26 @@ export const list = query({
       ["order", "stepOrder"],
     ).take(100);
 
-    return messages.map((m) => ({
-      streamId: m._id,
-      status: m.state.kind,
-      ...pick(m, [
-        "format",
-        "order",
-        "stepOrder",
-        "userId",
-        "agentName",
-        "model",
-        "provider",
-        "providerOptions",
-      ]),
-    }));
+    return messages.map((m) => publicStreamMessage(m));
   },
 });
+
+function publicStreamMessage(m: Doc<"streamingMessages">): StreamMessage {
+  return {
+    streamId: m._id,
+    status: m.state.kind,
+    ...pick(m, [
+      "format",
+      "order",
+      "stepOrder",
+      "userId",
+      "agentName",
+      "model",
+      "provider",
+      "providerOptions",
+    ]),
+  };
+}
 
 export const abortByOrder = mutation({
   args: { threadId: v.id("threads"), order: v.number(), reason: v.string() },
@@ -526,13 +531,7 @@ export async function getStreamingMessagesWithMetadata(
           .take(1000);
         const uiMessages = await deriveUIMessagesFromDeltas(
           threadId,
-          [
-            {
-              ...streamingMessage,
-              status: "streaming",
-              streamId: streamingMessage._id,
-            },
-          ],
+          [publicStreamMessage(streamingMessage)],
           deltas,
         );
         // We don't save messages that have already been saved
