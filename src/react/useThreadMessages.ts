@@ -159,6 +159,8 @@ export function useThreadMessages<
     { startOrder },
   );
 
+  const threadId = args === "skip" ? undefined : args.threadId;
+
   const merged = useMemo(() => {
     const streamListMessages =
       streamMessages?.map((m) => ({
@@ -171,10 +173,13 @@ export function useThreadMessages<
         paginated.results
           .map((m) => ({ ...m, streaming: false }))
           // Note: this is intentionally after paginated results.
-          .concat(streamListMessages),
+          .concat(streamListMessages) as (MessageDocLike & {
+          streaming: boolean;
+          key: string;
+        })[],
       ).reduce(
-        (msgs, msg) => {
-          msg.key = `${msg.threadId}-${msg.order}-${msg.stepOrder}`;
+        (msgs, msg: MessageDocLike & { streaming: boolean; key: string }) => {
+          msg.key = `${threadId}-${msg.order}-${msg.stepOrder}`;
           const last = msgs.at(-1);
           if (!last) {
             return [msg];
@@ -193,10 +198,10 @@ export function useThreadMessages<
           // skip the new one if the previous one (listed) was finalized
           return msgs;
         },
-        [] as (ThreadMessagesResult<Query> & { streaming: boolean })[],
+        [] as (MessageDocLike & { streaming: boolean; key: string })[],
       ),
     };
-  }, [paginated, streamMessages]);
+  }, [paginated, streamMessages, threadId]);
 
   return merged as ThreadMessagesResult<Query> & {
     key: string;
