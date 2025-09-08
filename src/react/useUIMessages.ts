@@ -131,9 +131,7 @@ export function useUIMessages<
       : ErrorMessage<"To enable streaming, your query must take in streamArgs: vStreamArgs and return a streams object returned from syncStreams. See docs.">;
     skipStreamIds?: string[];
   },
-): UsePaginatedQueryResult<
-  UIMessagesQueryResult<Query> & { streaming: boolean }
-> {
+): UsePaginatedQueryResult<UIMessagesQueryResult<Query>> {
   // These are full messages
   const paginated = usePaginatedQuery(
     query,
@@ -157,46 +155,36 @@ export function useUIMessages<
   );
 
   const merged = useMemo(() => {
-    const streamListMessages =
-      streamMessages?.map((m) => ({
-        ...m,
-        streaming: m.status === "streaming",
-      })) ?? [];
     return {
       ...paginated,
-      results: sorted(
-        paginated.results
-          .map((m) => ({ ...m, streaming: false }))
-          // Note: this is intentionally after paginated results.
-          .concat(streamListMessages),
-      ).reduce(
-        (msgs, msg) => {
-          const last = msgs.at(-1);
-          if (!last) {
-            return [msg];
-          }
-          if (last.order !== msg.order || last.stepOrder !== msg.stepOrder) {
-            return [...msgs, msg];
-          }
-          if (
-            last.status === "pending" &&
-            (msg.streaming || msg.status !== "pending")
-          ) {
-            // Let's prefer a streaming or finalized message over a pending
-            // one.
-            return [...msgs.slice(0, -1), msg];
-          }
-          // skip the new one if the previous one (listed) was finalized
-          return msgs;
-        },
-        [] as (UIMessagesQueryResult<Query> & {
-          streaming: boolean;
-        })[],
-      ),
+      results: dedupeMessages(paginated.results, streamMessages ?? []),
     };
   }, [paginated, streamMessages]);
 
-  return merged as UIMessagesQueryResult<Query> & {
-    streaming: boolean;
-  };
+  return merged as UIMessagesQueryResult<Query>;
+}
+
+export function dedupeMessages<
+  M extends {
+    order: number;
+    stepOrder: number;
+    status: UIStatus;
+  },
+>(messages: M[], streamMessages: M[]): M[] {
+  return sorted(messages.concat(streamMessages)).reduce((msgs, msg) => {
+    const last = msgs.at(-1);
+    if (!last) {
+      return [msg];
+    }
+    if (last.order !== msg.order || last.stepOrder !== msg.stepOrder) {
+      return [...msgs, msg];
+    }
+    if (last.status === "pending" && msg.status !== "pending") {
+      // Let's prefer a streaming or finalized message over a pending
+      // one.
+      return [...msgs.slice(0, -1), msg];
+    }
+    // skip the new one if the previous one (listed) was finalized
+    return msgs;
+  }, [] as M[]);
 }
