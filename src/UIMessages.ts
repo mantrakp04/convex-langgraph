@@ -466,6 +466,10 @@ function createAssistantUIMessage<
           break;
         }
         case "tool-result": {
+          const output =
+            contentPart.output?.type === "json"
+              ? contentPart.output.value
+              : contentPart.output;
           const call = allParts.find(
             (part) =>
               part.type === `tool-${contentPart.toolName}` &&
@@ -476,13 +480,10 @@ function createAssistantUIMessage<
             if (message.error) {
               call.state = "output-error";
               call.errorText = message.error;
-              call.output = contentPart.output;
+              call.output = output;
             } else {
               call.state = "output-available";
-              call.output =
-                contentPart.output?.type === "json"
-                  ? contentPart.output.value
-                  : contentPart.output;
+              call.output = output;
             }
           } else {
             console.warn(
@@ -504,10 +505,7 @@ function createAssistantUIMessage<
                 toolCallId: contentPart.toolCallId,
                 state: "output-available",
                 input: undefined,
-                output:
-                  contentPart.output?.type === "json"
-                    ? contentPart.output.value
-                    : contentPart.output,
+                output,
                 callProviderMetadata: message.providerMetadata,
               } satisfies ToolUIPart<TOOLS>);
             }
