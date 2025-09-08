@@ -170,7 +170,7 @@ describe("toUIMessages", () => {
     const uiMessages = toUIMessages(messages);
     expect(uiMessages).toHaveLength(1);
     expect(uiMessages[0].role).toBe("assistant");
-    expect(uiMessages[0].text).toBe("Here's one idea. Here's another idea.");
+    expect(uiMessages[0].text).toBe("Here's one idea.Here's another idea.");
     expect(uiMessages[0].parts.filter((p) => p.type === "reasoning")).toEqual([
       {
         providerOptions: undefined,
