@@ -15,6 +15,7 @@
 - `optimisticallySendMessage` will set fields for both MessageDoc and
   UIMessage, so it should transparently work for either hook strategy, though
   you may see more fields than you expect.
+- Defaults `text` to `undefined` if it's empty (no text chunks)
 
 ## 0.2.7
 
