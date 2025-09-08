@@ -1,11 +1,160 @@
 import { describe, it, expect } from "vitest";
 import {
+  blankUIMessage,
   deriveUIMessagesFromTextStreamParts,
   updateFromTextStreamParts,
+  updateFromUIMessageChunks,
 } from "./deltas.js";
 import type { StreamMessage, StreamDelta } from "./validators.js";
 import { omit } from "convex-helpers";
 import type { Tool, ToolUIPart, TypedToolResult } from "ai";
+
+describe("UIMessageChunks", () => {
+  it("updates a UIMessage with a tool call and follow up", async () => {
+    const uiMessage = blankUIMessage(
+      {
+        streamId: "s1",
+        status: "streaming",
+        order: 0,
+        stepOrder: 1,
+        format: "UIMessageChunk",
+        agentName: "agent1",
+      },
+      "thread1",
+    );
+    expect(uiMessage.text).toBe("");
+    expect(uiMessage.parts).toEqual([]);
+    const updatedMessage = await updateFromUIMessageChunks(uiMessage, [
+      { type: "start" },
+      { type: "start-step" },
+      { type: "reasoning-start", id: "reasoning-0" },
+      { type: "reasoning-delta", id: "reasoning-0", delta: "Okay" },
+      {
+        type: "reasoning-delta",
+        id: "reasoning-0",
+        delta: ", the user is asking...",
+      },
+      { type: "text-start", id: "txt-1" },
+      {
+        type: "text-delta",
+        id: "txt-1",
+        delta: "Hey ho.",
+      },
+      { type: "reasoning-end", id: "reasoning-0" },
+      { type: "text-end", id: "txt-1" },
+      { type: "tool-input-start", toolCallId: "0ychh9k6f", toolName: "say" },
+      {
+        type: "tool-input-delta",
+        toolCallId: "0ychh9k6f",
+        inputTextDelta:
+          '{"question":"What is your favorite flavor of ice cream?"}',
+      },
+      {
+        type: "tool-input-available",
+        toolCallId: "0ychh9k6f",
+        toolName: "say",
+        input: { question: "What is your favorite flavor of ice cream?" },
+        providerMetadata: { openai: { itemId: "123" } },
+      },
+      {
+        type: "tool-output-available",
+        toolCallId: "0ychh9k6f",
+        output: "I'm sorry I can't help you. Stop asking me questions.",
+      },
+      { type: "finish-step" },
+      { type: "start-step" },
+      { type: "tool-input-start", toolCallId: "1ychh9k6f", toolName: "say" },
+      {
+        type: "tool-input-delta",
+        toolCallId: "1ychh9k6f",
+        inputTextDelta:
+          '{"question":"What is your favorite flavor of ice cream?"}',
+      },
+      {
+        type: "tool-input-available",
+        toolCallId: "1ychh9k6f",
+        toolName: "say",
+        input: { question: "What is your favorite flavor of ice cream?" },
+      },
+      {
+        type: "tool-output-available",
+        toolCallId: "1ychh9k6f",
+        output: "I'm serious.",
+      },
+      { type: "finish-step" },
+      { type: "start-step" },
+      { type: "text-start", id: "msg_0" },
+      {
+        type: "text-delta",
+        id: "msg_0",
+        delta: "The best ice cream flavor is vanilla",
+      },
+      {
+        type: "text-delta",
+        id: "msg_0",
+        delta: ".",
+      },
+      { type: "text-end", id: "msg_0" },
+      { type: "finish-step" },
+      { type: "finish" },
+    ]);
+    expect(updatedMessage.text).toBe(
+      "Hey ho.The best ice cream flavor is vanilla.",
+    );
+    const expectedParts = [
+      {
+        type: "step-start",
+      },
+      {
+        state: "done",
+        text: "Okay, the user is asking...",
+        type: "reasoning",
+      },
+      {
+        state: "done",
+        text: "Hey ho.",
+        type: "text",
+      },
+      {
+        callProviderMetadata: {
+          openai: {
+            itemId: "123",
+          },
+        },
+        input: {
+          question: "What is your favorite flavor of ice cream?",
+        },
+        output: "I'm sorry I can't help you. Stop asking me questions.",
+
+        state: "output-available",
+        toolCallId: "0ychh9k6f",
+        type: "tool-say",
+      },
+      {
+        type: "step-start",
+      },
+      {
+        input: {
+          question: "What is your favorite flavor of ice cream?",
+        },
+        output: "I'm serious.",
+        state: "output-available",
+        toolCallId: "1ychh9k6f",
+        type: "tool-say",
+      },
+      {
+        type: "step-start",
+      },
+      {
+        state: "done",
+        text: "The best ice cream flavor is vanilla.",
+        type: "text",
+      },
+    ];
+    expect(updatedMessage.parts).toEqual(expectedParts);
+    expect(updatedMessage.parts).toHaveLength(8);
+  });
+});
 
 describe("mergeDeltas", () => {
   it("merges a single text-delta into a message", () => {
