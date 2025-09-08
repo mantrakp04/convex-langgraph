@@ -162,7 +162,7 @@ export function toUIMessages<
   messages: (MessageDoc & ExtraFields<METADATA>)[],
 ): UIMessage<METADATA, DATA_PARTS, TOOLS>[] {
   // Group assistant and tool messages together
-  const assistantGroups = groupAssistantMessages(messages);
+  const assistantGroups = groupAssistantMessages(sorted(messages));
 
   const uiMessages: UIMessage<METADATA, DATA_PARTS, TOOLS>[] = [];
   for (const group of assistantGroups) {
@@ -198,13 +198,10 @@ function groupAssistantMessages<METADATA = unknown>(
 ): Group<METADATA>[] {
   const groups: Group<METADATA>[] = [];
 
-  // Sort messages by order and stepOrder first to handle out-of-order arrivals
-  const sortedMessages = sorted(messages);
-
   let currentAssistantGroup: (MessageDoc & ExtraFields<METADATA>)[] = [];
   let currentOrder: number | undefined;
 
-  for (const message of sortedMessages) {
+  for (const message of messages) {
     const coreMessage = message.message && deserializeMessage(message.message);
     if (!coreMessage) continue;
 
@@ -241,7 +238,6 @@ function groupAssistantMessages<METADATA = unknown>(
       currentAssistantGroup.push(message);
 
       // End group if this is an assistant message without tool calls
-      // But only if we're processing messages in order (which we are now due to sorting)
       if (coreMessage.role === "assistant" && !message.tool) {
         groups.push({
           role: "assistant",
