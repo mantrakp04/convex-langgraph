@@ -179,7 +179,10 @@ export function dedupeMessages<
     if (last.order !== msg.order || last.stepOrder !== msg.stepOrder) {
       return [...msgs, msg];
     }
-    if (last.status === "pending" && msg.status !== "pending") {
+    if (
+      (last.status === "pending" || last.status === "streaming") &&
+      msg.status !== "pending"
+    ) {
       // Let's prefer a streaming or finalized message over a pending
       // one.
       return [...msgs.slice(0, -1), msg];
