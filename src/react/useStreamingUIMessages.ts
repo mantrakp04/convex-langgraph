@@ -120,8 +120,26 @@ export function useStreamingUIMessages<
 
   const threadId = args === "skip" ? undefined : args.threadId;
 
-  // Process new deltas and convert to UIMessageChunks, then use readUIMessageStream
   useEffect(() => {
+    const activeStreamIds = new Set(
+      streamList?.streams.messages.map((m) => m.streamId) ?? [],
+    );
+    // Clean up finished streams
+    setUIMessages((prev) => {
+      const toRemove = Object.keys(prev).filter(
+        (streamId) => !activeStreamIds.has(streamId),
+      );
+      return toRemove.length ? omit(prev, toRemove) : prev;
+    });
+    for (const [
+      streamId,
+      controller,
+    ] of uiMessageStreamControllers.current.entries()) {
+      if (!activeStreamIds.has(streamId)) {
+        uiMessageStreamControllers.current.delete(streamId);
+        controller.close();
+      }
+    }
     if (!cursorQuery?.streams?.deltas || !threadId) return;
 
     const deltasByStream = new Map<string, typeof cursorQuery.streams.deltas>();
@@ -259,27 +277,6 @@ export function useStreamingUIMessages<
     }
   }, [cursorQuery, streamCursors, threadId, streamList?.streams?.messages]);
 
-  // Clean up finished streams
-  useEffect(() => {
-    const activeStreamIds = new Set(
-      streamList?.streams.messages.map((m) => m.streamId) ?? [],
-    );
-    setUIMessages((prev) => {
-      const toRemove = Object.keys(prev).filter(
-        (streamId) => !activeStreamIds.has(streamId),
-      );
-      return toRemove.length ? omit(prev, toRemove) : prev;
-    });
-    for (const [
-      streamId,
-      controller,
-    ] of uiMessageStreamControllers.current.entries()) {
-      if (!activeStreamIds.has(streamId)) {
-        controller.close();
-        uiMessageStreamControllers.current.delete(streamId);
-      }
-    }
-  }, [streamList]);
 
   return useMemo(() => {
     if (!streamList) return undefined;
