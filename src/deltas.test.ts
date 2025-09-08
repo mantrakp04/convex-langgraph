@@ -5,37 +5,22 @@ import {
 } from "./deltas.js";
 import type { StreamMessage, StreamDelta } from "./validators.js";
 import { omit } from "convex-helpers";
-import type { TextStreamPart, ToolSet, ToolUIPart } from "ai";
-
-function makeStreamMessage(
-  streamId: string,
-  order: number,
-  stepOrder: number,
-): StreamMessage {
-  return { streamId, order, stepOrder } as StreamMessage;
-}
-
-function makeDelta(
-  streamId: string,
-  start: number,
-  end: number,
-  parts: TextStreamPart<ToolSet>[],
-): StreamDelta {
-  return { streamId, start, end, parts };
-}
+import type { Tool, ToolUIPart, TypedToolResult } from "ai";
 
 describe("mergeDeltas", () => {
   it("merges a single text-delta into a message", () => {
     const streamId = "s1";
-    const streamMessages = [makeStreamMessage(streamId, 1, 0)];
     const deltas = [
-      makeDelta(streamId, 0, 5, [
-        { type: "text-delta", id: "1", text: "Hello" },
-      ]),
+      {
+        streamId,
+        start: 0,
+        end: 5,
+        parts: [{ type: "text-delta", id: "1", text: "Hello" }],
+      } satisfies StreamDelta,
     ];
     const [messages, newStreams, changed] = deriveUIMessagesFromTextStreamParts(
       "thread1",
-      streamMessages,
+      [{ streamId, order: 1, stepOrder: 0, status: "streaming" }],
       [],
       deltas,
     );
@@ -48,18 +33,23 @@ describe("mergeDeltas", () => {
 
   it("merges multiple deltas for the same stream", () => {
     const streamId = "s1";
-    const streamMessages = [makeStreamMessage(streamId, 1, 0)];
     const deltas = [
-      makeDelta(streamId, 0, 5, [
-        { type: "text-delta", id: "1", text: "Hello" },
-      ]),
-      makeDelta(streamId, 5, 11, [
-        { type: "text-delta", id: "2", text: " World!" },
-      ]),
+      {
+        streamId,
+        start: 0,
+        end: 5,
+        parts: [{ type: "text-delta", id: "1", text: "Hello" }],
+      },
+      {
+        streamId,
+        start: 5,
+        end: 11,
+        parts: [{ type: "text-delta", id: "2", text: " World!" }],
+      },
     ];
     const [messages, newStreams, changed] = deriveUIMessagesFromTextStreamParts(
       "thread1",
-      streamMessages,
+      [{ streamId, order: 1, stepOrder: 0, status: "streaming" }],
       [],
       deltas,
     );
@@ -71,29 +61,38 @@ describe("mergeDeltas", () => {
 
   it("handles tool-call and tool-result parts", () => {
     const streamId = "s2";
-    const streamMessages = [makeStreamMessage(streamId, 2, 0)];
     const deltas = [
-      makeDelta(streamId, 0, 1, [
-        {
-          type: "tool-call",
-          toolCallId: "call1",
-          toolName: "myTool",
-          input: "What's the meaning of life?",
-        },
-      ]),
-      makeDelta(streamId, 1, 2, [
-        {
-          type: "tool-result",
-          toolCallId: "call1",
-          toolName: "myTool",
-          input: undefined,
-          output: "42",
-        },
-      ]),
+      {
+        streamId,
+        start: 0,
+        end: 1,
+        parts: [
+          {
+            type: "tool-call",
+            toolCallId: "call1",
+            toolName: "myTool",
+            input: "What's the meaning of life?",
+          },
+        ],
+      } satisfies StreamDelta,
+      {
+        streamId,
+        start: 1,
+        end: 2,
+        parts: [
+          {
+            type: "tool-result",
+            toolCallId: "call1",
+            toolName: "myTool",
+            input: undefined,
+            output: "42",
+          } satisfies TypedToolResult<{ myTool: Tool }>,
+        ],
+      } satisfies StreamDelta,
     ];
     const [[message], _, changed] = deriveUIMessagesFromTextStreamParts(
       "thread1",
-      streamMessages,
+      [{ streamId, order: 2, stepOrder: 0, status: "streaming" }],
       [],
       deltas,
     );
@@ -114,11 +113,10 @@ describe("mergeDeltas", () => {
 
   it("returns changed=false if no new deltas", () => {
     const streamId = "s3";
-    const streamMessages = [makeStreamMessage(streamId, 3, 0)];
     const deltas: StreamDelta[] = [];
     const [, newStreams, changed] = deriveUIMessagesFromTextStreamParts(
       "thread1",
-      streamMessages,
+      [{ streamId, order: 3, stepOrder: 0, status: "streaming" }],
       [],
       deltas,
     );
@@ -127,15 +125,26 @@ describe("mergeDeltas", () => {
   });
 
   it("handles multiple streams and sorts by order/stepOrder", () => {
-    const s1 = makeStreamMessage("s1", 1, 0);
-    const s2 = makeStreamMessage("s2", 2, 0);
     const deltas = [
-      makeDelta("s2", 0, 3, [{ type: "text-delta", id: "1", text: "B" }]),
-      makeDelta("s1", 0, 3, [{ type: "text-delta", id: "2", text: "A" }]),
+      {
+        streamId: "s2",
+        start: 0,
+        end: 3,
+        parts: [{ type: "text-delta", id: "1", text: "B" }],
+      } satisfies StreamDelta,
+      {
+        streamId: "s1",
+        start: 0,
+        end: 3,
+        parts: [{ type: "text-delta", id: "2", text: "A" }],
+      } satisfies StreamDelta,
     ];
     const [messages, _, changed] = deriveUIMessagesFromTextStreamParts(
       "thread1",
-      [s2, s1],
+      [
+        { streamId: "s1", order: 1, stepOrder: 0, status: "streaming" },
+        { streamId: "s2", order: 2, stepOrder: 0, status: "streaming" },
+      ],
       [],
       deltas,
     );
@@ -150,19 +159,29 @@ describe("mergeDeltas", () => {
 
   it("does not duplicate text content when merging sequential text-deltas", () => {
     const streamId = "s4";
-    const streamMessages = [makeStreamMessage(streamId, 4, 0)];
     const deltas = [
-      makeDelta(streamId, 0, 5, [
-        { type: "text-delta", id: "1", text: "Hello" },
-      ]),
-      makeDelta(streamId, 5, 11, [
-        { type: "text-delta", id: "2", text: " World!" },
-      ]),
-      makeDelta(streamId, 11, 12, [{ type: "text-delta", id: "3", text: "!" }]),
-    ];
+      {
+        streamId,
+        start: 0,
+        end: 5,
+        parts: [{ type: "text-delta", id: "1", text: "Hello" }],
+      },
+      {
+        streamId,
+        start: 5,
+        end: 11,
+        parts: [{ type: "text-delta", id: "2", text: " World!" }],
+      },
+      {
+        streamId,
+        start: 11,
+        end: 12,
+        parts: [{ type: "text-delta", id: "3", text: "!" }],
+      },
+    ] satisfies StreamDelta[];
     const [messages] = deriveUIMessagesFromTextStreamParts(
       "thread1",
-      streamMessages,
+      [{ streamId, order: 4, stepOrder: 0, status: "streaming" }],
       [],
       deltas,
     );
@@ -179,20 +198,34 @@ describe("mergeDeltas", () => {
 
   it("does not duplicate reasoning parts", () => {
     const streamId = "s6";
-    const streamMessages = [makeStreamMessage(streamId, 6, 0)];
     const deltas = [
-      makeDelta(streamId, 0, 1, [
-        { type: "reasoning-start", id: "1" },
-        { type: "reasoning-delta", id: "1", text: "I'm thinking..." },
-      ]),
-      makeDelta(streamId, 1, 2, [
-        { type: "reasoning-delta", id: "1", text: " Still thinking..." },
-      ]),
-      makeDelta(streamId, 2, 3, [{ type: "reasoning-end", id: "1" }]),
+      {
+        streamId,
+        start: 0,
+        end: 1,
+        parts: [
+          { type: "reasoning-start", id: "1" },
+          { type: "reasoning-delta", id: "1", text: "I'm thinking..." },
+        ],
+      },
+      {
+        streamId,
+        start: 1,
+        end: 2,
+        parts: [
+          { type: "reasoning-delta", id: "1", text: " Still thinking..." },
+        ],
+      },
+      {
+        streamId,
+        start: 2,
+        end: 3,
+        parts: [{ type: "reasoning-end", id: "1" }],
+      },
     ];
     const [messages] = deriveUIMessagesFromTextStreamParts(
       "thread1",
-      streamMessages,
+      [{ streamId, order: 6, stepOrder: 0, status: "streaming" }],
       [],
       deltas,
     );
@@ -209,14 +242,25 @@ describe("mergeDeltas", () => {
 
   it("applyDeltasToStreamMessage is idempotent and does not duplicate content", () => {
     const streamId = "s7";
-    const streamMessage = makeStreamMessage(streamId, 7, 0);
+    const streamMessage = {
+      streamId,
+      order: 7,
+      stepOrder: 0,
+      status: "streaming",
+    } satisfies StreamMessage;
     const deltas = [
-      makeDelta(streamId, 0, 5, [
-        { type: "text-delta", id: "1", text: "Hello" },
-      ]),
-      makeDelta(streamId, 5, 11, [
-        { type: "text-delta", id: "2", text: " World!" },
-      ]),
+      {
+        streamId,
+        start: 0,
+        end: 5,
+        parts: [{ type: "text-delta", id: "1", text: "Hello" }],
+      },
+      {
+        streamId,
+        start: 5,
+        end: 11,
+        parts: [{ type: "text-delta", id: "2", text: " World!" }],
+      },
     ];
     // First call: apply both deltas
     let [result, changed] = updateFromTextStreamParts(
@@ -237,7 +281,12 @@ describe("mergeDeltas", () => {
     // Third call: add a new delta
     const moreDeltas = [
       ...deltas,
-      makeDelta(streamId, 11, 12, [{ type: "text-delta", id: "3", text: "!" }]),
+      {
+        streamId,
+        start: 11,
+        end: 12,
+        parts: [{ type: "text-delta", id: "3", text: "!" }],
+      },
     ];
     [result, changed] = updateFromTextStreamParts(
       "thread1",
@@ -260,14 +309,22 @@ describe("mergeDeltas", () => {
 
   it("mergeDeltas is pure and does not mutate inputs", () => {
     const streamId = "s8";
-    const streamMessages = [makeStreamMessage(streamId, 8, 0)];
+    const streamMessages = [
+      { streamId, order: 8, stepOrder: 0, status: "streaming" },
+    ] satisfies StreamMessage[];
     const deltas = [
-      makeDelta(streamId, 0, 5, [
-        { type: "text-delta", id: "1", text: "Hello" },
-      ]),
-      makeDelta(streamId, 5, 11, [
-        { type: "text-delta", id: "2", text: " World!" },
-      ]),
+      {
+        streamId,
+        start: 0,
+        end: 5,
+        parts: [{ type: "text-delta", id: "1", text: "Hello" }],
+      },
+      {
+        streamId,
+        start: 5,
+        end: 11,
+        parts: [{ type: "text-delta", id: "2", text: " World!" }],
+      },
     ];
     // Deep freeze inputs to catch mutation
     function deepFreeze(obj: unknown): unknown {
@@ -309,14 +366,22 @@ describe("mergeDeltas", () => {
     );
     expect(changed1).toBe(changed2);
     // Inputs should remain unchanged
-    expect(streamMessages).toEqual([makeStreamMessage(streamId, 8, 0)]);
+    expect(streamMessages).toMatchObject([
+      { streamId, order: 8, stepOrder: 0, status: "streaming" },
+    ]);
     expect(deltas).toEqual([
-      makeDelta(streamId, 0, 5, [
-        { type: "text-delta", id: "1", text: "Hello" },
-      ]),
-      makeDelta(streamId, 5, 11, [
-        { type: "text-delta", id: "2", text: " World!" },
-      ]),
+      {
+        streamId,
+        start: 0,
+        end: 5,
+        parts: [{ type: "text-delta", id: "1", text: "Hello" }],
+      },
+      {
+        streamId,
+        start: 5,
+        end: 11,
+        parts: [{ type: "text-delta", id: "2", text: " World!" }],
+      },
     ]);
   });
 });
