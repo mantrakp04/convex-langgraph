@@ -373,7 +373,7 @@ function createAssistantUIMessage<
   const allText = group
     .map((msg) => extractTextFromMessageDoc(msg))
     .filter(Boolean)
-    .join("");
+    .join(" ");
 
   // Get status from last message
   const lastMessage = group[group.length - 1];
