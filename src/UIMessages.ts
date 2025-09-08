@@ -375,7 +375,7 @@ function createAssistantUIMessage<
 
   // Concatenate text from all messages in group
   const allText = group
-    .map((msg) => msg.text || ((msg.message && extractText(msg.message)) ?? ""))
+    .map((msg) => extractTextFromMessageDoc(msg))
     .filter(Boolean)
     .join("");
 
