@@ -16,6 +16,10 @@
   UIMessage, so it should transparently work for either hook strategy, though
   you may see more fields than you expect.
 - Defaults `text` to `undefined` if it's empty (no text chunks)
+- `mockModel` can now simulate responses for multi-step generation, by passing
+  a `contentSteps` array to its constructor. Each element is an array of content
+  for that step.
+- `createTool` supports async iteration.
 
 ## 0.2.7
 
