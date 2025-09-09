@@ -13,7 +13,7 @@ export type StreamQuery<Args = Record<string, unknown>> = FunctionReference<
   { streams: SyncStreamsReturnValue }
 >;
 
-export type StreamMessagesArgs<Query extends StreamQuery<unknown>> =
+export type StreamQueryArgs<Query extends StreamQuery<unknown>> =
   Query extends StreamQuery<unknown>
     ? Expand<BetterOmit<FunctionArgs<Query>, "streamArgs">>
     : never;

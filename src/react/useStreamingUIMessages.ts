@@ -12,7 +12,7 @@ import {
 } from "ai";
 import type { SyncStreamsReturnValue } from "../client/types.js";
 import type { StreamArgs } from "../validators.js";
-import type { StreamQuery, StreamMessagesArgs } from "./types.js";
+import type { StreamQuery, StreamQueryArgs } from "./types.js";
 import { type UIMessage } from "../UIMessages.js";
 import {
   blankUIMessage,
@@ -44,7 +44,7 @@ export function useStreamingUIMessages<
   Query extends StreamQuery<any> = StreamQuery<object>,
 >(
   query: Query,
-  args: StreamMessagesArgs<Query> | "skip",
+  args: StreamQueryArgs<Query> | "skip",
   options?: {
     startOrder?: number;
     skipStreamIds?: string[];
@@ -111,7 +111,6 @@ export function useStreamingUIMessages<
       ? ("skip" as const)
       : ({
           ...args,
-          paginationOpts: { cursor: null, numItems: 0 },
           streamArgs: { kind: "deltas", cursors } as StreamArgs,
         } as FunctionArgs<Query>),
   ) as
@@ -276,7 +275,6 @@ export function useStreamingUIMessages<
       }
     }
   }, [cursorQuery, streamCursors, threadId, streamList?.streams?.messages]);
-
 
   return useMemo(() => {
     if (!streamList) return undefined;

@@ -26,7 +26,7 @@ import type {
   MessageStatus,
   StreamArgs,
 } from "../validators.js";
-import type { StreamMessagesArgs, StreamQuery } from "./types.js";
+import type { StreamQueryArgs, StreamQuery } from "./types.js";
 import { useStreamingUIMessages } from "./useStreamingUIMessages.js";
 
 export type MessageDocLike = {
@@ -228,7 +228,7 @@ export function useStreamingThreadMessages<
 >(
   query: Query,
   args:
-    | (StreamMessagesArgs<Query> & {
+    | (StreamQueryArgs<Query> & {
         /** @deprecated Pass startOrder to the next argument (third argument). */
         startOrder?: number;
       })
@@ -241,7 +241,7 @@ export function useStreamingThreadMessages<
   const queryArgs =
     args === "skip"
       ? args
-      : (omit(args, ["startOrder"]) as unknown as StreamMessagesArgs<Query>);
+      : (omit(args, ["startOrder"]) as unknown as StreamQueryArgs<Query>);
   const startOrder =
     args === "skip" ? undefined : (args.startOrder ?? undefined);
   const queryOptions = { startOrder, ...options };
