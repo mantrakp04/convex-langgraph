@@ -127,6 +127,10 @@ export async function updateFromUIMessageChunks(
   });
   let message = uiMessage;
   for await (const messagePart of messageStream) {
+    assert(
+      messagePart.id === message.id,
+      `Expecting to only make one UIMessage in a stream, but have ${JSON.stringify(message)} and created ${JSON.stringify(messagePart)}`,
+    );
     message = messagePart;
   }
   if (failed) {
