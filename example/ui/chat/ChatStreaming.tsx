@@ -67,6 +67,8 @@ export default function ChatStreaming() {
 }
 
 function Story({ threadId, reset }: { threadId: string; reset: () => void }) {
+  // Loads the messages as UIMessages (where all tool calls and assistant
+  // responses are parts in one message). See below for other options.
   const {
     results: messages,
     status,
@@ -76,22 +78,25 @@ function Story({ threadId, reset }: { threadId: string; reset: () => void }) {
     { threadId },
     { initialNumItems: 10, stream: true },
   );
-
   // If you don't want to use UIMessages, you can use this hook:
   // (note: you'll need to return MessageDoc from listThreadMessages)
-  // const { results } = useThreadMessages(
-  //   api.chat.streaming.listThreadMessages,
-  //   { threadId },
-  //   { initialNumItems: 10, stream: true },
-  // );
-  // const messages = toUIMessages(results ?? []);
-
+  /*
+  const { results } = useThreadMessages(
+    api.chat.streaming.listThreadMessages,
+    { threadId },
+    { initialNumItems: 10, stream: true },
+  );
+  const messages = toUIMessages(results ?? []);
+  */
   // If you only want to show streaming messages, you can use this hook:
-  // const messages =
-  //   useStreamingUIMessages(api.chat.streaming.listThreadMessages, {
-  //     threadId,
-  //     paginationOpts: { numItems: 10, cursor: null },
-  //   }) ?? [];
+  /*
+  const messages =
+    useStreamingUIMessages(api.chat.streaming.listThreadMessages, {
+      threadId,
+      paginationOpts: { numItems: 10, cursor: null },
+    }) ?? [];
+  */
+
   const sendMessage = useMutation(
     api.chat.streaming.initiateAsyncStreaming,
   ).withOptimisticUpdate(
