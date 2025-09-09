@@ -44,7 +44,7 @@ export function createTool<INPUT, OUTPUT, Ctx extends ToolCtx = ToolCtx>(def: {
     ctx: Ctx,
     args: INPUT,
     options: ToolCallOptions,
-  ) => PromiseLike<OUTPUT>;
+  ) => PromiseLike<OUTPUT> | AsyncIterable<OUTPUT>;
   /**
    * Provide the context to use, e.g. when defining the tool at runtime.
    */
@@ -85,7 +85,7 @@ export function createTool<INPUT, OUTPUT, Ctx extends ToolCtx = ToolCtx>(def: {
     ctx: def.ctx,
     description: def.description,
     inputSchema: def.args,
-    async execute(args: INPUT, options: ToolCallOptions) {
+    execute(args: INPUT, options: ToolCallOptions) {
       if (!getCtx(this)) {
         throw new Error(
           "To use a Convex tool, you must either provide the ctx" +
