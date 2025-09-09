@@ -4,7 +4,7 @@ import type {
   LanguageModelV2StreamPart,
 } from "@ai-sdk/provider";
 import { simulateReadableStream, type ProviderMetadata } from "ai";
-import { pick } from "convex-helpers";
+import { assert, pick } from "convex-helpers";
 
 export const DEFAULT_TEXT = `
 A A A A A A A A A A A A A A A
@@ -22,8 +22,18 @@ export type MockModelArgs = {
     | (() => LanguageModelV2["supportedUrls"]);
   chunkDelayInMs?: number;
   initialDelayInMs?: number;
-  // provide either content or doGenerate & doStream
+  /** A list of the responses for multiple steps.
+   * For tool calls, the first list would include a tool call part,
+   * then the next list would be after the tool response or another tool call.
+   * Tool responses come from actual tool calls!
+   */
+  contentSteps?: LanguageModelV2Content[][];
+  /** A single list of content responded from each step.
+   * Provide contentSteps instead if you want to do multi-step responses with
+   * tool calls.
+   */
   content?: LanguageModelV2Content[];
+  // provide either content, contentResponses or doGenerate & doStream
   doGenerate?: LanguageModelV2["doGenerate"];
   doStream?: LanguageModelV2["doStream"];
   providerMetadata?: ProviderMetadata;
@@ -34,6 +44,10 @@ export type MockModelArgs = {
         error?: string;
       };
 };
+
+function atMostOneOf(...args: unknown[]) {
+  return args.filter(Boolean).length <= 1;
+}
 
 export function mockModel(args?: MockModelArgs): LanguageModelV2 {
   return new MockLanguageModel(args ?? {});
@@ -54,10 +68,19 @@ export class MockLanguageModel implements LanguageModelV2 {
   doStreamCalls: Parameters<LanguageModelV2["doStream"]>[0][] = [];
 
   constructor(args: MockModelArgs) {
+    assert(
+      atMostOneOf(
+        args.content,
+        args.contentSteps,
+        args.doGenerate && args.doStream,
+      ),
+      "Expected only one of content, contentSteps, or doGenerate and doStream",
+    );
     this.provider = args.provider || "mock-provider";
     this.modelId = args.modelId || "mock-model-id";
     const {
       content = [{ type: "text", text: DEFAULT_TEXT }],
+      contentSteps = [content],
       chunkDelayInMs = 0,
       initialDelayInMs = 0,
       supportedUrls = {},
@@ -72,77 +95,83 @@ export class MockLanguageModel implements LanguageModelV2 {
       "Mock error message";
     const metadata = pick(args, ["providerMetadata"]);
 
-    const chunks: LanguageModelV2StreamPart[] = [
-      { type: "stream-start", warnings: [] },
-    ];
-    chunks.push(
-      ...content.flatMap((c, ci): LanguageModelV2StreamPart[] => {
-        if (c.type !== "text" && c.type !== "reasoning") {
-          return [c];
+    const chunkResponses: LanguageModelV2StreamPart[][] = contentSteps.map(
+      (content) => {
+        const chunks: LanguageModelV2StreamPart[] = [
+          { type: "stream-start", warnings: [] },
+        ];
+        chunks.push(
+          ...content.flatMap((c, ci): LanguageModelV2StreamPart[] => {
+            if (c.type !== "text" && c.type !== "reasoning") {
+              return [c];
+            }
+            const metadata = pick(c, ["providerMetadata"]);
+            const deltas = c.text.split(" ");
+            const parts: LanguageModelV2StreamPart[] = [];
+            if (c.type === "reasoning") {
+              parts.push({
+                type: "reasoning-start",
+                id: `reasoning-${ci}`,
+                ...metadata,
+              });
+              parts.push(
+                ...deltas.map(
+                  (delta, di) =>
+                    ({
+                      type: "reasoning-delta",
+                      delta: (di ? " " : "") + delta,
+                      id: `reasoning-${ci}`,
+                      ...metadata,
+                    }) satisfies LanguageModelV2StreamPart,
+                ),
+              );
+              parts.push({
+                type: "reasoning-end",
+                id: `reasoning-${ci}`,
+                ...metadata,
+              });
+            } else if (c.type === "text") {
+              parts.push({
+                type: "text-start",
+                id: `txt-${ci}`,
+                ...metadata,
+              });
+              parts.push(
+                ...deltas.map(
+                  (delta, di) =>
+                    ({
+                      type: "text-delta",
+                      delta: (di ? " " : "") + delta,
+                      id: `txt-${ci}`,
+                      ...metadata,
+                    }) satisfies LanguageModelV2StreamPart,
+                ),
+              );
+              parts.push({
+                type: "text-end",
+                id: `txt-${ci}`,
+                ...metadata,
+              });
+            }
+            return parts;
+          }),
+        );
+        if (fail) {
+          chunks.push({
+            type: "error",
+            error,
+          });
         }
-        const metadata = pick(c, ["providerMetadata"]);
-        const deltas = c.text.split(" ");
-        const parts: LanguageModelV2StreamPart[] = [];
-        if (c.type === "reasoning") {
-          parts.push({
-            type: "reasoning-start",
-            id: `reasoning-${ci}`,
-            ...metadata,
-          });
-          parts.push(
-            ...deltas.map(
-              (delta, di) =>
-                ({
-                  type: "reasoning-delta",
-                  delta: (di ? " " : "") + delta,
-                  id: `reasoning-${ci}`,
-                  ...metadata,
-                }) satisfies LanguageModelV2StreamPart,
-            ),
-          );
-          parts.push({
-            type: "reasoning-end",
-            id: `reasoning-${ci}`,
-            ...metadata,
-          });
-        } else if (c.type === "text") {
-          parts.push({
-            type: "text-start",
-            id: `txt-${ci}`,
-            ...metadata,
-          });
-          parts.push(
-            ...deltas.map(
-              (delta, di) =>
-                ({
-                  type: "text-delta",
-                  delta: (di ? " " : "") + delta,
-                  id: `txt-${ci}`,
-                        ...metadata,
-                }) satisfies LanguageModelV2StreamPart,
-            ),
-          );
-          parts.push({
-            type: "text-end",
-            id: `txt-${ci}`,
-            ...metadata,
-          });
-        }
-        return parts;
-      }),
+        chunks.push({
+          type: "finish",
+          finishReason: fail ? "error" : "stop",
+          usage: DEFAULT_USAGE,
+          ...metadata,
+        });
+        return chunks;
+      },
     );
-    if (fail) {
-      chunks.push({
-        type: "error",
-        error,
-      });
-    }
-    chunks.push({
-      type: "finish",
-      finishReason: fail ? "error" : "stop",
-      usage: DEFAULT_USAGE,
-      ...metadata,
-    });
+    let callIndex = 0;
     this.doGenerate = async (options) => {
       this.doGenerateCalls.push(options);
 
@@ -153,14 +182,16 @@ export class MockLanguageModel implements LanguageModelV2 {
         return args.doGenerate(options);
       } else if (Array.isArray(args.doGenerate)) {
         return args.doGenerate[this.doGenerateCalls.length];
-      } else if (content) {
-        return {
-          content,
-          finishReason: "stop",
+      } else if (contentSteps.length) {
+        const result = {
+          content: contentSteps[callIndex % contentSteps.length],
+          finishReason: "stop" as const,
           usage: DEFAULT_USAGE,
           ...metadata,
           warnings: [],
         };
+        callIndex++;
+        return result;
       } else {
         throw new Error("Unexpected: no content or doGenerate");
       }
@@ -176,12 +207,13 @@ export class MockLanguageModel implements LanguageModelV2 {
         return args.doStream(options);
       } else if (Array.isArray(args.doStream)) {
         return args.doStream[this.doStreamCalls.length];
-      } else if (content) {
+      } else if (contentSteps) {
         const stream = simulateReadableStream({
-          chunks,
+          chunks: chunkResponses[callIndex % chunkResponses.length],
           initialDelayInMs,
           chunkDelayInMs,
         });
+        callIndex++;
 
         if (options.abortSignal) {
           options.abortSignal.addEventListener("abort", () => {
