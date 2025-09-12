@@ -23,6 +23,7 @@ import type {
   TelemetrySettings,
   CallSettings,
   Prompt,
+  Experimental_DownloadFunction,
 } from "ai";
 import type {
   Auth,
@@ -454,6 +455,12 @@ to enable JSON parsing.
 Optional telemetry configuration (experimental).
      */
     experimental_telemetry?: TelemetrySettings;
+    /**
+Custom download function to use for URLs.
+
+By default, files are downloaded if the model does not support the URL for the given media type.
+     */
+    experimental_download?: Experimental_DownloadFunction | undefined;
     /**
 Additional provider-specific options. They are passed through
 to the provider from the AI SDK and enable provider-specific
