@@ -20,6 +20,7 @@
   a `contentSteps` array to its constructor. Each element is an array of content
   for that step.
 - `createTool` supports async iteration.
+- Add `experimental_download` type to `generateObject`
 
 ## 0.2.7
 
