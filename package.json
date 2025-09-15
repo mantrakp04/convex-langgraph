@@ -107,7 +107,7 @@
   "main": "./dist/client/index.js",
   "types": "./dist/client/index.d.ts",
   "module": "./dist/client/index.js",
-  "dependencies": {
+  "optionalDependencies": {
     "@ungap/structured-clone": "^1.3.0"
   }
 }
