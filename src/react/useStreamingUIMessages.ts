@@ -25,7 +25,11 @@ import structuredClone from "@ungap/structured-clone";
 
 // Polyfill structuredClone to support readUIMessageStream on ReactNative
 if (!("structuredClone" in globalThis)) {
-  globalThis.structuredClone = structuredClone;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  void import("@ungap/structured-clone" as any).then(
+    ({ default: structuredClone }) =>
+      (globalThis.structuredClone = structuredClone),
+  );
 }
 
 /**
