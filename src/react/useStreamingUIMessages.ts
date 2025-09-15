@@ -21,6 +21,12 @@ import {
   statusFromStreamStatus,
 } from "../deltas.js";
 import { sorted } from "../shared.js";
+import structuredClone from "@ungap/structured-clone";
+
+// Polyfill structuredClone to support readUIMessageStream on ReactNative
+if (!("structuredClone" in globalThis)) {
+  globalThis.structuredClone = structuredClone;
+}
 
 /**
  * A hook that fetches streaming messages from a thread and converts them to UIMessages
