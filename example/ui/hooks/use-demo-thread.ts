@@ -33,7 +33,7 @@ export function useDemoThread(title: string) {
     }
   }, [resetThread, threadId]);
 
-  return { threadId, resetThread };
+  return { threadId, resetThread, setThreadId };
 }
 
 function getThreadIdFromHash() {
