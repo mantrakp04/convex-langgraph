@@ -21,6 +21,7 @@
   for that step.
 - `createTool` supports async iteration.
 - Add `experimental_download` type to `generateObject`
+- Adds `structuredClone` polyfill for ReactNative UIMessages.
 
 ## 0.2.7
 
