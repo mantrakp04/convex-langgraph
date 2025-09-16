@@ -9,14 +9,18 @@ import FilesImages from "./files/FilesImages";
 import RateLimiting from "./rate_limiting/RateLimiting";
 import { WeatherFashion } from "./workflows/WeatherFashion";
 import RagBasic from "./rag/RagBasic";
+import { StrictMode } from "react";
 import StreamArray from "./objects/StreamArray";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
 createRoot(document.getElementById("root")!).render(
-  <ConvexProvider client={convex}>
-    <App />
-  </ConvexProvider>,
+  <StrictMode>
+    <ConvexProvider client={convex}>
+      <App />
+    </ConvexProvider>
+    ,
+  </StrictMode>,
 );
 
 export function App() {
