@@ -6,9 +6,8 @@ import { type UIMessage } from "../UIMessages.js";
 import {
   blankUIMessage,
   getParts,
-  statusFromStreamStatus,
   updateFromUIMessageChunks,
-  updateFromTextStreamParts,
+  deriveUIMessagesFromTextStreamParts,
 } from "../deltas.js";
 import { useDeltaStreams } from "./useDeltaStreams.js";
 
@@ -66,75 +65,68 @@ export function useStreamingUIMessages<
 
   useEffect(() => {
     if (!streams) return;
+    // return if there are no new deltas beyond the cursors
+    let noNewDeltas = true;
+    for (const stream of streams) {
+      const lastDelta = stream.deltas.at(-1);
+      const cursor = messageState[stream.streamMessage.streamId]?.cursor;
+      if (!cursor) {
+        noNewDeltas = false;
+        break;
+      }
+      if (lastDelta && lastDelta.start >= cursor) {
+        noNewDeltas = false;
+        break;
+      }
+    }
+    if (noNewDeltas) {
+      return;
+    }
     const abortController = new AbortController();
     void (async () => {
-      let changed = false;
       const newMessageState: Record<
         string,
         {
           uiMessage: UIMessage<METADATA, DATA_PARTS, TOOLS>;
           cursor: number;
         }
-      > = {};
-      for (const stream of streams) {
-        if (abortController.signal.aborted) return;
-        const oldState = messageState[stream.streamMessage.streamId];
-        let uiMessage = oldState?.uiMessage;
-        if (!oldState) {
-          changed = true;
-          uiMessage = blankUIMessage(
-            stream.streamMessage,
-            threadId,
-          ) as UIMessage<METADATA, DATA_PARTS, TOOLS>;
-        }
-        const { parts, cursor } = getParts<UIMessageChunk>(
-          stream.deltas,
-          oldState?.cursor,
-        );
-        if (parts.length) {
-          changed = true;
-          if (stream.streamMessage.format === "UIMessageChunk") {
-            uiMessage = (await updateFromUIMessageChunks(
-              uiMessage,
-              parts,
-            )) as UIMessage<METADATA, DATA_PARTS, TOOLS>;
-            if (
-              uiMessage.status !== "failed" &&
-              uiMessage.status !== "success"
-            ) {
-              uiMessage.status = statusFromStreamStatus(
-                stream.streamMessage.status,
+      > = Object.fromEntries(
+        await Promise.all(
+          streams.map(async ({ deltas, streamMessage }) => {
+            const { parts, cursor } = getParts<UIMessageChunk>(deltas, 0);
+            if (streamMessage.format === "UIMessageChunk") {
+              // Unfortunately this can't handle resuming from a UIMessage and
+              // adding more chunks, so we re-create it from scratch each time.
+              const uiMessage = await updateFromUIMessageChunks(
+                blankUIMessage(streamMessage, threadId),
+                parts,
               );
+              return [
+                streamMessage.streamId,
+                {
+                  uiMessage,
+                  cursor,
+                },
+              ];
+            } else {
+              const [uiMessages] = deriveUIMessagesFromTextStreamParts(
+                threadId,
+                [streamMessage],
+                [],
+                deltas,
+              );
+              return [
+                streamMessage.streamId,
+                {
+                  uiMessage: uiMessages[0],
+                  cursor,
+                },
+              ];
             }
-          } else if (
-            stream.streamMessage.format === "TextStreamPart" ||
-            !stream.streamMessage.format
-          ) {
-            const updated = updateFromTextStreamParts(
-              threadId,
-              stream.streamMessage,
-              {
-                streamId: stream.streamMessage.streamId,
-                cursor,
-                message: uiMessage,
-              },
-              stream.deltas,
-            )[0];
-            uiMessage = updated.message as UIMessage<
-              METADATA,
-              DATA_PARTS,
-              TOOLS
-            >;
-          } else {
-            console.error("Unknown format", stream.streamMessage.format);
-          }
-        }
-        newMessageState[stream.streamMessage.streamId] = {
-          uiMessage,
-          cursor,
-        };
-      }
-      if (!changed || abortController.signal.aborted) return;
+          }),
+        ),
+      );
+      if (abortController.signal.aborted) return;
       setMessageState(newMessageState);
     })();
     return () => {

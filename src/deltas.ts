@@ -188,9 +188,6 @@ export function getParts<T extends StreamDelta["parts"][number]>(
     }
     if (cursor !== delta.start) {
       if (cursor >= delta.end) {
-        console.debug(
-          `Got duplicate delta for stream ${delta.streamId} at ${delta.start}`,
-        );
         continue;
       } else if (cursor < delta.start) {
         console.warn(

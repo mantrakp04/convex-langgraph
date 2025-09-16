@@ -1,9 +1,10 @@
 "use client";
 
 import type { StreamQuery, StreamQueryArgs } from "./types.js";
+import type { SyncStreamsReturnValue } from "../client/types.js";
 import type { FunctionArgs } from "convex/server";
 import type { StreamArgs, StreamDelta, StreamMessage } from "../validators.js";
-import type { SyncStreamsReturnValue } from "@convex-dev/agent";
+import { sorted } from "../shared.js";
 import { useQuery } from "convex/react";
 import { useState } from "react";
 import { assert } from "convex-helpers";
@@ -75,10 +76,12 @@ export function useDeltaStreams<
       ? undefined
       : !streamList
         ? state.deltaStreams?.map(({ streamMessage }) => streamMessage)
-        : streamList.streams.messages.filter(
-            ({ streamId, order }) =>
-              !options?.skipStreamIds?.includes(streamId) &&
-              (!options?.startOrder || order >= options.startOrder),
+        : sorted(
+            streamList.streams.messages.filter(
+              ({ streamId, order }) =>
+                !options?.skipStreamIds?.includes(streamId) &&
+                (!options?.startOrder || order >= options.startOrder),
+            ),
           );
 
   // Get the deltas for all the active streams, if any.
