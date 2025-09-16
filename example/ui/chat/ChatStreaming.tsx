@@ -10,6 +10,7 @@ import {
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useDemoThread } from "@/hooks/use-demo-thread";
+import { ToolUIPart } from "ai";
 
 export default function ChatStreaming() {
   const { threadId, resetThread } = useDemoThread("Streaming Chat Example");
@@ -192,6 +193,9 @@ function Message({ message }: { message: UIMessage }) {
       startStreaming: message.status === "streaming",
     },
   );
+  const nameToolCalls = message.parts.filter(
+    (p): p is ToolUIPart => p.type === "tool-getCharacterNames",
+  );
   return (
     <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
       <div
@@ -207,6 +211,13 @@ function Message({ message }: { message: UIMessage }) {
         {reasoningText && (
           <div className="text-xs text-gray-500">💭{reasoningText}</div>
         )}
+        {nameToolCalls.map((p) => (
+          <div key={p.toolCallId} className="text-xs text-gray-500">
+            Names generated:{" "}
+            {p.output ? (p.output as string[]).join(", ") : p.state}
+            <br />
+          </div>
+        ))}
         {visibleText || "..."}
       </div>
     </div>
