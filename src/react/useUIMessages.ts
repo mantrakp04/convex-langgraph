@@ -22,6 +22,7 @@ import type { StreamQuery } from "./types.js";
 import { type UIMessage, type UIStatus } from "../UIMessages.js";
 import { sorted } from "../shared.js";
 import { useStreamingUIMessages } from "./useStreamingUIMessages.js";
+import { combineUIMessages } from "../deltas.js";
 
 export type UIMessageLike = {
   order: number;
@@ -155,9 +156,11 @@ export function useUIMessages<
   );
 
   const merged = useMemo(() => {
+    // Messages may have been split by pagination. Re-combine them here.
+    const combined = combineUIMessages(sorted(paginated.results));
     return {
       ...paginated,
-      results: dedupeMessages(paginated.results, streamMessages ?? []),
+      results: dedupeMessages(combined, streamMessages ?? []),
     };
   }, [paginated, streamMessages]);
 
