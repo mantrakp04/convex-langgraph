@@ -135,6 +135,55 @@ export declare const components: {
         boolean
       >;
     };
+    coreMemories: {
+      append: FunctionReference<
+        "mutation",
+        "internal",
+        { field: "persona" | "human"; text: string; userId?: string },
+        null
+      >;
+      create: FunctionReference<
+        "mutation",
+        "internal",
+        { human?: string; persona?: string; userId?: string },
+        string
+      >;
+      get: FunctionReference<"query", "internal", { userId?: string }, any>;
+      insert: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          field: "persona" | "human";
+          index: number;
+          text: string;
+          userId?: string;
+        },
+        null
+      >;
+      prepend: FunctionReference<
+        "mutation",
+        "internal",
+        { field: "persona" | "human"; text: string; userId?: string },
+        null
+      >;
+      remove: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          field: "persona" | "human";
+          index: number;
+          length: number;
+          userId?: string;
+        },
+        null
+      >;
+      update: FunctionReference<
+        "mutation",
+        "internal",
+        { human?: string | null; persona?: string | null; userId?: string },
+        null
+      >;
+    };
     files: {
       addFile: FunctionReference<
         "mutation",
@@ -207,6 +256,73 @@ export declare const components: {
         "internal",
         { filename?: string; hash: string },
         null | { fileId: string; storageId: string }
+      >;
+    };
+    memories: {
+      add: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          embedding?: { model: string; vector: Array<number> };
+          memory: string;
+          userId?: string;
+        },
+        any
+      >;
+      get: FunctionReference<
+        "query",
+        "internal",
+        { memoryId: string; userId?: string },
+        any
+      >;
+      list: FunctionReference<
+        "query",
+        "internal",
+        { limit?: number; userId?: string },
+        any
+      >;
+      modify: FunctionReference<
+        "mutation",
+        "internal",
+        {
+          embedding?: null | { model: string; vector: Array<number> };
+          memoryId: string;
+          patch: { memory?: string };
+        },
+        any
+      >;
+      remove: FunctionReference<
+        "mutation",
+        "internal",
+        { memoryId: string },
+        any
+      >;
+      search: FunctionReference<
+        "action",
+        "internal",
+        {
+          embedding?: Array<number>;
+          embeddingModel?: string;
+          limit: number;
+          targetMessageId?: string;
+          userId?: string;
+          vectorScoreThreshold?: number;
+        },
+        Array<{
+          embeddingId?:
+            | string
+            | string
+            | string
+            | string
+            | string
+            | string
+            | string
+            | string
+            | string
+            | string;
+          memory: string;
+          userId?: string;
+        }>
       >;
     };
     messages: {
@@ -838,7 +954,7 @@ export declare const components: {
         "mutation",
         "internal",
         { messageIds: Array<string> },
-        Array<string>
+        any
       >;
       deleteByOrder: FunctionReference<
         "mutation",

@@ -17,7 +17,7 @@ import type {
 } from "convex/server";
 import { useMemo } from "react";
 import type { SyncStreamsReturnValue } from "../client/types.js";
-import type { MessageStatus, StreamArgs } from "../validators.js";
+import type { StreamArgs } from "../validators.js";
 import type { StreamQuery } from "./types.js";
 import { type UIMessage, type UIStatus } from "../UIMessages.js";
 import { sorted } from "../shared.js";

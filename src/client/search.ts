@@ -31,6 +31,7 @@ import { inlineMessagesFiles } from "./files.js";
 import { deserializeMessage } from "../mapping.js";
 
 const DEFAULT_VECTOR_SCORE_THRESHOLD = 0.0;
+const DEFAULT_MEMORY_LIMIT = 5;
 // 10k characters should be more than enough for most cases, and stays under
 // the 8k token limit for some models.
 const MAX_EMBEDDING_TEXT_LENGTH = 10_000;
@@ -110,6 +111,8 @@ export async function fetchRecentAndSearchMessages(
     upToAndIncludingMessageId?: string;
     contextOptions: ContextOptions;
     getEmbedding?: GetEmbedding;
+    embedding?: number[];
+    embeddingModel?: string;
   },
 ): Promise<{ recentMessages: MessageDoc[]; searchMessages: MessageDoc[] }> {
   assert(args.userId || args.threadId, "Specify userId or threadId");
@@ -146,8 +149,8 @@ export async function fetchRecentAndSearchMessages(
       throw new Error("searchUserMessages only works in an action");
     }
     let text = args.searchText;
-    let embedding: number[] | undefined;
-    let embeddingModel: string | undefined;
+    let embedding: number[] | undefined = args.embedding;
+    let embeddingModel: string | undefined = args.embeddingModel;
     if (!text) {
       if (targetMessageId) {
         const targetMessage = recentMessages.find(
@@ -292,7 +295,7 @@ export async function embedMessages(
   // Find the indexes of the messages that have text.
   const textIndexes = messageTexts
     .map((t, i) => (t ? i : undefined))
-    .filter((i) => i !== undefined);
+    .filter((i): i is number => i !== undefined);
   if (textIndexes.length === 0) {
     return undefined;
   }
@@ -451,6 +454,7 @@ export async function fetchContextWithPrompt(
 
   const promptArray = getPromptArray(args.prompt);
 
+  // Compute search text and embedding at the root and pass down to dependents
   const searchText = promptArray.length
     ? extractText(promptArray.at(-1)!)
     : args.promptMessageId
@@ -458,6 +462,40 @@ export async function fetchContextWithPrompt(
       : args.messages?.at(-1)
         ? extractText(args.messages.at(-1)!)
         : undefined;
+  let embedding: number[] | undefined;
+  let embeddingModel: string | undefined;
+  if (args.promptMessageId) {
+    const targetSearchFields = await ctx.runQuery(
+      component.messages.getMessageSearchFields,
+      { messageId: args.promptMessageId },
+    );
+    embedding = targetSearchFields.embedding;
+    embeddingModel = targetSearchFields.embeddingModel;
+    // If no embedding saved but we have text + model, embed once here
+    if (!embedding && targetSearchFields.text && textEmbeddingModel) {
+      const embedded = await embedMany(ctx, {
+        ...args,
+        userId,
+        threadId,
+        values: [targetSearchFields.text],
+        textEmbeddingModel,
+      });
+      embedding = embedded.embeddings[0];
+      embeddingModel = getModelName(textEmbeddingModel);
+
+      // TODO: save the embedding to the database
+    }
+  } else if (searchText && textEmbeddingModel) {
+    const embedded = await embedMany(ctx, {
+      ...args,
+      userId,
+      threadId,
+      values: [searchText],
+      textEmbeddingModel,
+    });
+    embedding = embedded.embeddings[0];
+    embeddingModel = getModelName(textEmbeddingModel);
+  }
   // If only a messageId is provided, this will add that message to the end.
   const { recentMessages, searchMessages } = await fetchRecentAndSearchMessages(
     ctx,
@@ -468,23 +506,8 @@ export async function fetchContextWithPrompt(
       targetMessageId: args.promptMessageId,
       searchText,
       contextOptions: args.contextOptions ?? {},
-      getEmbedding: async (text) => {
-        assert(
-          textEmbeddingModel,
-          "A textEmbeddingModel is required to be set on the Agent that you're doing vector search with",
-        );
-        return {
-          embedding: (
-            await embedMany(ctx, {
-              ...args,
-              userId,
-              values: [text],
-              textEmbeddingModel,
-            })
-          ).embeddings[0],
-          textEmbeddingModel,
-        };
-      },
+      embedding,
+      embeddingModel,
     },
   );
 
@@ -524,18 +547,60 @@ export async function fetchContextWithPrompt(
 
   const search = searchMessages
     .map((m) => m.message)
-    .filter((m) => !!m)
+    .filter((m): m is NonNullable<typeof m> => !!m)
     .map(deserializeMessage);
   const recent = prePromptDocs
     .map((m) => m.message)
-    .filter((m) => !!m)
+    .filter((m): m is NonNullable<typeof m> => !!m)
     .map(deserializeMessage);
   const inputMessages = messages.map(deserializeMessage);
   const inputPrompt = promptArray.map(deserializeMessage);
   const existingResponses = existingResponseDocs
     .map((m) => m.message)
-    .filter((m) => !!m)
+    .filter((m): m is NonNullable<typeof m> => !!m)
     .map(deserializeMessage);
+
+  // Fetch core memory for the user
+  const coreMemory = await ctx.runQuery(component.coreMemories.get, { userId });
+  const coreMemoryMessages: ModelMessage[] = [];
+  
+  if (coreMemory) {
+    if (coreMemory.persona) {
+      coreMemoryMessages.push({
+        role: "system",
+        content: `Core Memory - Agent Persona: ${coreMemory.persona}`,
+      });
+    }
+    if (coreMemory.human) {
+      coreMemoryMessages.push({
+        role: "system", 
+        content: `Core Memory - Human Context: ${coreMemory.human}`,
+      });
+    }
+  }
+
+  // Fetch memories for the user via vector search (if possible)
+  let memoriesMessages: ModelMessage[] = [];
+  if (embedding || args.promptMessageId) {
+    const memoryLimit = Math.min(
+      DEFAULT_MEMORY_LIMIT,
+      args.contextOptions?.searchOptions?.limit ?? 10,
+    );
+    const memories = await ctx.runAction(component.memories.search, {
+      userId,
+      targetMessageId: args.promptMessageId,
+      embedding,
+      embeddingModel,
+      limit: memoryLimit,
+      vectorScoreThreshold:
+        args.contextOptions?.searchOptions?.vectorScoreThreshold ??
+        DEFAULT_VECTOR_SCORE_THRESHOLD,
+    });
+    memoriesMessages = memories.map((m) => ({
+      role: "system",
+      content: `Archival Memory: ${m.memory}`,
+    }));
+  }
 
   let processedMessages = args.contextHandler
     ? await args.contextHandler(ctx, {
@@ -544,11 +609,15 @@ export async function fetchContextWithPrompt(
         inputMessages,
         inputPrompt,
         existingResponses,
+        coreMemory: coreMemoryMessages,
+        memories: memoriesMessages,
         userId,
         threadId,
       })
     : [
         ...search,
+        ...coreMemoryMessages,
+        ...memoriesMessages,
         ...recent,
         ...inputMessages,
         ...inputPrompt,
