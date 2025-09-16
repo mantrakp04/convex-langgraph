@@ -146,14 +146,6 @@ export const schema = defineSchema({
     .index("persona", ["persona"])
     .index("human", ["human"]),
 
-  memories: defineTable({
-    userId: v.optional(v.string()),
-    memory: v.string(),
-    embeddingId: v.optional(vVectorId),
-  })
-    .index("userId", ["userId"])
-    .index("embeddingId", ["embeddingId"]),
-
   files: defineTable({
     storageId: v.string(),
     mimeType: v.string(),

@@ -11,7 +11,6 @@
 import type * as apiKeys from "../apiKeys.js";
 import type * as coreMemories from "../coreMemories.js";
 import type * as files from "../files.js";
-import type * as memories from "../memories.js";
 import type * as messages from "../messages.js";
 import type * as streams from "../streams.js";
 import type * as threads from "../threads.js";
@@ -37,7 +36,6 @@ declare const fullApi: ApiFromModules<{
   apiKeys: typeof apiKeys;
   coreMemories: typeof coreMemories;
   files: typeof files;
-  memories: typeof memories;
   messages: typeof messages;
   streams: typeof streams;
   threads: typeof threads;
@@ -170,68 +168,6 @@ export type Mounts = {
       "public",
       { filename?: string; hash: string },
       null | { fileId: string; storageId: string }
-    >;
-  };
-  memories: {
-    add: FunctionReference<
-      "mutation",
-      "public",
-      {
-        embedding?: { model: string; vector: Array<number> };
-        memory: string;
-        userId?: string;
-      },
-      any
-    >;
-    get: FunctionReference<
-      "query",
-      "public",
-      { memoryId: string; userId?: string },
-      any
-    >;
-    list: FunctionReference<
-      "query",
-      "public",
-      { limit?: number; userId?: string },
-      any
-    >;
-    modify: FunctionReference<
-      "mutation",
-      "public",
-      {
-        embedding?: null | { model: string; vector: Array<number> };
-        memoryId: string;
-        patch: { memory?: string };
-      },
-      any
-    >;
-    remove: FunctionReference<"mutation", "public", { memoryId: string }, any>;
-    search: FunctionReference<
-      "action",
-      "public",
-      {
-        embedding?: Array<number>;
-        embeddingModel?: string;
-        limit: number;
-        targetMessageId?: string;
-        userId?: string;
-        vectorScoreThreshold?: number;
-      },
-      Array<{
-        embeddingId?:
-          | string
-          | string
-          | string
-          | string
-          | string
-          | string
-          | string
-          | string
-          | string
-          | string;
-        memory: string;
-        userId?: string;
-      }>
     >;
   };
   messages: {

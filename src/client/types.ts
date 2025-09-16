@@ -273,10 +273,6 @@ export type ContextHandler = (
      */
     coreMemory: ModelMessage[];
     /**
-     * Memories (Archival: aka long term memory) for the user, injected as system messages.
-     */
-    memories: ModelMessage[];
-    /**
      * The user associated with the generation, if any.
      */
     userId: string | undefined;

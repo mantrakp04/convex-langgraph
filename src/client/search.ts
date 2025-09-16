@@ -31,7 +31,6 @@ import { inlineMessagesFiles } from "./files.js";
 import { deserializeMessage } from "../mapping.js";
 
 const DEFAULT_VECTOR_SCORE_THRESHOLD = 0.0;
-const DEFAULT_MEMORY_LIMIT = 5;
 // 10k characters should be more than enough for most cases, and stays under
 // the 8k token limit for some models.
 const MAX_EMBEDDING_TEXT_LENGTH = 10_000;
@@ -579,29 +578,6 @@ export async function fetchContextWithPrompt(
     }
   }
 
-  // Fetch memories for the user via vector search (if possible)
-  let memoriesMessages: ModelMessage[] = [];
-  if (embedding || args.promptMessageId) {
-    const memoryLimit = Math.min(
-      DEFAULT_MEMORY_LIMIT,
-      args.contextOptions?.searchOptions?.limit ?? 10,
-    );
-    const memories = await ctx.runAction(component.memories.search, {
-      userId,
-      targetMessageId: args.promptMessageId,
-      embedding,
-      embeddingModel,
-      limit: memoryLimit,
-      vectorScoreThreshold:
-        args.contextOptions?.searchOptions?.vectorScoreThreshold ??
-        DEFAULT_VECTOR_SCORE_THRESHOLD,
-    });
-    memoriesMessages = memories.map((m) => ({
-      role: "system",
-      content: `Archival Memory: ${m.memory}`,
-    }));
-  }
-
   let processedMessages = args.contextHandler
     ? await args.contextHandler(ctx, {
         search,
@@ -610,14 +586,12 @@ export async function fetchContextWithPrompt(
         inputPrompt,
         existingResponses,
         coreMemory: coreMemoryMessages,
-        memories: memoriesMessages,
         userId,
         threadId,
       })
     : [
         ...search,
         ...coreMemoryMessages,
-        ...memoriesMessages,
         ...recent,
         ...inputMessages,
         ...inputPrompt,

@@ -551,6 +551,37 @@ describe("search.ts", () => {
       expect(result.order).toBeUndefined();
       expect(result.stepOrder).toBeUndefined();
     });
+
+    it("should include core memory system messages when present", async () => {
+      // Reset mocks so we can control specific call order/values
+      vi.mocked(mockCtx.runQuery).mockReset();
+      vi.mocked(mockCtx.runAction).mockReset();
+      // No recent messages or search
+      // First runQuery call in this scenario will be coreMemories.get
+      vi.mocked(mockCtx.runQuery).mockResolvedValueOnce(
+        { persona: "Helpful", human: "Prefers concise answers" } as unknown as ReturnType<RunQueryCtx["runQuery"]>,
+      );
+      vi.mocked(mockCtx.runAction).mockResolvedValue([]);
+
+      const result = await fetchContextWithPrompt(mockCtx, components.agent, {
+        ...baseArgs,
+        userId: "userCore",
+        threadId: "threadCore",
+        prompt: undefined,
+        messages: undefined,
+        promptMessageId: undefined,
+        contextOptions: { recentMessages: 0 },
+      });
+
+      expect(result.messages).toHaveLength(2);
+      expect(result.messages[0].role).toBe("system");
+      expect(String(result.messages[0].content)).toContain(
+        "Core Memory - Agent Persona: Helpful",
+      );
+      expect(String(result.messages[1].content)).toContain(
+        "Core Memory - Human Context: Prefers concise answers",
+      );
+    });
   });
 
   describe("fetchContextWithPrompt - Integration Tests", () => {
