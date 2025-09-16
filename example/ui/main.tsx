@@ -40,6 +40,7 @@ export function App() {
             <Route path="/rag-basic" element={<RagBasic />} />
             <Route path="/rate-limiting" element={<RateLimiting />} />
             <Route path="/weather-fashion" element={<WeatherFashion />} />
+            <Route path="/stream-array" element={<StreamArray />} />
           </Routes>
         </main>
         <Toaster />

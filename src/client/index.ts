@@ -161,6 +161,7 @@ export {
 } from "./search.js";
 export {
   DEFAULT_STREAMING_OPTIONS,
+  DeltaStreamer,
   abortStream,
   listStreams,
   syncStreams,

@@ -1,5 +1,5 @@
 import { action } from "../_generated/server.js";
-import { Agent, createThread, saveMessage } from "@convex-dev/agent";
+import { Agent, createThread } from "@convex-dev/agent";
 import { components } from "../_generated/api.js";
 import { defaultConfig } from "../agents/config.js";
 import z from "zod/v4";

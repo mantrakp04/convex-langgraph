@@ -91,6 +91,7 @@ export const create = mutation({
   returns: v.id("streamingMessages"),
   handler: async (ctx, args) => {
     const state = { kind: "streaming" as const, lastHeartbeat: Date.now() };
+    // TODO: enforce order/stepOrder uniqueness?
     const streamId = await ctx.db.insert("streamingMessages", {
       ...args,
       state,
