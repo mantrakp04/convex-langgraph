@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.2.8 alpha
+## 0.2.8
 
 - Adds useUIMessages and useUIStreamingMessages for UIMessage-first client
   usage. These have more metadata around reasoning streaming status, and
