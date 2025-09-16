@@ -35,7 +35,6 @@ import {
 import { convexToJson, v, type Value } from "convex/values";
 import type { threadFieldsSupportingPatch } from "../component/threads.js";
 import { type VectorDimension } from "../component/vector/tables.js";
-import { compressUIMessageChunks } from "../deltas.js";
 import {
   deserializeMessage,
   serializeMessage,
@@ -70,6 +69,7 @@ import {
 } from "./search.js";
 import { start } from "./start.js";
 import {
+  compressUIMessageChunks,
   DeltaStreamer,
   mergeTransforms,
   syncStreams,

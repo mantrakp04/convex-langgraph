@@ -1,14 +1,18 @@
 import {
-  type ChunkDetector,
-  type AsyncIterableStream,
-  type StreamTextTransform,
-  type ToolSet,
   smoothStream,
+  type AsyncIterableStream,
+  type ChunkDetector,
+  type StreamTextTransform,
+  type TextStreamPart,
+  type ToolSet,
+  type UIMessageChunk,
 } from "ai";
+import { v } from "convex/values";
 import {
+  vMessageDoc,
+  vPaginationResult,
   vStreamDelta,
   vStreamMessage,
-  vPaginationResult,
   type ProviderOptions,
   type StreamArgs,
   type StreamDelta,
@@ -20,8 +24,6 @@ import type {
   RunQueryCtx,
   SyncStreamsReturnValue,
 } from "./types.js";
-import { v } from "convex/values";
-import { vMessageDoc } from "../validators.js";
 
 export const vStreamMessagesReturnValue = v.object({
   ...vPaginationResult(vMessageDoc).fields,
@@ -359,4 +361,55 @@ export class DeltaStreamer<T> {
       reason,
     });
   }
+}
+
+/**
+ * Compressing parts when streaming to save bandwidth in deltas.
+ */
+
+export function compressUIMessageChunks(
+  parts: UIMessageChunk[],
+): UIMessageChunk[] {
+  const compressed: UIMessageChunk[] = [];
+  for (const part of parts) {
+    const last = compressed.at(-1);
+    if (part.type === "text-delta" || part.type === "reasoning-delta") {
+      if (last?.type === part.type && part.id === last.id) {
+        last.delta += part.delta;
+      } else {
+        compressed.push(part);
+      }
+    } else {
+      compressed.push(part);
+    }
+  }
+  return compressed;
+}
+
+export function compressTextStreamParts(
+  parts: TextStreamPart<ToolSet>[],
+): TextStreamPart<ToolSet>[] {
+  const compressed: TextStreamPart<ToolSet>[] = [];
+  for (const part of parts) {
+    const last = compressed.at(-1);
+    if (part.type === "text-delta" || part.type === "reasoning-delta") {
+      if (last?.type === part.type && part.id === last.id) {
+        last.text += part.text;
+      } else {
+        compressed.push(part);
+      }
+    } else {
+      if (part.type === "file") {
+        compressed.push({
+          type: "file",
+          file: {
+            ...part.file,
+            uint8Array: undefined as unknown as Uint8Array,
+          },
+        });
+      }
+      compressed.push(part);
+    }
+  }
+  return compressed;
 }

@@ -4,8 +4,8 @@ import type { GenericSchema, SchemaDefinition } from "convex/server";
 import { streamText } from "ai";
 import { components, initConvexTest } from "./setup.test.js";
 import { mockModel } from "./mockModel.js";
-import { DeltaStreamer } from "./streaming.js";
-import { compressUIMessageChunks, getParts } from "../deltas.js";
+import { compressUIMessageChunks, DeltaStreamer } from "./streaming.js";
+import { getParts } from "../deltas.js";
 import type { TestConvex } from "convex-test";
 
 const defaultTestOptions = {
