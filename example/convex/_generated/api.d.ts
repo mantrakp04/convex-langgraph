@@ -408,7 +408,7 @@ export declare const components: {
                               Record<string, any>
                             >;
                             sourceType: "url";
-                            title: string;
+                            title?: string;
                             type: "source";
                             url: string;
                           }
@@ -711,7 +711,7 @@ export declare const components: {
                               Record<string, any>
                             >;
                             sourceType: "url";
-                            title: string;
+                            title?: string;
                             type: "source";
                             url: string;
                           }
@@ -1019,7 +1019,7 @@ export declare const components: {
                           >;
                           providerOptions?: Record<string, Record<string, any>>;
                           sourceType: "url";
-                          title: string;
+                          title?: string;
                           type: "source";
                           url: string;
                         }
@@ -1337,7 +1337,7 @@ export declare const components: {
                               Record<string, any>
                             >;
                             sourceType: "url";
-                            title: string;
+                            title?: string;
                             type: "source";
                             url: string;
                           }
@@ -1626,7 +1626,7 @@ export declare const components: {
                           >;
                           providerOptions?: Record<string, Record<string, any>>;
                           sourceType: "url";
-                          title: string;
+                          title?: string;
                           type: "source";
                           url: string;
                         }
@@ -1899,7 +1899,7 @@ export declare const components: {
                           >;
                           providerOptions?: Record<string, Record<string, any>>;
                           sourceType: "url";
-                          title: string;
+                          title?: string;
                           type: "source";
                           url: string;
                         }
@@ -2196,7 +2196,7 @@ export declare const components: {
                               Record<string, any>
                             >;
                             sourceType: "url";
-                            title: string;
+                            title?: string;
                             type: "source";
                             url: string;
                           }
@@ -2410,7 +2410,7 @@ export declare const components: {
                           >;
                           providerOptions?: Record<string, Record<string, any>>;
                           sourceType: "url";
-                          title: string;
+                          title?: string;
                           type: "source";
                           url: string;
                         }

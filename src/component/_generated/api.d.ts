@@ -284,7 +284,7 @@ export type Mounts = {
                           >;
                           providerOptions?: Record<string, Record<string, any>>;
                           sourceType: "url";
-                          title: string;
+                          title?: string;
                           type: "source";
                           url: string;
                         }
@@ -546,7 +546,7 @@ export type Mounts = {
                           >;
                           providerOptions?: Record<string, Record<string, any>>;
                           sourceType: "url";
-                          title: string;
+                          title?: string;
                           type: "source";
                           url: string;
                         }
@@ -820,7 +820,7 @@ export type Mounts = {
                         providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         sourceType: "url";
-                        title: string;
+                        title?: string;
                         type: "source";
                         url: string;
                       }
@@ -1101,7 +1101,7 @@ export type Mounts = {
                           >;
                           providerOptions?: Record<string, Record<string, any>>;
                           sourceType: "url";
-                          title: string;
+                          title?: string;
                           type: "source";
                           url: string;
                         }
@@ -1356,7 +1356,7 @@ export type Mounts = {
                         providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         sourceType: "url";
-                        title: string;
+                        title?: string;
                         type: "source";
                         url: string;
                       }
@@ -1599,7 +1599,7 @@ export type Mounts = {
                         providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         sourceType: "url";
-                        title: string;
+                        title?: string;
                         type: "source";
                         url: string;
                       }
@@ -1859,7 +1859,7 @@ export type Mounts = {
                           >;
                           providerOptions?: Record<string, Record<string, any>>;
                           sourceType: "url";
-                          title: string;
+                          title?: string;
                           type: "source";
                           url: string;
                         }
@@ -2043,7 +2043,7 @@ export type Mounts = {
                         providerMetadata?: Record<string, Record<string, any>>;
                         providerOptions?: Record<string, Record<string, any>>;
                         sourceType: "url";
-                        title: string;
+                        title?: string;
                         type: "source";
                         url: string;
                       }

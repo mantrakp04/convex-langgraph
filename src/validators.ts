@@ -93,7 +93,7 @@ export const vSourcePart = v.union(
     sourceType: v.literal("url"),
     id: v.string(),
     url: v.string(),
-    title: v.string(),
+    title: v.optional(v.string()),
     providerOptions,
     providerMetadata,
   }),
