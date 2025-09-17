@@ -371,17 +371,17 @@ export function fromModelMessageContent(content: Content): Message["content"] {
   if (typeof content === "string") {
     return content;
   }
-  const metadata: {
-    providerOptions?: ProviderOptions;
-    providerMetadata?: ProviderMetadata;
-  } = {};
-  if ("providerOptions" in content) {
-    metadata.providerOptions = content.providerOptions as ProviderOptions;
-  }
-  if ("providerMetadata" in content) {
-    metadata.providerMetadata = content.providerMetadata as ProviderMetadata;
-  }
   return content.map((part) => {
+    const metadata: {
+      providerOptions?: ProviderOptions;
+      providerMetadata?: ProviderMetadata;
+    } = {};
+    if ("providerOptions" in part) {
+      metadata.providerOptions = part.providerOptions as ProviderOptions;
+    }
+    if ("providerMetadata" in part) {
+      metadata.providerMetadata = part.providerMetadata as ProviderMetadata;
+    }
     switch (part.type) {
       case "text":
         return part satisfies Infer<typeof vTextPart>;
