@@ -1,42 +1,40 @@
 import { assert } from "convex-helpers";
 import { mutation, query } from "./_generated/server.js";
 import { v } from "convex/values";
-import type { Doc } from "./_generated/dataModel.js";
+import { vCoreMemory, vCoreMemoryDoc } from "../validators.js";
 
 export const get = query({
   args: {
     userId: v.optional(v.string()),
   },
+  returns: v.union(v.null(), vCoreMemoryDoc),
   handler: async (ctx, args) => {
     return await ctx.db.query("coreMemories").withIndex("userId", (q) => q.eq("userId", args.userId)).first();
   },
 });
 
-export const create = mutation({
-  args: {
-    userId: v.optional(v.string()),
-    persona: v.optional(v.string()),
-    human: v.optional(v.string()),
-  },
-  returns: v.id("coreMemories"),
+export const getOrCreate = mutation({
+  args: vCoreMemory,
+  returns: v.union(v.null(), vCoreMemoryDoc),
   handler: async (ctx, args) => {
-    const doc: Doc<"coreMemories"> | null = await ctx.db
+    const doc = await ctx.db
       .query("coreMemories")
       .withIndex("userId", (q) => q.eq("userId", args.userId))
       .first();
     if (doc) {
       assert(doc.userId === args.userId, `Core memory for user ${args.userId} already exists`);
-      return doc._id;
+      return doc;
     }
-    return ctx.db.insert("coreMemories", args);
+    const id = await ctx.db.insert("coreMemories", args);
+    return await ctx.db.get(id);
   },
 });
 
 export const update = mutation({
   args: {
     userId: v.optional(v.string()),
-    persona: v.optional(v.union(v.string(), v.null())),
-    human: v.optional(v.union(v.string(), v.null())),
+    persona: v.optional(v.string()),
+    human: v.optional(v.string()),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -72,13 +70,14 @@ export const append = mutation({
   },
 });
 
-export const prepend = mutation({
+export const replace = mutation({
   args: {
     userId: v.optional(v.string()),
     field: v.union(v.literal("persona"), v.literal("human")),
-    text: v.string(),
+    oldContent: v.string(),
+    newContent: v.string(),
   },
-  returns: v.null(),
+  returns: v.number(),
   handler: async (ctx, args) => {
     const doc = await ctx.db
       .query("coreMemories")
@@ -86,39 +85,24 @@ export const prepend = mutation({
       .first();
     assert(doc, `Core memory for user ${args.userId} not found`);
     const base = (doc[args.field] as string | undefined) ?? "";
-    await ctx.db.patch(doc._id, { [args.field]: args.text + base });
-    return null;
-  },
-});
-
-export const insert = mutation({
-  args: {
-    userId: v.optional(v.string()),
-    field: v.union(v.literal("persona"), v.literal("human")),
-    index: v.number(),
-    text: v.string(),
-  },
-  returns: v.null(),
-  handler: async (ctx, args) => {
-    const doc = await ctx.db
-      .query("coreMemories")
-      .withIndex("userId", (q) => q.eq("userId", args.userId))
-      .first();
-    assert(doc, `Core memory for user ${args.userId} not found`);
-    const base = (doc[args.field] as string | undefined) ?? "";
-    const i = Math.max(0, Math.min(base.length, Math.floor(args.index)));
-    const updated = base.slice(0, i) + args.text + base.slice(i);
+    
+    if (args.oldContent === "") {
+      throw new Error("oldContent must be non-empty for replacement");
+    }
+    
+    const occurrences = base.split(args.oldContent).length - 1;
+    const updated = occurrences > 0
+      ? base.split(args.oldContent).join(args.newContent)
+      : base;
+    
     await ctx.db.patch(doc._id, { [args.field]: updated });
-    return null;
+    return occurrences;
   },
 });
 
 export const remove = mutation({
   args: {
     userId: v.optional(v.string()),
-    field: v.union(v.literal("persona"), v.literal("human")),
-    index: v.number(),
-    length: v.number(),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
@@ -127,12 +111,7 @@ export const remove = mutation({
       .withIndex("userId", (q) => q.eq("userId", args.userId))
       .first();
     assert(doc, `Core memory for user ${args.userId} not found`);
-    const base = (doc[args.field] as string | undefined) ?? "";
-    const start = Math.max(0, Math.min(base.length, Math.floor(args.index)));
-    const len = Math.max(0, Math.floor(args.length));
-    const end = Math.max(start, Math.min(base.length, start + len));
-    const updated = base.slice(0, start) + base.slice(end);
-    await ctx.db.patch(doc._id, { [args.field]: updated });
+    await ctx.db.delete(doc._id);
     return null;
   },
 });

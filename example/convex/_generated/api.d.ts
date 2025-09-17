@@ -18,6 +18,7 @@ import type * as chat_human from "../chat/human.js";
 import type * as chat_streamAbort from "../chat/streamAbort.js";
 import type * as chat_streaming from "../chat/streaming.js";
 import type * as chat_streamingReasoning from "../chat/streamingReasoning.js";
+import type * as coreMemories_utils from "../coreMemories/utils.js";
 import type * as crons from "../crons.js";
 import type * as debugging_rawRequestResponseHandler from "../debugging/rawRequestResponseHandler.js";
 import type * as etc_objects from "../etc/objects.js";
@@ -71,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   "chat/streamAbort": typeof chat_streamAbort;
   "chat/streaming": typeof chat_streaming;
   "chat/streamingReasoning": typeof chat_streamingReasoning;
+  "coreMemories/utils": typeof coreMemories_utils;
   crons: typeof crons;
   "debugging/rawRequestResponseHandler": typeof debugging_rawRequestResponseHandler;
   "etc/objects": typeof etc_objects;
@@ -142,45 +144,51 @@ export declare const components: {
         { field: "persona" | "human"; text: string; userId?: string },
         null
       >;
-      create: FunctionReference<
-        "mutation",
+      get: FunctionReference<
+        "query",
         "internal",
-        { human?: string; persona?: string; userId?: string },
-        string
-      >;
-      get: FunctionReference<"query", "internal", { userId?: string }, any>;
-      insert: FunctionReference<
-        "mutation",
-        "internal",
-        {
-          field: "persona" | "human";
-          index: number;
-          text: string;
+        { userId?: string },
+        null | {
+          _creationTime: number;
+          _id: string;
+          human: string;
+          persona: string;
           userId?: string;
-        },
-        null
+        }
       >;
-      prepend: FunctionReference<
+      getOrCreate: FunctionReference<
         "mutation",
         "internal",
-        { field: "persona" | "human"; text: string; userId?: string },
-        null
+        { human: string; persona: string; userId?: string },
+        null | {
+          _creationTime: number;
+          _id: string;
+          human: string;
+          persona: string;
+          userId?: string;
+        }
       >;
       remove: FunctionReference<
         "mutation",
         "internal",
+        { userId?: string },
+        null
+      >;
+      replace: FunctionReference<
+        "mutation",
+        "internal",
         {
           field: "persona" | "human";
-          index: number;
-          length: number;
+          newContent: string;
+          oldContent: string;
           userId?: string;
         },
-        null
+        number
       >;
       update: FunctionReference<
         "mutation",
         "internal",
-        { human?: string | null; persona?: string | null; userId?: string },
+        { human?: string; persona?: string; userId?: string },
         null
       >;
     };

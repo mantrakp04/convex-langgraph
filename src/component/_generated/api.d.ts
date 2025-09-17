@@ -64,45 +64,46 @@ export type Mounts = {
       { field: "persona" | "human"; text: string; userId?: string },
       null
     >;
-    create: FunctionReference<
+    get: FunctionReference<
+      "query",
+      "public",
+      { userId?: string },
+      null | {
+        _creationTime: number;
+        _id: string;
+        human: string;
+        persona: string;
+        userId?: string;
+      }
+    >;
+    getOrCreate: FunctionReference<
       "mutation",
       "public",
-      { human?: string; persona?: string; userId?: string },
-      string
+      { human: string; persona: string; userId?: string },
+      null | {
+        _creationTime: number;
+        _id: string;
+        human: string;
+        persona: string;
+        userId?: string;
+      }
     >;
-    get: FunctionReference<"query", "public", { userId?: string }, any>;
-    insert: FunctionReference<
+    remove: FunctionReference<"mutation", "public", { userId?: string }, null>;
+    replace: FunctionReference<
       "mutation",
       "public",
       {
         field: "persona" | "human";
-        index: number;
-        text: string;
+        newContent: string;
+        oldContent: string;
         userId?: string;
       },
-      null
-    >;
-    prepend: FunctionReference<
-      "mutation",
-      "public",
-      { field: "persona" | "human"; text: string; userId?: string },
-      null
-    >;
-    remove: FunctionReference<
-      "mutation",
-      "public",
-      {
-        field: "persona" | "human";
-        index: number;
-        length: number;
-        userId?: string;
-      },
-      null
+      number
     >;
     update: FunctionReference<
       "mutation",
       "public",
-      { human?: string | null; persona?: string | null; userId?: string },
+      { human?: string; persona?: string; userId?: string },
       null
     >;
   };

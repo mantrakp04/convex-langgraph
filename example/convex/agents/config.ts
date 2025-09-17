@@ -12,4 +12,6 @@ export const defaultConfig = {
   },
   // If you want to use vector search, you need to set this.
   textEmbeddingModel,
+  // Enable built-in memory tools (append/replace core memory, message search)
+  memoryTools: true,
 } satisfies Config;

@@ -139,8 +139,8 @@ export const schema = defineSchema({
 
   coreMemories: defineTable({
     userId: v.optional(v.string()),
-    persona: v.optional(v.string()),
-    human: v.optional(v.string()),
+    persona: v.string(),
+    human: v.string(),
   })
     .index("userId", ["userId"])
     .index("persona", ["persona"])

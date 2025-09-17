@@ -31,6 +31,7 @@ import { wrapTools, type ToolCtx } from "./createTool.js";
 import type { Agent } from "./index.js";
 import { omit } from "convex-helpers";
 import { saveInputMessages } from "./saveInputMessages.js";
+import { memoryTools } from "./memory.js";
 
 export async function start<
   T,
@@ -187,7 +188,14 @@ export async function start<
     promptMessageId,
     agent: opts.agentForToolCtx,
   } satisfies ToolCtx;
-  const tools = wrapTools(toolCtx, args.tools) as Tools;
+  
+  // Conditionally add memory tools if enabled and embedding model is available
+  const toolsToWrap: (ToolSet | undefined)[] = [args.tools];
+  if (opts.memoryTools && opts.textEmbeddingModel) {
+    toolsToWrap.push(memoryTools(component));
+  }
+  
+  const tools = wrapTools(toolCtx, ...toolsToWrap) as Tools;
   const aiArgs = {
     ...opts.callSettings,
     providerOptions: opts.providerOptions,

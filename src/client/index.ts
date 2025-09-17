@@ -245,6 +245,14 @@ export class Agent<
        */
       stopWhen?: StopCondition<AgentTools> | Array<StopCondition<AgentTools>>;
       /**
+       * Whether to automatically include memory tools (memory_rethink, memory_append, 
+       * memory_replace, message_search) when an embedding model is available.
+       * Memory tools allow the agent to manage core memory and search through
+       * message history using semantic search.
+       * Defaults to false.
+       */
+      memoryTools?: boolean;
+      /**
        * @deprecated Use `languageEmbeddingModel` instead.
        */
       chat?: LanguageModel;

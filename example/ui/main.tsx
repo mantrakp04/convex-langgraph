@@ -9,6 +9,7 @@ import FilesImages from "./files/FilesImages";
 import RateLimiting from "./rate_limiting/RateLimiting";
 import { WeatherFashion } from "./workflows/WeatherFashion";
 import RagBasic from "./rag/RagBasic";
+import MemoryUI from "./coreMemories/MemoryUI";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
@@ -40,6 +41,7 @@ export function App() {
             <Route path="/rag-basic" element={<RagBasic />} />
             <Route path="/rate-limiting" element={<RateLimiting />} />
             <Route path="/weather-fashion" element={<WeatherFashion />} />
+            <Route path="/core-memories" element={<MemoryUI />} />
           </Routes>
         </main>
         <Toaster />
@@ -67,6 +69,17 @@ function Index() {
             <p className="mt-2 text-gray-700">
               A simple chat with an AI agent. No tool calls, no streaming. Just
               enough to see it in action.
+            </p>
+          </li>
+          <li className="border rounded p-4 hover:shadow transition">
+            <Link
+              to="/core-memories"
+              className="text-xl font-semibold text-indigo-700 hover:underline"
+            >
+              Core Memories
+            </Link>
+            <p className="mt-2 text-gray-700">
+              Manage persona/human core memories with CRUD operations, append, and replace functions.
             </p>
           </li>
           <li className="border rounded p-4 hover:shadow transition">

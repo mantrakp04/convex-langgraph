@@ -511,3 +511,19 @@ export const vThreadDoc = v.object({
   status: vThreadStatus,
 });
 export type ThreadDoc = Infer<typeof vThreadDoc>;
+
+export const vCoreMemory = v.object({
+  userId: v.optional(v.string()),
+  persona: v.string(),
+  human: v.string(),
+});
+export type CoreMemory = Infer<typeof vCoreMemory>;
+
+export const vCoreMemoryDoc = v.object({
+  _id: v.string(),
+  _creationTime: v.number(),
+  userId: v.optional(v.string()),
+  persona: v.string(),
+  human: v.string(),
+});
+export type CoreMemoryDoc = Infer<typeof vCoreMemoryDoc>;
