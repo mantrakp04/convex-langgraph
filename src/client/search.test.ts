@@ -557,11 +557,13 @@ describe("search.ts", () => {
       vi.mocked(mockCtx.runQuery).mockReset();
       vi.mocked(mockCtx.runAction).mockReset();
       // No recent messages or search
-      // First runQuery call in this scenario will be coreMemories.get
-      vi.mocked(mockCtx.runQuery).mockResolvedValueOnce(
-        { persona: "Helpful", human: "Prefers concise answers" } as unknown as ReturnType<RunQueryCtx["runQuery"]>,
-      );
-      vi.mocked(mockCtx.runAction).mockResolvedValue([]);
+      const coreMemoryMessages: ModelMessage[] = [
+        { role: "system", content: "Core Memory - Agent Persona: Helpful" },
+        {
+          role: "system",
+          content: "Core Memory - Human Context: Prefers concise answers",
+        },
+      ];
 
       const result = await fetchContextWithPrompt(mockCtx, components.agent, {
         ...baseArgs,
@@ -571,6 +573,7 @@ describe("search.ts", () => {
         messages: undefined,
         promptMessageId: undefined,
         contextOptions: { recentMessages: 0 },
+        coreMemoryMessages,
       });
 
       expect(result.messages).toHaveLength(2);

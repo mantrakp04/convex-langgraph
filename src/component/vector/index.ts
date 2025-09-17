@@ -132,7 +132,7 @@ export async function insertVector(
   });
 }
 
-export function searchVectors(
+export async function searchVectors(
   ctx: ActionCtx,
   vector: number[],
   args: {
@@ -146,33 +146,42 @@ export function searchVectors(
   },
 ) {
   const tableName = getVectorTableName(args.dimension);
-  return ctx.vectorSearch(tableName, "vector", {
-    vector,
-    // TODO: to support more tables, add more "OR" clauses for each.
-    filter: (q) => {
-      if (args.searchAllMessagesForUserId) {
-        return q.eq("model_table_userId", [
+
+  let results;
+  if (args.searchAllMessagesForUserId) {
+    results = await ctx.vectorSearch(tableName, "vector", {
+      vector,
+      filter: (q) =>
+        q.eq("model_table_userId", [
           args.model,
           args.table,
-          args.searchAllMessagesForUserId,
-        ]);
-      }
-      if (args.userId && args.table === "memories") {
-        // Memories vector search should be keyed by userId, not threadId
-        return q.eq("model_table_userId", [args.model, args.table, args.userId]);
-      }
-      if (args.threadId) {
-        return q.eq("model_table_threadId", [
-          args.model,
-          args.table,
-          args.threadId,
-        ]);
-      }
-      // Fallback to model+table only – this broadens search but avoids undefined values
-      return q.eq("model_table_threadId", [args.model, args.table, ""]);
-    },
-    limit: args.limit,
-  });
+          args.searchAllMessagesForUserId!,
+        ]),
+      limit: args.limit,
+    });
+  } else if (args.userId && args.table === "memories") {
+    // Memories vector search should be keyed by userId, not threadId
+    results = await ctx.vectorSearch(tableName, "vector", {
+      vector,
+      filter: (q) => q.eq("model_table_userId", [args.model, args.table, args.userId!]),
+      limit: args.limit,
+    });
+  } else if (args.threadId) {
+    results = await ctx.vectorSearch(tableName, "vector", {
+      vector,
+      filter: (q) =>
+        q.eq("model_table_threadId", [args.model, args.table, args.threadId!]),
+      limit: args.limit,
+    });
+  } else {
+    // No valid threadId/userId to filter on: search broadly (caller narrows results later).
+    results = await ctx.vectorSearch(tableName, "vector", {
+      vector,
+      limit: args.limit,
+    });
+  }
+
+  return results;
 }
 
 export const updateBatch = mutation({

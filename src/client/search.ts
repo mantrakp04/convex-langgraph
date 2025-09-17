@@ -426,7 +426,7 @@ export async function generateAndSaveEmbeddings(
 
 /**
  * Similar to fetchContextMessages, but also combines the input messages,
- * with search context, recent messages, input messages, then prompt messages.
+ * with search context, core memory, recent messages, input messages, then prompt messages.
  * If there is a promptMessageId and prompt message(s) provided, it will splice
  * the prompt messages into the history to replace the promptMessageId message,
  * but still be followed by any existing messages that were in response to the
@@ -442,6 +442,7 @@ export async function fetchContextWithPrompt(
     userId: string | undefined;
     threadId: string | undefined;
     agentName?: string;
+    coreMemoryMessages?: ModelMessage[];
   } & Options &
     Config,
 ): Promise<{
@@ -559,24 +560,8 @@ export async function fetchContextWithPrompt(
     .filter((m): m is NonNullable<typeof m> => !!m)
     .map(deserializeMessage);
 
-  // Fetch core memory for the user
-  const coreMemory = await ctx.runQuery(component.coreMemories.get, { userId });
-  const coreMemoryMessages: ModelMessage[] = [];
-  
-  if (coreMemory) {
-    if (coreMemory.persona) {
-      coreMemoryMessages.push({
-        role: "system",
-        content: `Core Memory - Agent Persona: ${coreMemory.persona}`,
-      });
-    }
-    if (coreMemory.human) {
-      coreMemoryMessages.push({
-        role: "system", 
-        content: `Core Memory - Human Context: ${coreMemory.human}`,
-      });
-    }
-  }
+  // Core memory provided by caller to separate concerns from search.
+  const coreMemoryMessages: ModelMessage[] = args.coreMemoryMessages ?? [];
 
   let processedMessages = args.contextHandler
     ? await args.contextHandler(ctx, {

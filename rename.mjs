@@ -151,9 +151,9 @@ async function setup() {
   // Prompt for npm package name
   const npmPackageName = await new Promise((resolve) => {
     rl.question(
-      `Enter your npm package name [@convex-dev/${toKebabCase(componentName)}]: `,
+      `Enter your npm package name [${toKebabCase(componentName)}]: `,
       (answer) => {
-        resolve(answer.trim() || `@convex-dev/${toKebabCase(componentName)}`);
+        resolve(answer.trim() || toKebabCase(componentName));
       }
     );
   });
@@ -161,9 +161,9 @@ async function setup() {
   // Prompt for repository name
   const repoName = await new Promise((resolve) => {
     rl.question(
-      `Enter your repository name [get-convex/${toKebabCase(componentName)}]: `,
+      `Enter your repository name [${toKebabCase(componentName)}]: `,
       (answer) => {
-        resolve(answer.trim() || `get-convex/${toKebabCase(componentName)}`);
+        resolve(answer.trim() || toKebabCase(componentName));
       }
     );
   });
@@ -193,18 +193,18 @@ async function setup() {
   // Define all replacements
   const replacements = [
     // NPM package name
-    ["@useautumn/convex", npmPackageName],
+    ["@convex-dev/agent", npmPackageName],
 
     // Repository name
-    ["useautumn/autumn-js", repoName],
+    ["get-convex/agent", repoName],
 
     // Component name variations
-    ["Autumn", cases.pascal],
-    ["autumn", cases.camel],
-    ["autumn", cases.kebab],
-    ["autumn", cases.snake],
-    ["autumn", cases.space],
-    ["Autumn", cases.title],
+    ["Agent", cases.pascal],
+    ["agent", cases.camel],
+    ["agent", cases.kebab],
+    ["agent", cases.snake],
+    ["agent", cases.space],
+    ["Agent", cases.title],
   ];
 
   console.log("🔍 Finding files to update...");

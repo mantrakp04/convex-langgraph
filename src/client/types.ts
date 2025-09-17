@@ -90,6 +90,14 @@ export type Config = {
    * but you can override this by providing a context handler. Here you can
    * filter, modify, or enrich the context messages. If provided, the default
    * ordering will not apply. This excludes the system message / instructions.
+   *
+   * Default ordering (when no contextHandler provided):
+   * 1) search results
+   * 2) core memory (system messages)
+   * 3) recent thread messages
+   * 4) input messages (args.messages)
+   * 5) input prompt (args.prompt)
+   * 6) existing responses (same order as promptMessageId)
    */
   contextHandler?: ContextHandler;
   /**
@@ -718,6 +726,14 @@ export type Options = {
    * but you can override this by providing a context handler. Here you can
    * filter, modify, or enrich the context messages. If provided, the default
    * ordering will not apply. This excludes the system message / instructions.
+   *
+   * Default ordering (when no contextHandler provided):
+   * 1) search results
+   * 2) core memory (system messages)
+   * 3) recent thread messages
+   * 4) input messages (args.messages)
+   * 5) input prompt (args.prompt)
+   * 6) existing responses (same order as promptMessageId)
    */
   contextHandler?: ContextHandler;
 };

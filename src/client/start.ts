@@ -32,6 +32,7 @@ import type { Agent } from "./index.js";
 import { omit } from "convex-helpers";
 import { saveInputMessages } from "./saveInputMessages.js";
 import { memoryTools } from "./memory.js";
+import { fetchCoreMemoryMessages } from "./coreMemory.js";
 
 export async function start<
   T,
@@ -74,9 +75,10 @@ export async function start<
      * If provided alongside prompt, the ordering will be:
      * 1. system prompt
      * 2. search context
-     * 3. recent messages
-     * 4. these messages
-     * 5. prompt messages, including those already on the same `order` as
+     * 3. core memory
+     * 4. recent messages
+     * 5. these messages
+     * 6. prompt messages, including those already on the same `order` as
      *   the promptMessageId message, if provided.
      */
     messages?: (ModelMessage | Message)[];
@@ -129,6 +131,12 @@ export async function start<
         ?.userId) ??
     undefined;
 
+  const coreMemoryMessages = await fetchCoreMemoryMessages(
+    ctx,
+    component,
+    userId,
+  );
+
   const context = await fetchContextWithPrompt(ctx, component, {
     ...opts,
     userId,
@@ -136,6 +144,7 @@ export async function start<
     messages: args.messages,
     prompt: args.prompt,
     promptMessageId: args.promptMessageId,
+    coreMemoryMessages,
   });
 
   const saveMessages = opts.storageOptions?.saveMessages ?? "promptAndOutput";
