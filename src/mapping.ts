@@ -262,18 +262,18 @@ export async function serializeContent(
     return { content };
   }
   const fileIds: string[] = [];
-  const metadata: {
-    providerOptions?: ProviderOptions;
-    providerMetadata?: ProviderMetadata;
-  } = {};
-  if ("providerOptions" in content) {
-    metadata.providerOptions = content.providerOptions as ProviderOptions;
-  }
-  if ("providerMetadata" in content) {
-    metadata.providerMetadata = content.providerMetadata as ProviderMetadata;
-  }
   const serialized = await Promise.all(
     content.map(async (part) => {
+      const metadata: {
+        providerOptions?: ProviderOptions;
+        providerMetadata?: ProviderMetadata;
+      } = {};
+      if ("providerOptions" in part) {
+        metadata.providerOptions = part.providerOptions as ProviderOptions;
+      }
+      if ("providerMetadata" in part) {
+        metadata.providerMetadata = part.providerMetadata as ProviderMetadata;
+      }
       switch (part.type) {
         case "text": {
           return {
