@@ -105,6 +105,8 @@ import type {
 export { stepCountIs } from "ai";
 export {
   toModelMessage,
+  //** @deprecated use toModelMessage instead */
+  toModelMessage as deserializeMessage,
   guessMimeType,
   serializeDataOrUrl,
   serializeMessage,
