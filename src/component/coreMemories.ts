@@ -65,7 +65,7 @@ export const append = mutation({
       .first();
     assert(doc, `Core memory for user ${args.userId} not found`);
     const base = (doc[args.field] as string | undefined) ?? "";
-    await ctx.db.patch(doc._id, { [args.field]: base + args.text });
+    await ctx.db.patch(doc._id, { [args.field]: base + "\n" + args.text });
     return null;
   },
 });
