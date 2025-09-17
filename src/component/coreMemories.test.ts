@@ -70,7 +70,7 @@ describe("coreMemories", () => {
     });
     const got = await t.query(api.coreMemories.get, { userId: "u3" });
     expect(got?._id).toBe(doc?._id);
-    expect(got?.persona).toBe("AB");
+    expect(got?.persona).toBe("\nA\nB");
   });
 
   test("replace and remove operate correctly", async () => {
@@ -93,15 +93,12 @@ describe("coreMemories", () => {
     let got = await t.query(api.coreMemories.get, { userId: "u4" });
     expect(got?.human).toBe("heXXo");
 
-    // remove the "XX" segment
+    // remove the entire document
     await t.mutation(api.coreMemories.remove, {
       userId: "u4",
-      field: "human",
-      index: 2,
-      length: 2,
     });
     got = await t.query(api.coreMemories.get, { userId: "u4" });
-    expect(got?.human).toBe("heo");
+    expect(got).toBe(null);
   });
 
   test("getOrCreate prevents duplicates per userId", async () => {
