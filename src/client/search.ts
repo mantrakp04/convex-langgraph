@@ -28,7 +28,7 @@ import type {
   RunQueryCtx,
 } from "./types.js";
 import { inlineMessagesFiles } from "./files.js";
-import { deserializeMessage } from "../mapping.js";
+import { toModelMessage } from "../mapping.js";
 
 const DEFAULT_VECTOR_SCORE_THRESHOLD = 0.0;
 // 10k characters should be more than enough for most cases, and stays under
@@ -525,17 +525,17 @@ export async function fetchContextWithPrompt(
   const search = searchMessages
     .map((m) => m.message)
     .filter((m) => !!m)
-    .map(deserializeMessage);
+    .map(toModelMessage);
   const recent = prePromptDocs
     .map((m) => m.message)
     .filter((m) => !!m)
-    .map(deserializeMessage);
-  const inputMessages = messages.map(deserializeMessage);
-  const inputPrompt = promptArray.map(deserializeMessage);
+    .map(toModelMessage);
+  const inputMessages = messages.map(toModelMessage);
+  const inputPrompt = promptArray.map(toModelMessage);
   const existingResponses = existingResponseDocs
     .map((m) => m.message)
     .filter((m) => !!m)
-    .map(deserializeMessage);
+    .map(toModelMessage);
 
   let processedMessages = args.contextHandler
     ? await args.contextHandler(ctx, {

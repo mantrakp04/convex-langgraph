@@ -125,12 +125,12 @@ export async function serializeOrThrow(
   } as SerializedMessage;
 }
 
-export function deserializeMessage(
+export function toModelMessage(
   message: SerializedMessage | ModelMessage,
 ): ModelMessage {
   return {
     ...message,
-    content: deserializeContent(message.content),
+    content: toModelMessageContent(message.content),
   } as ModelMessage;
 }
 
@@ -144,7 +144,7 @@ export function serializeUsage(usage: LanguageModelUsage): Usage {
   };
 }
 
-export function deserializeUsage(usage: Usage): LanguageModelUsage {
+export function toModelMessageUsage(usage: Usage): LanguageModelUsage {
   return {
     inputTokens: usage.promptTokens,
     outputTokens: usage.completionTokens,
@@ -168,7 +168,7 @@ export function serializeWarnings(
   });
 }
 
-export function deserializeWarnings(
+export function toModelMessageWarnings(
   warnings: MessageWithMetadata["warnings"],
 ): CallWarning[] | undefined {
   // We don't need to do anythign here for now
@@ -424,7 +424,7 @@ export function fromModelMessageContent(content: Content): Message["content"] {
   }) as Message["content"];
 }
 
-export function deserializeContent(
+export function toModelMessageContent(
   content: SerializedContent | ModelMessage["content"],
 ): Content {
   if (typeof content === "string") {
@@ -451,14 +451,14 @@ export function deserializeContent(
       case "image":
         return {
           type: part.type,
-          image: deserializeUrl(part.image),
+          image: toModelMessageDataOrUrl(part.image),
           mediaType: getMimeOrMediaType(part),
           ...metadata,
         } satisfies ImagePart;
       case "file":
         return {
           type: part.type,
-          data: deserializeUrl(part.data),
+          data: toModelMessageDataOrUrl(part.data),
           filename: part.filename,
           mediaType: getMimeOrMediaType(part)!,
           ...metadata,
@@ -636,7 +636,7 @@ export function serializeDataOrUrl(
   ) as ArrayBuffer;
 }
 
-export function deserializeUrl(
+export function toModelMessageDataOrUrl(
   urlOrString: string | ArrayBuffer | URL | DataContent,
 ): URL | DataContent {
   if (urlOrString instanceof URL) {

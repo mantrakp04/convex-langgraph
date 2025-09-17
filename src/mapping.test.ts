@@ -2,11 +2,11 @@ import { describe, test, expect } from "vitest";
 import {
   guessMimeType,
   serializeDataOrUrl,
-  deserializeUrl,
+  toModelMessageDataOrUrl,
   serializeMessage,
-  deserializeMessage,
+  toModelMessage,
   serializeContent,
-  deserializeContent,
+  toModelMessageContent,
 } from "./mapping.js";
 import { api } from "./component/_generated/api.js";
 import type { AgentComponent, ActionCtx } from "./client/types.js";
@@ -57,8 +57,8 @@ describe("mapping", () => {
     const ser = serializeDataOrUrl(arr);
     expect(ser).toBeInstanceOf(ArrayBuffer);
     expect(new Uint8Array(ser as ArrayBuffer)).toEqual(arr);
-    // deserializeUrl should return the same ArrayBuffer
-    const deser = deserializeUrl(ser);
+    // toModelMessageDataOrUrl should return the same ArrayBuffer
+    const deser = toModelMessageDataOrUrl(ser);
     expect(deser).toBeInstanceOf(ArrayBuffer);
     expect(new Uint8Array(deser as ArrayBuffer)).toEqual(arr);
   });
@@ -83,7 +83,7 @@ describe("mapping", () => {
     const { message: ser } = await serializeMessage(ctx, component, message);
     // Use is for type validation
     expect(validate(vMessage, ser)).toBeTruthy();
-    const round = deserializeMessage(ser);
+    const round = toModelMessage(ser);
     expect(round).toEqual(message);
   });
 
@@ -97,7 +97,7 @@ describe("mapping", () => {
         value: "hello world",
       },
     } satisfies ToolResultPart;
-    const [result] = deserializeContent([toolResult]);
+    const [result] = toModelMessageContent([toolResult]);
     expect(result).toMatchObject(toolResult);
     const {
       content: [roundtrip],
@@ -123,7 +123,7 @@ describe("mapping", () => {
         value: "hello world",
       },
     };
-    const [deserialized] = deserializeContent([toolResult]);
+    const [deserialized] = toModelMessageContent([toolResult]);
     expect(deserialized).toMatchObject(expected);
     const {
       content: [serialized],

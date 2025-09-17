@@ -36,7 +36,7 @@ import { convexToJson, v, type Value } from "convex/values";
 import type { threadFieldsSupportingPatch } from "../component/threads.js";
 import { type VectorDimension } from "../component/vector/tables.js";
 import {
-  deserializeMessage,
+  toModelMessage,
   serializeMessage,
   serializeNewMessagesInStep,
   serializeObjectResult,
@@ -104,7 +104,7 @@ import type {
 
 export { stepCountIs } from "ai";
 export {
-  deserializeMessage,
+  toModelMessage,
   guessMimeType,
   serializeDataOrUrl,
   serializeMessage,
@@ -1496,10 +1496,8 @@ export class Agent<
           stopWhen: spec?.stopWhen,
           ...overrides,
           ...omit(rest, ["storageOptions", "contextOptions", "stream"]),
-          messages: messages?.map(deserializeMessage),
-          prompt: Array.isArray(prompt)
-            ? prompt.map(deserializeMessage)
-            : prompt,
+          messages: messages?.map(toModelMessage),
+          prompt: Array.isArray(prompt) ? prompt.map(toModelMessage) : prompt,
           toolChoice: args.toolChoice as ToolChoice<AgentTools>,
         } satisfies StreamingTextArgs<AgentTools>;
         if (maxSteps) {
@@ -1573,9 +1571,9 @@ export class Agent<
           ...objectArgs,
           ...callSettings,
           ...omit(rest, ["storageOptions", "contextOptions"]),
-          messages: args.messages?.map(deserializeMessage),
+          messages: args.messages?.map(toModelMessage),
           prompt: Array.isArray(args.prompt)
-            ? args.prompt.map(deserializeMessage)
+            ? args.prompt.map(toModelMessage)
             : args.prompt,
         } as GenerateObjectArgs<FlexibleSchema<T>>;
         const ctx = (
@@ -1633,7 +1631,7 @@ export class Agent<
       handler: async (ctx, args) => {
         const { messages } = await this.saveMessages(ctx, {
           ...args,
-          messages: args.messages.map((m) => deserializeMessage(m.message)),
+          messages: args.messages.map((m) => toModelMessage(m.message)),
           metadata: args.messages.map(({ message: _, ...m }) => m),
           skipEmbeddings: true,
         });

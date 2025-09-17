@@ -12,7 +12,7 @@ import { v } from "convex/values";
 import {
   createThread as createThread_,
   listMessages as listMessages_,
-  deserializeMessage,
+  toModelMessage,
   vContextOptions,
   vMessage,
   vMessageDoc,
@@ -272,7 +272,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
         {
           ...rest,
           ...(system ? { system } : {}),
-          ...(messages ? { messages: messages.map(deserializeMessage) } : {}),
+          ...(messages ? { messages: messages.map(toModelMessage) } : {}),
         },
         { contextOptions, storageOptions, saveStreamDeltas: true },
       );
@@ -343,7 +343,7 @@ export function definePlaygroundAPI<DataModel extends GenericDataModel>(
         targetMessageId,
         searchText: args.searchText,
         contextOptions: args.contextOptions,
-        messages: args.messages?.map(deserializeMessage),
+        messages: args.messages?.map(toModelMessage),
       });
       const targetMessageIndex = messages.findIndex(
         (m) => m._id === targetMessageId,

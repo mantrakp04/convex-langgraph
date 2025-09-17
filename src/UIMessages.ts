@@ -12,11 +12,7 @@ import {
   type UITools,
 } from "ai";
 import type { Infer } from "convex/values";
-import {
-  deserializeMessage,
-  fromModelMessage,
-  toUIFilePart,
-} from "./mapping.js";
+import { toModelMessage, fromModelMessage, toUIFilePart } from "./mapping.js";
 import { extractReasoning, extractText, isTool, sorted } from "./shared.js";
 import type {
   MessageDoc,
@@ -202,7 +198,7 @@ function groupAssistantMessages<METADATA = unknown>(
   let currentOrder: number | undefined;
 
   for (const message of messages) {
-    const coreMessage = message.message && deserializeMessage(message.message);
+    const coreMessage = message.message && toModelMessage(message.message);
     if (!coreMessage) continue;
 
     if (coreMessage.role === "user" || coreMessage.role === "system") {
@@ -304,7 +300,7 @@ function createUserUIMessage<
   message: MessageDoc & ExtraFields<METADATA>,
 ): UIMessage<METADATA, DATA_PARTS, TOOLS> {
   const text = extractTextFromMessageDoc(message);
-  const coreMessage = deserializeMessage(message.message!);
+  const coreMessage = toModelMessage(message.message!);
   const content = coreMessage.content;
   const nonStringContent =
     content && typeof content !== "string" ? content : [];
@@ -385,7 +381,7 @@ function createAssistantUIMessage<
   const allParts: UIMessage<METADATA, DATA_PARTS, TOOLS>["parts"] = [];
 
   for (const message of group) {
-    const coreMessage = message.message && deserializeMessage(message.message);
+    const coreMessage = message.message && toModelMessage(message.message);
     if (!coreMessage) continue;
 
     const content = coreMessage.content;
