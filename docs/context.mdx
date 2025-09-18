@@ -11,6 +11,13 @@ thread. This context is used to generate the next message.
 The context can include recent messages, as well as messages found via text and
 /or vector search.
 
+If a `promptMessageId` is provided, the context will include that message, as
+well as any other messages on that same `order`. More details on order are in
+[messages.mdx](./messages.mdx#message-ordering), but in practice this means that
+if you pass the ID of the user-submitted message as the `promptMessageId` and
+there had already been some assistant and/or tool responses, those will be
+included in the context, allowing the LLM to continue the conversation.
+
 You can also use [RAG](./rag.mdx) to add extra context to your prompt.
 
 ## Customizing the context

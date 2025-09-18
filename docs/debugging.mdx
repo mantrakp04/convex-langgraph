@@ -5,6 +5,8 @@ sidebar_position: 1100
 description: "Debugging the Agent component"
 ---
 
+## Debugging in the Playground
+
 Generally the [Playground](./playground.mdx) gives a lot of information about
 what's happening, but when that is insufficient, you have other options.
 
@@ -61,6 +63,13 @@ the table list to see the Agent data. The organization of the tables matches the
   a message that got stored in File Storage.
 
 ## Troubleshooting
+
+### Type errors on `components.agent`
+
+If you get type errors about `components.agent`, ensure you've run
+`npx convex dev` to generate code for the component. The types expected by the
+library are in the npm library, and the types for `components.agent` currently
+come from generated code in your project (via `npx convex dev`).
 
 ### Circular dependencies
 
