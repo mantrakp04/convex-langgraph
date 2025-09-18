@@ -32,7 +32,7 @@ import type { Agent } from "./index.js";
 import { omit } from "convex-helpers";
 import { saveInputMessages } from "./saveInputMessages.js";
 
-export async function start<
+export async function startGeneration<
   T,
   Tools extends ToolSet = ToolSet,
   CustomCtx extends object = object,

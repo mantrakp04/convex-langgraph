@@ -67,7 +67,7 @@ import {
   fetchContextMessages,
   generateAndSaveEmbeddings,
 } from "./search.js";
-import { start } from "./start.js";
+import { startGeneration } from "./start.js";
 import {
   compressUIMessageChunks,
   DeltaStreamer,
@@ -161,10 +161,12 @@ export {
   embedMessages,
   embedMany,
 } from "./search.js";
+export { startGeneration } from "./start.js";
 export {
   DEFAULT_STREAMING_OPTIONS,
   DeltaStreamer,
   abortStream,
+  compressUIMessageChunks,
   listStreams,
   syncStreams,
   vStreamMessagesReturnValue,
@@ -452,7 +454,7 @@ export class Agent<
     getSavedMessages: () => MessageDoc[];
   }> {
     type Tools = TOOLS extends undefined ? AgentTools : TOOLS;
-    return start<T, Tools, CustomCtx>(
+    return startGeneration<T, Tools, CustomCtx>(
       ctx,
       this.component,
       {

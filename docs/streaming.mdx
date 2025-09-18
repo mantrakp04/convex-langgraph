@@ -241,7 +241,7 @@ async function stream(ctx: ActionCtx, threadId: string, order: number) {
     // We don't need this on the client, but with it we can have some clients
     // selectively not stream down deltas when they're using HTTP streaming
     // already.
-    streamId: await streamer.streamId(),
+    streamId: await streamer.getStreamId(),
   };
 }
 ```

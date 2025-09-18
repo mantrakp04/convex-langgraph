@@ -40,7 +40,7 @@ export const streamArray = action({
     );
     await streamer.consumeStream(response.elementStream);
     return {
-      streamId: streamer.streamId,
+      streamId: await streamer.getStreamId(),
       object: await response.object,
     };
   },

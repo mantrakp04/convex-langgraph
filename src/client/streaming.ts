@@ -198,7 +198,7 @@ export function mergeTransforms<TOOLS extends ToolSet>(
  * optimize the data in transit.
  */
 export class DeltaStreamer<T> {
-  public streamId: string | undefined;
+  streamId: string | undefined;
   public readonly config: {
     throttleMs: number;
     onAsyncAbort: (reason: string) => Promise<void>;
@@ -255,16 +255,27 @@ export class DeltaStreamer<T> {
     }
   }
 
+  // Avoid race conditions by only creating once
+  #creatingStreamIdPromise: Promise<string> | undefined;
+  public async getStreamId() {
+    if (this.streamId) {
+      return this.streamId;
+    }
+    if (this.#creatingStreamIdPromise) {
+      return this.#creatingStreamIdPromise;
+    }
+    this.#creatingStreamIdPromise = this.ctx.runMutation(
+      this.component.streams.create,
+      this.metadata,
+    );
+    this.streamId = await this.#creatingStreamIdPromise;
+  }
+
   public async addParts(parts: T[]) {
     if (this.abortController.signal.aborted) {
       return;
     }
-    if (!this.streamId) {
-      this.streamId = await this.ctx.runMutation(
-        this.component.streams.create,
-        this.metadata,
-      );
-    }
+    await this.getStreamId();
     this.#nextParts.push(...parts);
     if (
       !this.#ongoingWrite &&
