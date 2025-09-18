@@ -245,6 +245,10 @@ export type ContextHandler = (
   ctx: RunActionCtx,
   args: {
     /**
+     * All messages in the default order.
+     */
+    allMessages: ModelMessage[];
+    /**
      * The messages fetched from search.
      */
     search: ModelMessage[];

@@ -99,6 +99,10 @@ const sharedDefaults = {
     const { usage, model, provider, agentName, threadId, userId } = args;
     // ... log, save usage to your database, etc.
   },
+  // Used for filtering, modifying, or enriching the context messages. See https://docs.convex.dev/agents/context
+  contextHandler: async (ctx, args) => {
+    return [...defaultMessages, args.allMessages];
+  },
   // Useful if you want to log or record every request and response.
   rawResponseHandler: async (ctx, args) => {
     const { request, response, agentName, threadId, userId } = args;
@@ -106,8 +110,6 @@ const sharedDefaults = {
   },
   // Used for limiting the number of retries when a tool call fails. Default: 3.
   callSettings: { maxRetries: 3, temperature: 1.0 },
-  // Used for setting default provider-specific options to the LLM calls.
-  providerOptions: { openai: { cacheControl: { type: "ephemeral" } } },
 } satisfies Config;
 
 // Define an agent similarly to the AI SDK

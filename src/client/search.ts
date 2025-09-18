@@ -537,8 +537,16 @@ export async function fetchContextWithPrompt(
     .filter((m) => !!m)
     .map(toModelMessage);
 
+    const allMessages = [
+      ...search,
+      ...recent,
+      ...inputMessages,
+      ...inputPrompt,
+      ...existingResponses,
+    ];
   let processedMessages = args.contextHandler
     ? await args.contextHandler(ctx, {
+        allMessages,
         search,
         recent,
         inputMessages,
@@ -547,13 +555,7 @@ export async function fetchContextWithPrompt(
         userId,
         threadId,
       })
-    : [
-        ...search,
-        ...recent,
-        ...inputMessages,
-        ...inputPrompt,
-        ...existingResponses,
-      ];
+    : allMessages;
 
   // Process messages to inline localhost files (if not, file urls pointing to localhost will be sent to LLM providers)
   if (process.env.CONVEX_CLOUD_URL?.startsWith("http://127.0.0.1")) {

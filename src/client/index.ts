@@ -175,6 +175,7 @@ export {
   searchThreadTitles,
   updateThreadMetadata,
 } from "./threads.js";
+export type { ContextHandler } from "./types.js";
 export { toUIMessages, fromUIMessages, type UIMessage } from "../UIMessages.js";
 
 export type {
