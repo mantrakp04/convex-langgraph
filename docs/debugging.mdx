@@ -28,6 +28,21 @@ const supportAgent = new Agent(components.agent, {
 });
 ```
 
+## Logging the context messages via the contextHandler
+
+You can log the context messages via the contextHandler, if you're curious
+what exactly the LLM is receiving.
+
+```ts
+const supportAgent = new Agent(components.agent, {
+  ...
+  contextHandler: async (ctx, { allMessages }) => {
+    console.log("context", allMessages);
+    return allMessages;
+  },
+});
+```
+
 ## Inspecting the database in the dashboard
 
 You can go to the Data tab in the dashboard and select the agent component above
