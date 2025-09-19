@@ -461,7 +461,7 @@ function createAssistantUIMessage<
           const output =
             typeof contentPart.output?.type === "string"
               ? contentPart.output.value
-              : (contentPart.output ?? contentPart.result);
+              : contentPart.output;
           const call = allParts.find(
             (part) =>
               part.type === `tool-${contentPart.toolName}` &&
