@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.2.10 alpha
+
+- Support models that return no content ([])
+
 ## 0.2.9
 
 - Add documentation for new behavior and export new functions.
