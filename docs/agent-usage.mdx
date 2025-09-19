@@ -1,6 +1,6 @@
 ---
 title: "Agent Definition and Usage"
-sidebar_label: "Agents"
+sidebar_label: "Agent Usage"
 sidebar_position: 140
 description: "Configuring and using the Agent class"
 ---
@@ -28,6 +28,8 @@ const agent = new Agent(components.agent, {
   languageModel: openai.chat("gpt-4o-mini"),
 });
 ```
+
+See [below](#customizing-the-agent) for more configuration options.
 
 Everything except the name can be overridden at the call site when calling the
 LLM, and many features available on the agent can be used without an Agent, if
