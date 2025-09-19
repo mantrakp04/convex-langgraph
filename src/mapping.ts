@@ -93,9 +93,7 @@ export async function serializeMessage(
 
 // Similar to serializeMessage, but doesn't save any files and is looser
 // For use on the frontend / in synchronous environments.
-export function fromModelMessage(
-  message: ModelMessage,
-): Message {
+export function fromModelMessage(message: ModelMessage): Message {
   const content = fromModelMessageContent(message.content);
   return {
     role: message.role,
@@ -199,7 +197,9 @@ export async function serializeNewMessagesInStep<TOOLS extends ToolSet>(
   const messages: MessageWithMetadata[] = await Promise.all(
     (step.toolResults.length > 0
       ? step.response.messages.slice(-2)
-      : step.response.messages.slice(-1)
+      : step.content.length
+        ? step.response.messages.slice(-1)
+        : [{ role: "assistant" as const, content: [] }]
     ).map(async (msg): Promise<MessageWithMetadata> => {
       const { message, fileIds } = await serializeMessage(ctx, component, msg);
       return parse(vMessageWithMetadata, {
