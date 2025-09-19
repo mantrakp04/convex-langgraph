@@ -100,7 +100,7 @@ describe("UIMessageChunks", () => {
       { type: "finish" },
     ]);
     expect(updatedMessage.text).toBe(
-      "Hey ho.The best ice cream flavor is vanilla.",
+      "Hey ho. The best ice cream flavor is vanilla.",
     );
     const expectedParts = [
       {
@@ -590,7 +590,9 @@ describe("combineUIMessages", () => {
     expect(combined[0].text).toBe("The result is 5.");
     expect(combined[0].parts).toHaveLength(2);
 
-    const toolPart = combined[0].parts.find(p => p.type === "tool-calculator");
+    const toolPart = combined[0].parts.find(
+      (p) => p.type === "tool-calculator",
+    );
     expect(toolPart).toMatchObject({
       type: "tool-calculator",
       state: "output-available",
@@ -599,7 +601,7 @@ describe("combineUIMessages", () => {
       output: { result: 5 },
     });
 
-    const textPart = combined[0].parts.find(p => p.type === "text");
+    const textPart = combined[0].parts.find((p) => p.type === "text");
     expect(textPart).toMatchObject({
       type: "text",
       text: "The result is 5.",
@@ -629,7 +631,13 @@ describe("combineUIMessages", () => {
       status: "success" as const,
       role: "assistant" as const,
       text: "The result is 5.",
-      parts: [{ type: "text" as const, text: "The result is 5.", state: "done" as const }],
+      parts: [
+        {
+          type: "text" as const,
+          text: "The result is 5.",
+          state: "done" as const,
+        },
+      ],
     };
 
     const combined = combineUIMessages([userMessage, assistantMessage]);
@@ -706,8 +714,11 @@ describe("combineUIMessages", () => {
     expect(combined[0].text).toBe("The formatted result is: 5");
     expect(combined[0].parts).toHaveLength(3);
 
-    const calculatorPart = combined[0].parts.find(p =>
-      p.type === "tool-calculator" && "toolCallId" in p && p.toolCallId === "call_1"
+    const calculatorPart = combined[0].parts.find(
+      (p) =>
+        p.type === "tool-calculator" &&
+        "toolCallId" in p &&
+        p.toolCallId === "call_1",
     );
     expect(calculatorPart).toMatchObject({
       type: "tool-calculator",
@@ -717,8 +728,11 @@ describe("combineUIMessages", () => {
       output: { result: 5 },
     });
 
-    const formatterPart = combined[0].parts.find(p =>
-      p.type === "tool-formatter" && "toolCallId" in p && p.toolCallId === "call_2"
+    const formatterPart = combined[0].parts.find(
+      (p) =>
+        p.type === "tool-formatter" &&
+        "toolCallId" in p &&
+        p.toolCallId === "call_2",
     );
     expect(formatterPart).toMatchObject({
       type: "tool-formatter",
@@ -775,9 +789,7 @@ describe("combineUIMessages", () => {
     expect(combined[0].text).toBe("Still processing...");
     expect(combined[0].parts).toHaveLength(2);
 
-    const toolPart = combined[0].parts.find(p =>
-      p.type === "dynamic-tool"
-    );
+    const toolPart = combined[0].parts.find((p) => p.type === "dynamic-tool");
     expect(toolPart).toMatchObject({
       type: "dynamic-tool",
       state: "input-available",
@@ -786,9 +798,7 @@ describe("combineUIMessages", () => {
       input: { operation: "add", a: 2, b: 3 },
     });
 
-    const textPart = combined[0].parts.find(p =>
-      p.type === "text"
-    );
+    const textPart = combined[0].parts.find((p) => p.type === "text");
     expect(textPart).toMatchObject({
       type: "text",
       text: "Still processing...",

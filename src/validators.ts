@@ -221,6 +221,16 @@ export const vMessage = v.union(
 );
 export type Message = Infer<typeof vMessage>;
 
+export type MessageContentParts =
+  | Infer<typeof vTextPart>
+  | Infer<typeof vImagePart>
+  | Infer<typeof vFilePart>
+  | Infer<typeof vReasoningPart>
+  | Infer<typeof vRedactedReasoningPart>
+  | Infer<typeof vToolCallPart>
+  | Infer<typeof vToolResultPart>
+  | Infer<typeof vSourcePart>;
+
 export const vSource = v.union(
   v.object({
     type: v.optional(v.literal("source")),

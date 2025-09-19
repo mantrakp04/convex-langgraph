@@ -1,5 +1,18 @@
-import type { ModelMessage } from "ai";
-import type { Message } from "./validators.js";
+import type {
+  FilePart,
+  ImagePart,
+  ReasoningPart,
+  ToolCallPart,
+  ToolResultPart,
+} from "@ai-sdk/provider-utils";
+import type {
+  ModelMessage,
+  TextPart,
+  UIDataTypes,
+  UIMessagePart,
+  UITools,
+} from "ai";
+import type { Message, MessageContentParts } from "./validators.js";
 
 export const DEFAULT_RECENT_MESSAGES = 100;
 
@@ -18,25 +31,37 @@ export function extractText(message: Message | ModelMessage) {
       if (typeof message.content === "string") {
         return message.content;
       }
-      return message.content
-        .filter((c) => c.type === "text")
-        .map((c) => c.text)
-        .join("");
+      return joinText(message.content);
     case "assistant":
       if (typeof message.content === "string") {
         return message.content;
       } else {
-        const textParts = message.content.filter((c) => c.type === "text");
-        if (!textParts.length) {
-          return undefined;
-        }
-        return textParts.map((c) => c.text).join("");
+        return joinText(message.content) || undefined;
       }
     case "system":
       return message.content;
     // we don't extract text from tool messages
   }
   return undefined;
+}
+
+export function joinText(
+  parts: (
+    | UIMessagePart<UIDataTypes, UITools>
+    | TextPart
+    | ImagePart
+    | FilePart
+    | ReasoningPart
+    | ToolCallPart
+    | ToolResultPart
+    | MessageContentParts
+  )[],
+) {
+  return parts
+    .filter((p) => p.type === "text")
+    .map((p) => p.text)
+    .filter(Boolean)
+    .join(" ");
 }
 
 export function extractReasoning(message: Message | ModelMessage) {
@@ -46,7 +71,7 @@ export function extractReasoning(message: Message | ModelMessage) {
   return message.content
     .filter((c) => c.type === "reasoning")
     .map((c) => c.text)
-    .join("");
+    .join(" ");
 }
 
 export const DEFAULT_MESSAGE_RANGE = { before: 2, after: 1 };

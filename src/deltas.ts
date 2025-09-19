@@ -11,7 +11,7 @@ import {
 } from "ai";
 import { assert, pick } from "convex-helpers";
 import { type UIMessage } from "./UIMessages.js";
-import { sorted } from "./shared.js";
+import { joinText, sorted } from "./shared.js";
 import {
   type MessageStatus,
   type StreamDelta,
@@ -86,10 +86,7 @@ export async function updateFromUIMessageChunks(
   if (failed) {
     message.status = "failed";
   }
-  message.text = message.parts
-    .filter((p) => p.type === "text")
-    .map((p) => p.text)
-    .join("");
+  message.text = joinText(message.parts);
   return message;
 }
 
@@ -499,10 +496,7 @@ export function updateFromTextStreamParts(
       part.state = "done";
     }
   }
-  message.text = message.parts
-    .filter((p) => p.type === "text")
-    .map((p) => p.text)
-    .join("");
+  message.text = joinText(message.parts);
   return [
     {
       streamId: streamMessage.streamId,
@@ -569,10 +563,7 @@ export function combineUIMessages(messages: UIMessage[]): UIMessage[] {
       ...previous,
       ...pick(message, ["status", "metadata", "agentName"]),
       parts: newParts,
-      text: newParts
-        .filter((p) => p.type === "text")
-        .map((p) => p.text)
-        .join(""),
+      text: joinText(newParts),
     });
     return acc;
   }, [] as UIMessage[]);
