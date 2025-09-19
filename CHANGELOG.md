@@ -1,13 +1,16 @@
 # Changelog
 
-## 0.2.10 alpha
+## 0.2.10
 
 - Support models that return no content ([])
+- Breaking bug fix: we were returning output in UIMessages with extra { type:
+  "json", value: ... } instead of the value itself. Now we return the output
+  directly.
 
 ## 0.2.9
 
 - Add documentation for new behavior and export new functions.
-- Breaking: Renames deserializeMessage to toModelMessage.
+- Deprecation: Renames deserializeMessage to toModelMessage.
 - Fix: Pass provider metadata through more consistently in message parts.
 
 ## 0.2.8
