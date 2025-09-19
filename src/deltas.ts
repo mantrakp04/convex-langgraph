@@ -17,6 +17,7 @@ import {
   type StreamDelta,
   type StreamMessage,
 } from "./validators.js";
+import { getErrorMessage } from "@ai-sdk/provider-utils";
 
 export function blankUIMessage<METADATA = unknown>(
   streamMessage: StreamMessage & { metadata?: METADATA },
@@ -470,10 +471,7 @@ export function updateFromTextStreamParts(
       case "tool-error": {
         const toolPart = toolPartsById.get(part.toolCallId);
         if (toolPart) {
-          toolPart.errorText =
-            part.error instanceof Error
-              ? part.error.message.toString()
-              : String(part.error);
+          toolPart.errorText = getErrorMessage(part.error);
         }
         break;
       }
