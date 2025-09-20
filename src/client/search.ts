@@ -230,23 +230,48 @@ export async function fetchRecentAndSearchMessages(
  */
 export function filterOutOrphanedToolMessages(docs: MessageDoc[]) {
   const toolCallIds = new Set<string>();
+  const toolResultIds = new Set<string>();
   const result: MessageDoc[] = [];
+  for (const doc of docs) {
+    if (doc.message && Array.isArray(doc.message.content)) {
+      for (const content of doc.message.content) {
+        if (content.type === "tool-call") {
+          toolCallIds.add(content.toolCallId);
+        } else if (content.type === "tool-result") {
+          toolResultIds.add(content.toolCallId);
+        }
+      }
+    }
+  }
   for (const doc of docs) {
     if (
       doc.message?.role === "assistant" &&
       Array.isArray(doc.message.content)
     ) {
-      for (const content of doc.message.content) {
-        if (content.type === "tool-call") {
-          toolCallIds.add(content.toolCallId);
-        }
+      const content = doc.message.content.filter(
+        (p) => p.type !== "tool-call" || toolResultIds.has(p.toolCallId),
+      );
+      if (content.length) {
+        result.push({
+          ...doc,
+          message: {
+            ...doc.message,
+            content,
+          },
+        });
       }
-      result.push(doc);
     } else if (doc.message?.role === "tool") {
-      if (doc.message.content.every((c) => toolCallIds.has(c.toolCallId))) {
-        result.push(doc);
-      } else {
-        console.debug("Filtering out orphaned tool message", doc);
+      const content = doc.message.content.filter((c) =>
+        toolCallIds.has(c.toolCallId),
+      );
+      if (content.length) {
+        result.push({
+          ...doc,
+          message: {
+            ...doc.message,
+            content,
+          },
+        });
       }
     } else {
       result.push(doc);

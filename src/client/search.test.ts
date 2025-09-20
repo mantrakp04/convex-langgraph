@@ -190,8 +190,23 @@ describe("search.ts", () => {
     it("should filter out orphaned tool messages", () => {
       const messages: MessageDoc[] = [
         {
-          _id: "1",
+          _id: "0",
           message: { role: "user", content: "Hello" },
+          order: 1,
+        } as MessageDoc,
+        {
+          _id: "1",
+          message: {
+            role: "assistant",
+            content: [
+              {
+                type: "tool-call",
+                toolCallId: "call_orphaned",
+                toolName: "test",
+                args: {},
+              },
+            ],
+          },
           order: 1,
         } as MessageDoc,
         {
@@ -201,18 +216,24 @@ describe("search.ts", () => {
             content: [
               {
                 type: "tool-result",
-                toolCallId: "call_orphaned",
+                toolCallId: "result_orphaned",
                 result: "orphaned",
               },
             ],
           },
           order: 2,
         } as MessageDoc,
+        {
+          _id: "3",
+          message: { role: "assistant", content: "I'll help you with that" },
+          order: 1,
+        } as MessageDoc,
       ];
 
       const result = filterOutOrphanedToolMessages(messages);
-      expect(result).toHaveLength(1);
-      expect(result[0]._id).toBe("1");
+      expect(result).toHaveLength(2);
+      expect(result[0]._id).toBe("0");
+      expect(result[1]._id).toBe("3");
     });
   });
 
