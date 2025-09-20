@@ -133,7 +133,7 @@ export function toModelMessage(
   } as ModelMessage;
 }
 
-export function docsToModelMessage(messages: MessageDoc[]): ModelMessage[] {
+export function docsToModelMessages(messages: MessageDoc[]): ModelMessage[] {
   return messages
     .map((m) => m.message)
     .filter((m) => !!m)

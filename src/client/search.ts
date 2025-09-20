@@ -29,7 +29,7 @@ import type {
   MutationCtx,
 } from "./types.js";
 import { inlineMessagesFiles } from "./files.js";
-import { docsToModelMessage, toModelMessage } from "../mapping.js";
+import { docsToModelMessages, toModelMessage } from "../mapping.js";
 
 const DEFAULT_VECTOR_SCORE_THRESHOLD = 0.0;
 // 10k characters should be more than enough for most cases, and stays under
@@ -523,11 +523,11 @@ export async function fetchContextWithPrompt(
     }
   }
 
-  const search = docsToModelMessage(searchMessages);
-  const recent = docsToModelMessage(prePromptDocs);
+  const search = docsToModelMessages(searchMessages);
+  const recent = docsToModelMessages(prePromptDocs);
   const inputMessages = messages.map(toModelMessage);
   const inputPrompt = promptArray.map(toModelMessage);
-  const existingResponses = docsToModelMessage(existingResponseDocs);
+  const existingResponses = docsToModelMessages(existingResponseDocs);
 
   const allMessages = [
     ...search,
