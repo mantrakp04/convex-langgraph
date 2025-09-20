@@ -5,7 +5,7 @@ import type {
   ActionCtx,
   AgentComponent,
   Config,
-  RunMutationCtx,
+  MutationCtx,
 } from "./types.js";
 import { saveMessages } from "./messages.js";
 import type { Message } from "../validators.js";
@@ -13,7 +13,7 @@ import { assert } from "convex-helpers";
 import type { VectorDimension } from "../component/vector/tables.js";
 
 export async function saveInputMessages(
-  ctx: RunMutationCtx | ActionCtx,
+  ctx: MutationCtx | ActionCtx,
   component: AgentComponent,
   {
     threadId,

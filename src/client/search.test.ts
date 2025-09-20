@@ -13,7 +13,7 @@ import {
   type StorageActionWriter,
 } from "convex/server";
 import type { MessageDoc } from "../validators.js";
-import type { ActionCtx, RunQueryCtx } from "./types.js";
+import type { ActionCtx, AnyCtx } from "./types.js";
 import {
   fetchContextWithPrompt,
   fetchContextMessages,
@@ -299,7 +299,7 @@ describe("search.ts", () => {
       const mockQueryCtx = {
         runQuery: vi.fn().mockResolvedValue({ page: [] }),
         // No runAction method
-      } as RunQueryCtx;
+      } as AnyCtx;
 
       await expect(
         fetchContextMessages(mockQueryCtx, components.agent, {

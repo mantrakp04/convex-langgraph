@@ -12,7 +12,7 @@ import {
 } from "../validators.js";
 import { serializeMessage } from "../mapping.js";
 import { toUIMessages, type UIMessage } from "../UIMessages.js";
-import type { AgentComponent, RunMutationCtx, RunQueryCtx } from "./types.js";
+import type { AgentComponent, MutationCtx, AnyCtx } from "./types.js";
 import { parse } from "convex-helpers/validators";
 
 /**
@@ -27,7 +27,7 @@ import { parse } from "convex-helpers/validators";
  * @returns The MessageDoc's in a format compatible with usePaginatedQuery.
  */
 export async function listMessages(
-  ctx: RunQueryCtx,
+  ctx: AnyCtx,
   component: AgentComponent,
   {
     threadId,
@@ -58,7 +58,7 @@ export async function listMessages(
 }
 
 export async function listUIMessages(
-  ctx: RunQueryCtx,
+  ctx: AnyCtx,
   component: AgentComponent,
   args: {
     threadId: string;
@@ -105,7 +105,7 @@ export type SaveMessagesArgs = {
  * Explicitly save messages associated with the thread (& user if provided)
  */
 export async function saveMessages(
-  ctx: RunMutationCtx,
+  ctx: MutationCtx,
   component: AgentComponent,
   args: SaveMessagesArgs & {
     /**
@@ -193,7 +193,7 @@ export type SaveMessageArgs = {
  * @returns The messageId of the saved message.
  */
 export async function saveMessage(
-  ctx: RunMutationCtx,
+  ctx: MutationCtx,
   component: AgentComponent,
   args: SaveMessageArgs & {
     /**

@@ -37,7 +37,7 @@ import {
   vToolResultOutput,
 } from "./validators.js";
 import type { ActionCtx, AgentComponent } from "./client/types.js";
-import type { RunMutationCtx } from "./client/types.js";
+import type { MutationCtx } from "./client/types.js";
 import { MAX_FILE_SIZE, storeFile } from "./client/files.js";
 import type { Infer } from "convex/values";
 import {
@@ -70,7 +70,7 @@ export type SerializedContent = Message["content"];
 export type SerializedMessage = Message;
 
 export async function serializeMessage(
-  ctx: ActionCtx | RunMutationCtx,
+  ctx: ActionCtx | MutationCtx,
   component: AgentComponent,
   message: ModelMessage | Message,
 ): Promise<{ message: SerializedMessage; fileIds?: string[] }> {
@@ -254,7 +254,7 @@ function getMimeOrMediaType(part: { mediaType?: string; mimeType?: string }) {
 }
 
 export async function serializeContent(
-  ctx: ActionCtx | RunMutationCtx,
+  ctx: ActionCtx | MutationCtx,
   component: AgentComponent,
   content: Content | Message["content"],
 ): Promise<{ content: SerializedContent; fileIds?: string[] }> {

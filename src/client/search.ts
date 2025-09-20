@@ -26,7 +26,7 @@ import type {
   ContextOptions,
   Options,
   RunActionCtx,
-  RunQueryCtx,
+  AnyCtx,
 } from "./types.js";
 import { inlineMessagesFiles } from "./files.js";
 import { toModelMessage } from "../mapping.js";
@@ -50,7 +50,7 @@ export type GetEmbedding = (text: string) => Promise<{
  * @returns
  */
 export async function fetchContextMessages(
-  ctx: RunQueryCtx | RunActionCtx,
+  ctx: AnyCtx | RunActionCtx,
   component: AgentComponent,
   args: {
     userId: string | undefined;
@@ -86,7 +86,7 @@ export async function fetchContextMessages(
 }
 
 export async function fetchRecentAndSearchMessages(
-  ctx: RunQueryCtx | RunActionCtx,
+  ctx: AnyCtx | RunActionCtx,
   component: AgentComponent,
   args: {
     userId: string | undefined;

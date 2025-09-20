@@ -20,8 +20,8 @@ import {
 } from "../validators.js";
 import type {
   AgentComponent,
-  RunMutationCtx,
-  RunQueryCtx,
+  MutationCtx,
+  AnyCtx,
   SyncStreamsReturnValue,
 } from "./types.js";
 
@@ -45,7 +45,7 @@ export const vStreamMessagesReturnValue = v.object({
  * @returns The deltas for each stream from their existing cursor.
  */
 export async function syncStreams(
-  ctx: RunQueryCtx,
+  ctx: AnyCtx,
   component: AgentComponent,
   {
     threadId,
@@ -80,7 +80,7 @@ export async function syncStreams(
 }
 
 export async function abortStream(
-  ctx: RunMutationCtx,
+  ctx: MutationCtx,
   component: AgentComponent,
   args: { reason: string } & (
     | { streamId: string }
@@ -111,7 +111,7 @@ export async function abortStream(
  * @returns The streams for the thread.
  */
 export async function listStreams(
-  ctx: RunQueryCtx,
+  ctx: AnyCtx,
   component: AgentComponent,
   {
     threadId,
@@ -212,7 +212,7 @@ export class DeltaStreamer<T> {
 
   constructor(
     public readonly component: AgentComponent,
-    public readonly ctx: RunMutationCtx,
+    public readonly ctx: MutationCtx,
     config: {
       throttleMs: number | undefined;
       onAsyncAbort: (reason: string) => Promise<void>;

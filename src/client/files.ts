@@ -10,7 +10,7 @@ import type {
   ActionCtx,
   AgentComponent,
   QueryCtx,
-  RunMutationCtx,
+  MutationCtx,
 } from "./types.js";
 import type { Message } from "../validators.js";
 import { assert } from "convex-helpers";
@@ -37,7 +37,7 @@ type File = {
  * @returns The URL, fileId, and storageId of the stored file.
  */
 export async function storeFile(
-  ctx: ActionCtx | RunMutationCtx,
+  ctx: ActionCtx | MutationCtx,
   component: AgentComponent,
   blob: Blob,
   { filename, sha256 }: { filename?: string; sha256?: string } = {},
