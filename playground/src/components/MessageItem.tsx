@@ -75,20 +75,6 @@ const MessageItem: React.FC<MessageItemProps> = ({
           )}
         </div>
       </div>
-
-      {message.text && (
-        <div
-          className={
-            `${message.message?.role === "user" ? "message-bubble-user" : "message-bubble-agent"} whitespace-pre-wrap`
-          }
-        >
-          <SmoothText
-            text={message.text}
-            startStreaming={message.status === "pending"}
-          />
-        </div>
-      )}
-
       <div className="ml-6 mt-2">
         {message.message?.parts.map((part, i) => {
           if ("toolCallId" in part) {
@@ -103,6 +89,19 @@ const MessageItem: React.FC<MessageItemProps> = ({
             );
           }
           switch (part.type) {
+            case "text":
+              return (
+                <div
+                  key={message._id + " text " + i}
+                  className={`${message.message?.role === "user" ? "message-bubble-user" : "message-bubble-agent"} whitespace-pre-wrap`}
+                >
+                  <SmoothText
+                    text={part.text}
+                    startStreaming={part.state === "streaming"}
+                  />
+                  {part.state === "streaming" && <span>...</span>}
+                </div>
+              );
             case "reasoning":
               return (
                 <div key={message._id + " reasoning " + i}>
