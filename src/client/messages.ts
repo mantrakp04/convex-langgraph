@@ -12,7 +12,12 @@ import {
 } from "../validators.js";
 import { serializeMessage } from "../mapping.js";
 import { toUIMessages, type UIMessage } from "../UIMessages.js";
-import type { AgentComponent, MutationCtx, AnyCtx } from "./types.js";
+import type {
+  AgentComponent,
+  MutationCtx,
+  QueryCtx,
+  ActionCtx,
+} from "./types.js";
 import { parse } from "convex-helpers/validators";
 
 /**
@@ -27,7 +32,7 @@ import { parse } from "convex-helpers/validators";
  * @returns The MessageDoc's in a format compatible with usePaginatedQuery.
  */
 export async function listMessages(
-  ctx: AnyCtx,
+  ctx: QueryCtx | MutationCtx | ActionCtx,
   component: AgentComponent,
   {
     threadId,
@@ -58,7 +63,7 @@ export async function listMessages(
 }
 
 export async function listUIMessages(
-  ctx: AnyCtx,
+  ctx: QueryCtx | MutationCtx | ActionCtx,
   component: AgentComponent,
   args: {
     threadId: string;

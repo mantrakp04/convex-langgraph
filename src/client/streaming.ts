@@ -19,9 +19,10 @@ import {
   type StreamMessage,
 } from "../validators.js";
 import type {
+  ActionCtx,
   AgentComponent,
   MutationCtx,
-  AnyCtx,
+  QueryCtx,
   SyncStreamsReturnValue,
 } from "./types.js";
 
@@ -45,7 +46,7 @@ export const vStreamMessagesReturnValue = v.object({
  * @returns The deltas for each stream from their existing cursor.
  */
 export async function syncStreams(
-  ctx: AnyCtx,
+  ctx: QueryCtx | MutationCtx | ActionCtx,
   component: AgentComponent,
   {
     threadId,
@@ -111,7 +112,7 @@ export async function abortStream(
  * @returns The streams for the thread.
  */
 export async function listStreams(
-  ctx: AnyCtx,
+  ctx: QueryCtx | MutationCtx | ActionCtx,
   component: AgentComponent,
   {
     threadId,

@@ -1,6 +1,11 @@
 import type { WithoutSystemFields } from "convex/server";
 import type { ThreadDoc } from "../validators.js";
-import type { AgentComponent, MutationCtx, AnyCtx } from "./types.js";
+import type {
+  ActionCtx,
+  AgentComponent,
+  MutationCtx,
+  QueryCtx,
+} from "./types.js";
 
 /**
  * Create a thread to store messages with an Agent.
@@ -32,7 +37,7 @@ export async function createThread(
  * @returns The metadata for the thread.
  */
 export async function getThreadMetadata(
-  ctx: AnyCtx,
+  ctx: QueryCtx | MutationCtx | ActionCtx,
   component: AgentComponent,
   args: { threadId: string },
 ): Promise<ThreadDoc> {
@@ -62,7 +67,7 @@ export async function updateThreadMetadata(
  * @returns The threads matching the search, paginated.
  */
 export async function searchThreadTitles(
-  ctx: AnyCtx,
+  ctx: QueryCtx | MutationCtx | ActionCtx,
   component: AgentComponent,
   {
     userId,

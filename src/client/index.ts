@@ -89,9 +89,7 @@ import type {
   ObjectSchema,
   Options,
   RawRequestResponseHandler,
-  RunActionCtx,
   MutationCtx,
-  AnyCtx,
   StorageOptions,
   StreamingTextArgs,
   StreamObjectArgs,
@@ -100,6 +98,7 @@ import type {
   Thread,
   UsageHandler,
   UserActionCtx,
+  QueryCtx,
 } from "./types.js";
 
 export { stepCountIs } from "ai";
@@ -268,7 +267,7 @@ export class Agent<
    * @returns The threadId of the new thread and the thread object.
    */
   async createThread(
-    ctx: RunActionCtx & CustomCtx,
+    ctx: ActionCtx & CustomCtx,
     args?: {
       /**
        * The userId to associate with the thread. If not provided, the thread will be
@@ -834,7 +833,7 @@ export class Agent<
    * @returns The messageId of the saved message.
    */
   async saveMessage(
-    ctx: MutationCtx,
+    ctx: MutationCtx | ActionCtx,
     args: SaveMessageArgs & {
       /**
        * If true, it will not generate embeddings for the message.
@@ -928,7 +927,7 @@ export class Agent<
    * @returns The MessageDoc's in a format compatible with usePaginatedQuery.
    */
   async listMessages(
-    ctx: AnyCtx,
+    ctx: QueryCtx | MutationCtx | ActionCtx,
     args: {
       threadId: string;
       paginationOpts: PaginationOptions;
@@ -948,7 +947,7 @@ export class Agent<
    * @returns The deltas for each stream from their existing cursor.
    */
   async syncStreams(
-    ctx: AnyCtx,
+    ctx: QueryCtx | MutationCtx | ActionCtx,
     args: {
       threadId: string;
       streamArgs: StreamArgs | undefined;
@@ -968,7 +967,7 @@ export class Agent<
    * @returns
    */
   async fetchContextMessages(
-    ctx: AnyCtx | ActionCtx,
+    ctx: QueryCtx | MutationCtx | ActionCtx,
     args: {
       userId: string | undefined;
       threadId: string | undefined;
@@ -1030,7 +1029,7 @@ export class Agent<
    * @returns The metadata for the thread.
    */
   async getThreadMetadata(
-    ctx: AnyCtx,
+    ctx: QueryCtx | MutationCtx | ActionCtx,
     args: { threadId: string },
   ): Promise<ThreadDoc> {
     return getThreadMetadata(ctx, this.component, args);
@@ -1044,7 +1043,7 @@ export class Agent<
    * @returns The updated thread metadata.
    */
   async updateThreadMetadata(
-    ctx: MutationCtx,
+    ctx: MutationCtx | ActionCtx,
     args: {
       threadId: string;
       patch: Partial<
@@ -1251,7 +1250,7 @@ export class Agent<
    *   the generateText call.
    */
   async finalizeMessage(
-    ctx: MutationCtx,
+    ctx: MutationCtx | ActionCtx,
     args: {
       messageId: string;
       result: { status: "failed"; error: string } | { status: "success" };
@@ -1269,7 +1268,7 @@ export class Agent<
    * @param args The message fields to update.
    */
   async updateMessage(
-    ctx: MutationCtx,
+    ctx: MutationCtx | ActionCtx,
     args: {
       /** The id of the message to update. */
       messageId: string;
@@ -1319,7 +1318,7 @@ export class Agent<
    * @param args The ids of the messages to delete.
    */
   async deleteMessages(
-    ctx: MutationCtx,
+    ctx: MutationCtx | ActionCtx,
     args: { messageIds: string[] },
   ): Promise<void> {
     await ctx.runMutation(this.component.messages.deleteByIds, args);
@@ -1332,7 +1331,7 @@ export class Agent<
    * @param args The id of the message to delete.
    */
   async deleteMessage(
-    ctx: MutationCtx,
+    ctx: MutationCtx | ActionCtx,
     args: { messageId: string },
   ): Promise<void> {
     await ctx.runMutation(this.component.messages.deleteByIds, {
@@ -1378,7 +1377,7 @@ export class Agent<
    * @param args The range of messages to delete.
    */
   async deleteMessageRange(
-    ctx: MutationCtx,
+    ctx: MutationCtx | ActionCtx,
     args: {
       threadId: string;
       startOrder: number;
@@ -1404,7 +1403,7 @@ export class Agent<
    * @param args The id of the thread to delete and optionally the page size to use for the delete.
    */
   async deleteThreadAsync(
-    ctx: MutationCtx,
+    ctx: MutationCtx | ActionCtx,
     args: { threadId: string; pageSize?: number },
   ): Promise<void> {
     await ctx.runMutation(this.component.threads.deleteAllForThreadIdAsync, {
@@ -1421,7 +1420,7 @@ export class Agent<
    * @param args The id of the thread to delete and optionally the page size to use for the delete.
    */
   async deleteThreadSync(
-    ctx: RunActionCtx,
+    ctx: ActionCtx,
     args: { threadId: string; pageSize?: number },
   ): Promise<void> {
     await ctx.runAction(this.component.threads.deleteAllForThreadIdSync, {

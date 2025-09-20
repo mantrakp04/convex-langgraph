@@ -727,30 +727,28 @@ export type SyncStreamsReturnValue =
   | undefined;
 
 /* Type utils follow */
-export type AnyCtx = {
+type RunQueryCtx = {
   runQuery: <Query extends FunctionReference<"query", "internal">>(
     query: Query,
     args: FunctionArgs<Query>,
   ) => Promise<FunctionReturnType<Query>>;
 };
-export type MutationCtx = AnyCtx & {
+export type MutationCtx = RunQueryCtx & {
   runMutation: <Mutation extends FunctionReference<"mutation", "internal">>(
     mutation: Mutation,
     args: FunctionArgs<Mutation>,
   ) => Promise<FunctionReturnType<Mutation>>;
 };
-export type RunActionCtx = MutationCtx & {
+export type UserActionCtx = GenericActionCtx<GenericDataModel>;
+export type ActionCtx = MutationCtx & {
   runAction<Action extends FunctionReference<"action", "internal">>(
     action: Action,
     args: FunctionArgs<Action>,
   ): Promise<FunctionReturnType<Action>>;
-};
-export type UserActionCtx = GenericActionCtx<GenericDataModel>;
-export type ActionCtx = RunActionCtx & {
   auth: Auth;
   storage: StorageActionWriter;
 };
-export type QueryCtx = AnyCtx & { storage: StorageReader };
+export type QueryCtx = RunQueryCtx & { storage: StorageReader };
 
 export type OpaqueIds<T> =
   T extends GenericId<infer _T>
