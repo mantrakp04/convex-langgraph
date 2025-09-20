@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.11 alpha
+
+- Filters out empty content arrays when prompting the LLM.
+- Breaking: now joins all text parts with a space delimiter instead of strict
+  concatenation. This improves text search and is unlikely to look worse, as
+  text parts aren't meant to be deltas.
+- Exports a `docsToModelMessages` to convert MessageDoc to ModelMessage taking
+  into account omitting missing messages or empty content.
+- Fixes playground UI showing follow-up messages.
+
 ## 0.2.10
 
 - Support models that return no content ([])
