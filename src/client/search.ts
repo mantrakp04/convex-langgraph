@@ -20,6 +20,7 @@ import {
 } from "../shared.js";
 import type { Message } from "../validators.js";
 import type {
+  ActionCtx,
   AgentComponent,
   Config,
   ContextOptions,
@@ -259,7 +260,7 @@ export function filterOutOrphanedToolMessages(docs: MessageDoc[]) {
  * This will not save the embeddings to the database.
  */
 export async function embedMessages(
-  ctx: RunActionCtx,
+  ctx: ActionCtx,
   {
     userId,
     threadId,
@@ -328,7 +329,7 @@ export async function embedMessages(
  * @returns The embeddings for the strings, matching the order of the values.
  */
 export async function embedMany(
-  ctx: RunActionCtx,
+  ctx: ActionCtx,
   {
     userId,
     threadId,
@@ -386,7 +387,7 @@ export async function embedMany(
  * @param messages The messages to embed, in the Agent MessageDoc format.
  */
 export async function generateAndSaveEmbeddings(
-  ctx: RunActionCtx,
+  ctx: ActionCtx,
   component: AgentComponent,
   args: {
     threadId: string | undefined;
@@ -431,7 +432,7 @@ export async function generateAndSaveEmbeddings(
  * promptMessageId message.
  */
 export async function fetchContextWithPrompt(
-  ctx: RunActionCtx,
+  ctx: ActionCtx,
   component: AgentComponent,
   args: {
     prompt: string | (ModelMessage | Message)[] | undefined;
@@ -537,13 +538,13 @@ export async function fetchContextWithPrompt(
     .filter((m) => !!m)
     .map(toModelMessage);
 
-    const allMessages = [
-      ...search,
-      ...recent,
-      ...inputMessages,
-      ...inputPrompt,
-      ...existingResponses,
-    ];
+  const allMessages = [
+    ...search,
+    ...recent,
+    ...inputMessages,
+    ...inputPrompt,
+    ...existingResponses,
+  ];
   let processedMessages = args.contextHandler
     ? await args.contextHandler(ctx, {
         allMessages,

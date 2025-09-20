@@ -2,9 +2,9 @@ import { type ModelMessage } from "ai";
 import type { MessageDoc } from "../validators.js";
 import { embedMessages, getPromptArray } from "./search.js";
 import type {
+  ActionCtx,
   AgentComponent,
   Config,
-  RunActionCtx,
   RunMutationCtx,
 } from "./types.js";
 import { saveMessages } from "./messages.js";
@@ -13,7 +13,7 @@ import { assert } from "convex-helpers";
 import type { VectorDimension } from "../component/vector/tables.js";
 
 export async function saveInputMessages(
-  ctx: RunMutationCtx | RunActionCtx,
+  ctx: RunMutationCtx | ActionCtx,
   component: AgentComponent,
   {
     threadId,

@@ -223,7 +223,7 @@ export type GenerationOutputMetadata = {
 };
 
 export type UsageHandler = (
-  ctx: RunActionCtx,
+  ctx: ActionCtx,
   args: {
     userId: string | undefined;
     threadId: string | undefined;
@@ -242,7 +242,7 @@ export type UsageHandler = (
  * out, add in, or reorder messages.
  */
 export type ContextHandler = (
-  ctx: RunActionCtx,
+  ctx: ActionCtx,
   args: {
     /**
      * All messages in the default order.

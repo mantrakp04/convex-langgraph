@@ -872,7 +872,7 @@ export class Agent<
    * @returns
    */
   async saveMessages(
-    ctx: RunMutationCtx | RunActionCtx,
+    ctx: RunMutationCtx | ActionCtx,
     args: SaveMessagesArgs & {
       /**
        * Skip generating embeddings for the messages. Useful if you're
@@ -968,7 +968,7 @@ export class Agent<
    * @returns
    */
   async fetchContextMessages(
-    ctx: RunQueryCtx | RunActionCtx,
+    ctx: RunQueryCtx | ActionCtx,
     args: {
       userId: string | undefined;
       threadId: string | undefined;
@@ -1065,7 +1065,7 @@ export class Agent<
    * @returns The embeddings for the messages.
    */
   async generateEmbeddings(
-    ctx: RunActionCtx,
+    ctx: ActionCtx,
     args: { userId: string | undefined; threadId: string | undefined },
     messages: (ModelMessage | Message)[],
   ): Promise<
@@ -1091,7 +1091,7 @@ export class Agent<
    * @param args The messageIds to generate embeddings for.
    */
   async generateAndSaveEmbeddings(
-    ctx: RunActionCtx,
+    ctx: ActionCtx,
     args: { messageIds: string[] },
   ) {
     const messages = (
