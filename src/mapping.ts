@@ -35,6 +35,7 @@ import {
   type vToolResultPart,
   type SourcePart,
   vToolResultOutput,
+  type MessageDoc,
 } from "./validators.js";
 import type { ActionCtx, AgentComponent } from "./client/types.js";
 import type { MutationCtx } from "./client/types.js";
@@ -130,6 +131,14 @@ export function toModelMessage(
     ...message,
     content: toModelMessageContent(message.content),
   } as ModelMessage;
+}
+
+export function docsToModelMessage(messages: MessageDoc[]): ModelMessage[] {
+  return messages
+    .map((m) => m.message)
+    .filter((m) => !!m)
+    .filter((m) => !!m.content.length)
+    .map(toModelMessage);
 }
 
 export function serializeUsage(usage: LanguageModelUsage): Usage {

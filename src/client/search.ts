@@ -29,7 +29,7 @@ import type {
   AnyCtx,
 } from "./types.js";
 import { inlineMessagesFiles } from "./files.js";
-import { toModelMessage } from "../mapping.js";
+import { docsToModelMessage, toModelMessage } from "../mapping.js";
 
 const DEFAULT_VECTOR_SCORE_THRESHOLD = 0.0;
 // 10k characters should be more than enough for most cases, and stays under
@@ -523,20 +523,11 @@ export async function fetchContextWithPrompt(
     }
   }
 
-  const search = searchMessages
-    .map((m) => m.message)
-    .filter((m) => !!m)
-    .map(toModelMessage);
-  const recent = prePromptDocs
-    .map((m) => m.message)
-    .filter((m) => !!m)
-    .map(toModelMessage);
+  const search = docsToModelMessage(searchMessages);
+  const recent = docsToModelMessage(prePromptDocs);
   const inputMessages = messages.map(toModelMessage);
   const inputPrompt = promptArray.map(toModelMessage);
-  const existingResponses = existingResponseDocs
-    .map((m) => m.message)
-    .filter((m) => !!m)
-    .map(toModelMessage);
+  const existingResponses = docsToModelMessage(existingResponseDocs);
 
   const allMessages = [
     ...search,
