@@ -203,6 +203,81 @@ describe("toUIMessages", () => {
     );
   });
 
+  it("combines text from between messages", () => {
+    const messages = [
+      baseMessageDoc({
+        message: {
+          role: "assistant",
+          content: [
+            {
+              type: "reasoning",
+              text: "I'm thinking...",
+            },
+            {
+              type: "text",
+              text: "I'm going to ask a question.",
+            },
+            {
+              type: "tool-call",
+              args: "What's the meaning of life?",
+              toolCallId: "call1",
+              toolName: "myTool",
+            },
+          ],
+        },
+        reasoning: "I'm thinking...",
+        text: "Here's one idea.",
+        tool: true,
+        order: 1,
+        stepOrder: 1,
+      }),
+      baseMessageDoc({
+        message: {
+          role: "tool",
+          content: [
+            {
+              type: "tool-result",
+              toolCallId: "call1",
+              toolName: "myTool",
+              output: {
+                type: "text",
+                value: "42",
+              },
+            },
+          ],
+        },
+        text: "",
+        tool: true,
+        order: 1,
+        stepOrder: 2,
+      }),
+      baseMessageDoc({
+        message: {
+          role: "assistant",
+          content: [
+            {
+              type: "reasoning",
+              text: "Thinking again...",
+            },
+            {
+              type: "text",
+              text: "Ok now I know.",
+            },
+          ],
+        },
+        text: "One last thing.",
+        order: 1,
+        stepOrder: 3,
+      }),
+    ];
+    const uiMessages = toUIMessages(messages);
+    expect(uiMessages).toHaveLength(1);
+    expect(uiMessages[0].role).toBe("assistant");
+    expect(uiMessages[0].text).toBe(
+      "I'm going to ask a question. Ok now I know.",
+    );
+  });
+
   it("handles system message", () => {
     const messages = [
       baseMessageDoc({
