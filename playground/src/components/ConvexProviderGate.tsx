@@ -7,6 +7,7 @@ export const DEPLOYMENT_URL_STORAGE_KEY = "playground_deployment_url";
 function isValidHttpUrl(url: string): boolean {
   try {
     const u = new URL(url);
+    if (u.hostname === "localhost") return u.protocol === "http:";
     return u.protocol === "http:" || u.protocol === "https:";
   } catch {
     return false;
@@ -45,84 +46,84 @@ function ConvexProviderGate({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(false);
   // Don't optimistically set isValid to true - wait for async validation
   const [isValid, setIsValid] = useState(false);
-  const [isValidating, setIsValidating] = useState(false);
 
-  // Extracted validation logic for reuse
-  const validateDeploymentUrl = useCallback(
-    async (url: string) => {
-      if (isValidating) return;
-      setIsValidating(true);
-      if (!url) {
-        setIsValid(false);
-        setInstanceName(null);
-        setError(null);
-        setLoading(false);
-        return;
-      }
-      if (!isValidHttpUrl(url)) {
-        setIsValid(false);
-        setInstanceName(null);
-        setError(null);
-        setLoading(false);
-        return;
-      }
-      setLoading(true);
+  // Validation function
+  const validateDeploymentUrl = useCallback(async (url: string) => {
+    if (loading) return;
+    if (!url) {
+      setIsValid(false);
       setInstanceName(null);
+      setError("Please enter a URL");
+      setLoading(false);
+      return;
+    }
+    if (!isValidHttpUrl(url)) {
+      setIsValid(false);
+      setInstanceName(null);
+      setError("Please enter a valid HTTP or HTTPS URL");
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    setInstanceName(null);
+    setError(null);
+    try {
+      const res = await fetch(url + "/instance_name");
+      if (!res.ok) throw new Error("Invalid response");
+      const name = await res.text();
+      setInstanceName(name);
       setError(null);
-      try {
-        const res = await fetch(url + "/instance_name");
-        if (!res.ok) throw new Error("Invalid response");
-        const name = await res.text();
-        setInstanceName(name);
-        setError(null);
-        setLoading(false);
-        setIsValid(true);
-        localStorage.setItem(DEPLOYMENT_URL_STORAGE_KEY, url);
-      } catch {
-        setInstanceName(null);
-        setError(
-          "Could not validate deployment URL. Please check the URL and try again.",
-        );
-        setLoading(false);
-        setIsValid(false);
-      } finally {
-        setIsValidating(false);
-      }
-    },
-    [isValidating],
-  );
+      setLoading(false);
+      setIsValid(true);
+      localStorage.setItem(DEPLOYMENT_URL_STORAGE_KEY, url);
+      // Navigate to the validated URL
+      navigate(`/play/${encodeURIComponent(url.replace(/\/$/, ""))}`);
+    } catch {
+      setInstanceName(null);
+      setError(
+        "Could not validate deployment URL. Please check the URL and try again.",
+      );
+      setLoading(false);
+      setIsValid(false);
+    }
+  }, [loading, navigate]);
 
-  // 2. Validate deployment URL when it changes
+  // Auto-validate deployment URL from path when it changes
   useEffect(() => {
     if (!deploymentUrl) {
       setIsValid(false);
+      setInstanceName(null);
+      setError(null);
       return;
     }
-    validateDeploymentUrl(deploymentUrl);
-  }, [deploymentUrl, validateDeploymentUrl]);
-
-  // Polling effect: If deploymentUrl is set but not valid, poll every 3 seconds
-  useEffect(() => {
-    if (!deploymentUrl || isValid) return;
-    // Only poll if we have a URL and it's not valid
-    const interval = setInterval(() => {
+    // Only auto-validate if we don't have validation state yet
+    if (!isValid && !error && !instanceName && !loading) {
       validateDeploymentUrl(deploymentUrl);
-    }, 3000);
-    return () => clearInterval(interval);
-  }, [deploymentUrl, isValid, validateDeploymentUrl]);
+    }
+  }, [deploymentUrl, validateDeploymentUrl, isValid, error, instanceName, loading]);
 
-  // 4. When user enters a new URL, update the path (which will trigger validation)
+  // Handle input changes and validation
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputValue(e.target.value.trim());
-  };
-  const handleInputBlur = () => {
-    if (inputValue && isValidHttpUrl(inputValue)) {
-      navigate(`/play/${encodeURIComponent(inputValue.replace(/\/$/, ""))}`);
+    const newValue = e.target.value.trim();
+    setInputValue(newValue);
+    // Clear validation state when input changes
+    if (newValue !== deploymentUrl) {
+      setError(null);
+      setInstanceName(null);
+      setLoading(false);
+      setIsValid(false);
     }
   };
-  const handleInputKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" && inputValue && isValidHttpUrl(inputValue)) {
-      navigate(`/play/${encodeURIComponent(inputValue.replace(/\/$/, ""))}`);
+
+  const handleValidate = () => {
+    if (inputValue) {
+      validateDeploymentUrl(inputValue.replace(/\/$/, ""));
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleValidate();
     }
   };
 
@@ -154,16 +155,25 @@ function ConvexProviderGate({ children }: { children: ReactNode }) {
           <label className="text-sm font-medium text-foreground">
             Deployment URL
           </label>
-          <input
-            className="border border-input rounded-lg px-4 py-2 text-base font-mono bg-muted focus:outline-none focus:ring-2 focus:ring-blue-500 transition w-full min-w-0"
-            type="text"
-            value={inputValue}
-            onChange={handleInputChange}
-            onBlur={handleInputBlur}
-            onKeyDown={handleInputKeyDown}
-            placeholder="https://<your-convex>.cloud"
-            autoFocus
-          />
+          <div className="flex gap-2">
+            <input
+              className="border border-input rounded-lg px-4 py-2 text-base font-mono bg-muted focus:outline-none focus:ring-2 focus:ring-blue-500 transition flex-1 min-w-0"
+              type="text"
+              value={inputValue}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              placeholder="https://<your-convex>.cloud"
+              autoFocus
+              disabled={loading}
+            />
+            <button
+              onClick={handleValidate}
+              disabled={loading || !inputValue}
+              className="px-6 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition"
+            >
+              {loading ? "Validating..." : "Connect"}
+            </button>
+          </div>
           <div style={{ minHeight: "2.5em" }} className="flex items-center">
             {loading ? (
               <div
