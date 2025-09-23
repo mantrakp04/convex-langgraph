@@ -38,12 +38,19 @@ class ProxyOAuth(OAuthClientProvider):
     client_name: str = "FastMCP Client",
     token_storage_cache_dir: Optional[Path] = None,
     additional_client_metadata: dict[str, Any] | None = None,
+    redirect_host: Optional[str] = None,
   ):
     parsed_url = urlparse(mcp_url)
     server_base_url = f"{parsed_url.scheme}://{parsed_url.netloc}"
 
-    host = os.environ.get("HOST") or "localhost"
-    redirect_uri = f"http://{host}:8000/callback"
+    # Prefer explicitly provided redirect_host, then env HOST, fallback to localhost
+    host = redirect_host or os.environ.get("HOST", "localhost")
+    # If host already contains a scheme, keep it; otherwise default to http
+    if host.startswith("http://") or host.startswith("https://"):
+      base = host.rstrip("/")
+    else:
+      base = f"http://{host}"
+    redirect_uri = f"{base}/callback"
 
     scopes_str: str
     if isinstance(scopes, list):

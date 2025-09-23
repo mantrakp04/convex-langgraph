@@ -101,8 +101,14 @@ async def oauth_callback(request: Request) -> JSONResponse:
 
 @proxy.custom_route("/config", methods=["GET"], name="get_config")
 async def get_config(request: Request) -> JSONResponse:
-  async def fetch_auth_url(mcp_url: str) -> str | None:
-    oauth = OAuth(mcp_url)
+  def _resolve_redirect_base_from_request(req: Request) -> str:
+    # Prefer forwarded headers when behind a proxy (e.g., Cloudflare)
+    proto = req.headers.get("x-forwarded-proto") or req.url.scheme or "http"
+    host = req.headers.get("x-forwarded-host") or req.headers.get("host") or req.url.netloc
+    return f"{proto}://{host}"
+
+  async def fetch_auth_url(mcp_url: str, redirect_base: str) -> str | None:
+    oauth = OAuth(mcp_url, redirect_host=redirect_base)
     try:
       async with httpx.AsyncClient(auth=oauth, timeout=5.0) as client:
         await client.get(mcp_url)
@@ -113,6 +119,7 @@ async def get_config(request: Request) -> JSONResponse:
 
   prepared: dict[str, Any] = {"mcpServers": {}}
   servers = (config.get("mcpServers", {}) or {}) if isinstance(config, dict) else {}
+  redirect_base = _resolve_redirect_base_from_request(request)
 
   for name, server_cfg in servers.items():
     if not isinstance(server_cfg, dict):
@@ -128,7 +135,7 @@ async def get_config(request: Request) -> JSONResponse:
       except Exception:
         needs_auth = True
       if needs_auth:
-        auth_url = await fetch_auth_url(mcp_url)
+        auth_url = await fetch_auth_url(mcp_url, redirect_base)
 
     if mcp_url:
       out_cfg["auth"] = auth_url
