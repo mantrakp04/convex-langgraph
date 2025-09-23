@@ -9,14 +9,19 @@ import FilesImages from "./files/FilesImages";
 import RateLimiting from "./rate_limiting/RateLimiting";
 import { WeatherFashion } from "./workflows/WeatherFashion";
 import RagBasic from "./rag/RagBasic";
+import { StrictMode } from "react";
 import MemoryUI from "./coreMemories/MemoryUI";
+import StreamArray from "./objects/StreamArray";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
 createRoot(document.getElementById("root")!).render(
-  <ConvexProvider client={convex}>
-    <App />
-  </ConvexProvider>,
+  <StrictMode>
+    <ConvexProvider client={convex}>
+      <App />
+    </ConvexProvider>
+    ,
+  </StrictMode>,
 );
 
 export function App() {
@@ -42,6 +47,7 @@ export function App() {
             <Route path="/rate-limiting" element={<RateLimiting />} />
             <Route path="/weather-fashion" element={<WeatherFashion />} />
             <Route path="/core-memories" element={<MemoryUI />} />
+            <Route path="/stream-array" element={<StreamArray />} />
           </Routes>
         </main>
         <Toaster />

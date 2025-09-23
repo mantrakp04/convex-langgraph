@@ -1,25 +1,50 @@
 # Changelog
 
-## 0.2.8 alpha
+## 0.2.11 alpha
+
+- Filters out empty content arrays when prompting the LLM.
+- Breaking: now joins all text parts with a space delimiter instead of strict
+  concatenation. This improves text search and is unlikely to look worse, as
+  text parts aren't meant to be deltas.
+- Exports a `docsToModelMessages` to convert MessageDoc to ModelMessage taking
+  into account omitting missing messages or empty content.
+- Fixes playground UI showing follow-up messages.
+
+## 0.2.10
+
+- Support models that return no content ([])
+- Breaking bug fix: we were returning output in UIMessages with extra { type:
+  "json", value: ... } instead of the value itself. Now we return the output
+  directly.
+
+## 0.2.9
+
+- Add documentation for new behavior and export new functions.
+- Deprecation: Renames deserializeMessage to toModelMessage.
+- Fix: Pass provider metadata through more consistently in message parts.
+
+## 0.2.8
 
 - Adds useUIMessages and useUIStreamingMessages for UIMessage-first client
-  usage. These have more metadata around reasoning streaming status, and
-  provide support for metadata and custom data parts.
+  usage. These have more metadata around reasoning streaming status, and provide
+  support for metadata and custom data parts.
 - Adds a `listUIMessages` akin to `listMessages` converted to UIMessages.
 - Uses the UIMessageChunk stream when streaming text, which fixes many bugs
   which stemmed from the AI SDK's onChunk callback.
-- Enables having streaming hooks skip streamIds so you can stream via HTTP
-  for some clients and have others get the deltas.
+- Enables having streaming hooks skip streamIds so you can stream via HTTP for
+  some clients and have others get the deltas.
 - Compresses the deltas saved to the DB - combining text deltas & reasoning
   deltas that come from the same part `id`.
-- `optimisticallySendMessage` will set fields for both MessageDoc and
-  UIMessage, so it should transparently work for either hook strategy, though
-  you may see more fields than you expect.
+- `optimisticallySendMessage` will set fields for both MessageDoc and UIMessage,
+  so it should transparently work for either hook strategy, though you may see
+  more fields than you expect.
 - Defaults `text` to `undefined` if it's empty (no text chunks)
-- `mockModel` can now simulate responses for multi-step generation, by passing
-  a `contentSteps` array to its constructor. Each element is an array of content
+- `mockModel` can now simulate responses for multi-step generation, by passing a
+  `contentSteps` array to its constructor. Each element is an array of content
   for that step.
 - `createTool` supports async iteration.
+- Add `experimental_download` type to `generateObject`
+- Adds `structuredClone` polyfill for ReactNative UIMessages.
 
 ## 0.2.7
 
@@ -29,25 +54,25 @@
 ## 0.2.6
 
 - Splits out the `start` function from the Agent, along with other utilities
-  that can be used without the Agent, e.g. to `saveInputMessages` and
-  fetch context messages combined with input messages.
-- Adds a `contextHandler` option to the Agent, which is a function to modify
-  the context messages before they are passed to the LLM.
+  that can be used without the Agent, e.g. to `saveInputMessages` and fetch
+  context messages combined with input messages.
+- Adds a `contextHandler` option to the Agent, which is a function to modify the
+  context messages before they are passed to the LLM.
 - Adds a `fromUIMessage` function to convert UIMessage[] to MessageDoc[].
 - Fixes asObjectAction being generic on the wrong DataModel.
 - Using `mockModel` works better now for streaming.
 - Search text will use the last message, prompt, or promptMessage string.
 - Fixes the `stepOrder` being off when streaming with tool calls.
 - More readable MessageDoc type.
-- The output of a tool result is now saved differently from the `result`
-  and matches the ModelMessage expected format. This also coerces the
-  previous `result` format into the new `output` data format.
+- The output of a tool result is now saved differently from the `result` and
+  matches the ModelMessage expected format. This also coerces the previous
+  `result` format into the new `output` data format.
 - cachedInputTokens is now saved in the usage field
 - The global default for providerOptions is supplied correctly, however lmk if
   you actually want it, otherwise it's deprecated and may be removed.
 - Fix: useSmoothText starts streaming even if no text update happens.
-- The DeltaStreamer class is now generic on the type of part to save,
-  and decoupled to make it easier to use on its own.
+- The DeltaStreamer class is now generic on the type of part to save, and
+  decoupled to make it easier to use on its own.
 - Running agent-playground works on windows (credit: yahyasamet)
 - The setup script works interactively (credit: kfiroo)
 - Playground assistant messages CSS fix (credit: jamieday)

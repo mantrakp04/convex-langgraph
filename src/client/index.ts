@@ -35,9 +35,8 @@ import {
 import { convexToJson, v, type Value } from "convex/values";
 import type { threadFieldsSupportingPatch } from "../component/threads.js";
 import { type VectorDimension } from "../component/vector/tables.js";
-import { compressUIMessageChunks } from "../deltas.js";
 import {
-  deserializeMessage,
+  toModelMessage,
   serializeMessage,
   serializeNewMessagesInStep,
   serializeObjectResult,
@@ -68,8 +67,9 @@ import {
   fetchContextMessages,
   generateAndSaveEmbeddings,
 } from "./search.js";
-import { start } from "./start.js";
+import { startGeneration } from "./start.js";
 import {
+  compressUIMessageChunks,
   DeltaStreamer,
   mergeTransforms,
   syncStreams,
@@ -89,9 +89,7 @@ import type {
   ObjectSchema,
   Options,
   RawRequestResponseHandler,
-  RunActionCtx,
-  RunMutationCtx,
-  RunQueryCtx,
+  MutationCtx,
   StorageOptions,
   StreamingTextArgs,
   StreamObjectArgs,
@@ -100,11 +98,15 @@ import type {
   Thread,
   UsageHandler,
   UserActionCtx,
+  QueryCtx,
 } from "./types.js";
 
 export { stepCountIs } from "ai";
 export {
-  deserializeMessage,
+  docsToModelMessages,
+  toModelMessage,
+  //** @deprecated use toModelMessage instead */
+  toModelMessage as deserializeMessage,
   guessMimeType,
   serializeDataOrUrl,
   serializeMessage,
@@ -159,9 +161,12 @@ export {
   embedMessages,
   embedMany,
 } from "./search.js";
+export { startGeneration } from "./start.js";
 export {
   DEFAULT_STREAMING_OPTIONS,
+  DeltaStreamer,
   abortStream,
+  compressUIMessageChunks,
   listStreams,
   syncStreams,
   vStreamMessagesReturnValue,
@@ -172,6 +177,7 @@ export {
   searchThreadTitles,
   updateThreadMetadata,
 } from "./threads.js";
+export type { ContextHandler } from "./types.js";
 export { toUIMessages, fromUIMessages, type UIMessage } from "../UIMessages.js";
 
 export type {
@@ -270,7 +276,7 @@ export class Agent<
    * @returns The threadId of the new thread and the thread object.
    */
   async createThread(
-    ctx: RunActionCtx & CustomCtx,
+    ctx: ActionCtx & CustomCtx,
     args?: {
       /**
        * The userId to associate with the thread. If not provided, the thread will be
@@ -297,7 +303,7 @@ export class Agent<
    * @returns The threadId of the new thread.
    */
   async createThread(
-    ctx: RunMutationCtx,
+    ctx: MutationCtx,
     args?: {
       /**
        * The userId to associate with the thread. If not provided, the thread will be
@@ -315,7 +321,7 @@ export class Agent<
     },
   ): Promise<{ threadId: string }>;
   async createThread(
-    ctx: (ActionCtx & CustomCtx) | RunMutationCtx,
+    ctx: (ActionCtx & CustomCtx) | MutationCtx,
     args?: { userId: string | null; title?: string; summary?: string },
   ): Promise<{ threadId: string; thread?: Thread<AgentTools> }> {
     const threadId = await createThread(ctx, this.component, args);
@@ -456,7 +462,7 @@ export class Agent<
     getSavedMessages: () => MessageDoc[];
   }> {
     type Tools = TOOLS extends undefined ? AgentTools : TOOLS;
-    return start<T, Tools, CustomCtx>(
+    return startGeneration<T, Tools, CustomCtx>(
       ctx,
       this.component,
       {
@@ -836,7 +842,7 @@ export class Agent<
    * @returns The messageId of the saved message.
    */
   async saveMessage(
-    ctx: RunMutationCtx,
+    ctx: MutationCtx | ActionCtx,
     args: SaveMessageArgs & {
       /**
        * If true, it will not generate embeddings for the message.
@@ -874,7 +880,7 @@ export class Agent<
    * @returns
    */
   async saveMessages(
-    ctx: RunMutationCtx | RunActionCtx,
+    ctx: MutationCtx | ActionCtx,
     args: SaveMessagesArgs & {
       /**
        * Skip generating embeddings for the messages. Useful if you're
@@ -930,7 +936,7 @@ export class Agent<
    * @returns The MessageDoc's in a format compatible with usePaginatedQuery.
    */
   async listMessages(
-    ctx: RunQueryCtx,
+    ctx: QueryCtx | MutationCtx | ActionCtx,
     args: {
       threadId: string;
       paginationOpts: PaginationOptions;
@@ -950,7 +956,7 @@ export class Agent<
    * @returns The deltas for each stream from their existing cursor.
    */
   async syncStreams(
-    ctx: RunQueryCtx,
+    ctx: QueryCtx | MutationCtx | ActionCtx,
     args: {
       threadId: string;
       streamArgs: StreamArgs | undefined;
@@ -970,7 +976,7 @@ export class Agent<
    * @returns
    */
   async fetchContextMessages(
-    ctx: RunQueryCtx | RunActionCtx,
+    ctx: QueryCtx | MutationCtx | ActionCtx,
     args: {
       userId: string | undefined;
       threadId: string | undefined;
@@ -1032,7 +1038,7 @@ export class Agent<
    * @returns The metadata for the thread.
    */
   async getThreadMetadata(
-    ctx: RunQueryCtx,
+    ctx: QueryCtx | MutationCtx | ActionCtx,
     args: { threadId: string },
   ): Promise<ThreadDoc> {
     return getThreadMetadata(ctx, this.component, args);
@@ -1046,7 +1052,7 @@ export class Agent<
    * @returns The updated thread metadata.
    */
   async updateThreadMetadata(
-    ctx: RunMutationCtx,
+    ctx: MutationCtx | ActionCtx,
     args: {
       threadId: string;
       patch: Partial<
@@ -1067,7 +1073,7 @@ export class Agent<
    * @returns The embeddings for the messages.
    */
   async generateEmbeddings(
-    ctx: RunActionCtx,
+    ctx: ActionCtx,
     args: { userId: string | undefined; threadId: string | undefined },
     messages: (ModelMessage | Message)[],
   ): Promise<
@@ -1093,7 +1099,7 @@ export class Agent<
    * @param args The messageIds to generate embeddings for.
    */
   async generateAndSaveEmbeddings(
-    ctx: RunActionCtx,
+    ctx: ActionCtx,
     args: { messageIds: string[] },
   ) {
     const messages = (
@@ -1253,7 +1259,7 @@ export class Agent<
    *   the generateText call.
    */
   async finalizeMessage(
-    ctx: RunMutationCtx,
+    ctx: MutationCtx | ActionCtx,
     args: {
       messageId: string;
       result: { status: "failed"; error: string } | { status: "success" };
@@ -1271,7 +1277,7 @@ export class Agent<
    * @param args The message fields to update.
    */
   async updateMessage(
-    ctx: RunMutationCtx,
+    ctx: MutationCtx | ActionCtx,
     args: {
       /** The id of the message to update. */
       messageId: string;
@@ -1321,7 +1327,7 @@ export class Agent<
    * @param args The ids of the messages to delete.
    */
   async deleteMessages(
-    ctx: RunMutationCtx,
+    ctx: MutationCtx | ActionCtx,
     args: { messageIds: string[] },
   ): Promise<void> {
     await ctx.runMutation(this.component.messages.deleteByIds, args);
@@ -1334,7 +1340,7 @@ export class Agent<
    * @param args The id of the message to delete.
    */
   async deleteMessage(
-    ctx: RunMutationCtx,
+    ctx: MutationCtx | ActionCtx,
     args: { messageId: string },
   ): Promise<void> {
     await ctx.runMutation(this.component.messages.deleteByIds, {
@@ -1380,7 +1386,7 @@ export class Agent<
    * @param args The range of messages to delete.
    */
   async deleteMessageRange(
-    ctx: RunMutationCtx,
+    ctx: MutationCtx | ActionCtx,
     args: {
       threadId: string;
       startOrder: number;
@@ -1406,7 +1412,7 @@ export class Agent<
    * @param args The id of the thread to delete and optionally the page size to use for the delete.
    */
   async deleteThreadAsync(
-    ctx: RunMutationCtx,
+    ctx: MutationCtx | ActionCtx,
     args: { threadId: string; pageSize?: number },
   ): Promise<void> {
     await ctx.runMutation(this.component.threads.deleteAllForThreadIdAsync, {
@@ -1423,7 +1429,7 @@ export class Agent<
    * @param args The id of the thread to delete and optionally the page size to use for the delete.
    */
   async deleteThreadSync(
-    ctx: RunActionCtx,
+    ctx: ActionCtx,
     args: { threadId: string; pageSize?: number },
   ): Promise<void> {
     await ctx.runAction(this.component.threads.deleteAllForThreadIdSync, {
@@ -1503,10 +1509,8 @@ export class Agent<
           stopWhen: spec?.stopWhen,
           ...overrides,
           ...omit(rest, ["storageOptions", "contextOptions", "stream"]),
-          messages: messages?.map(deserializeMessage),
-          prompt: Array.isArray(prompt)
-            ? prompt.map(deserializeMessage)
-            : prompt,
+          messages: messages?.map(toModelMessage),
+          prompt: Array.isArray(prompt) ? prompt.map(toModelMessage) : prompt,
           toolChoice: args.toolChoice as ToolChoice<AgentTools>,
         } satisfies StreamingTextArgs<AgentTools>;
         if (maxSteps) {
@@ -1580,9 +1584,9 @@ export class Agent<
           ...objectArgs,
           ...callSettings,
           ...omit(rest, ["storageOptions", "contextOptions"]),
-          messages: args.messages?.map(deserializeMessage),
+          messages: args.messages?.map(toModelMessage),
           prompt: Array.isArray(args.prompt)
-            ? args.prompt.map(deserializeMessage)
+            ? args.prompt.map(toModelMessage)
             : args.prompt,
         } as GenerateObjectArgs<FlexibleSchema<T>>;
         const ctx = (
@@ -1640,7 +1644,7 @@ export class Agent<
       handler: async (ctx, args) => {
         const { messages } = await this.saveMessages(ctx, {
           ...args,
-          messages: args.messages.map((m) => deserializeMessage(m.message)),
+          messages: args.messages.map((m) => toModelMessage(m.message)),
           metadata: args.messages.map(({ message: _, ...m }) => m),
           skipEmbeddings: true,
         });

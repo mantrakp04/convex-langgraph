@@ -35,9 +35,10 @@ import {
   type vToolResultPart,
   type SourcePart,
   vToolResultOutput,
+  type MessageDoc,
 } from "./validators.js";
 import type { ActionCtx, AgentComponent } from "./client/types.js";
-import type { RunMutationCtx } from "./client/types.js";
+import type { MutationCtx } from "./client/types.js";
 import { MAX_FILE_SIZE, storeFile } from "./client/files.js";
 import type { Infer } from "convex/values";
 import {
@@ -70,7 +71,7 @@ export type SerializedContent = Message["content"];
 export type SerializedMessage = Message;
 
 export async function serializeMessage(
-  ctx: ActionCtx | RunMutationCtx,
+  ctx: ActionCtx | MutationCtx,
   component: AgentComponent,
   message: ModelMessage | Message,
 ): Promise<{ message: SerializedMessage; fileIds?: string[] }> {
@@ -93,9 +94,7 @@ export async function serializeMessage(
 
 // Similar to serializeMessage, but doesn't save any files and is looser
 // For use on the frontend / in synchronous environments.
-export function fromModelMessage(
-  message: ModelMessage,
-): Message {
+export function fromModelMessage(message: ModelMessage): Message {
   const content = fromModelMessageContent(message.content);
   return {
     role: message.role,
@@ -125,13 +124,21 @@ export async function serializeOrThrow(
   } as SerializedMessage;
 }
 
-export function deserializeMessage(
+export function toModelMessage(
   message: SerializedMessage | ModelMessage,
 ): ModelMessage {
   return {
     ...message,
-    content: deserializeContent(message.content),
+    content: toModelMessageContent(message.content),
   } as ModelMessage;
+}
+
+export function docsToModelMessages(messages: MessageDoc[]): ModelMessage[] {
+  return messages
+    .map((m) => m.message)
+    .filter((m) => !!m)
+    .filter((m) => !!m.content.length)
+    .map(toModelMessage);
 }
 
 export function serializeUsage(usage: LanguageModelUsage): Usage {
@@ -144,7 +151,7 @@ export function serializeUsage(usage: LanguageModelUsage): Usage {
   };
 }
 
-export function deserializeUsage(usage: Usage): LanguageModelUsage {
+export function toModelMessageUsage(usage: Usage): LanguageModelUsage {
   return {
     inputTokens: usage.promptTokens,
     outputTokens: usage.completionTokens,
@@ -168,7 +175,7 @@ export function serializeWarnings(
   });
 }
 
-export function deserializeWarnings(
+export function toModelMessageWarnings(
   warnings: MessageWithMetadata["warnings"],
 ): CallWarning[] | undefined {
   // We don't need to do anythign here for now
@@ -199,7 +206,9 @@ export async function serializeNewMessagesInStep<TOOLS extends ToolSet>(
   const messages: MessageWithMetadata[] = await Promise.all(
     (step.toolResults.length > 0
       ? step.response.messages.slice(-2)
-      : step.response.messages.slice(-1)
+      : step.content.length
+        ? step.response.messages.slice(-1)
+        : [{ role: "assistant" as const, content: [] }]
     ).map(async (msg): Promise<MessageWithMetadata> => {
       const { message, fileIds } = await serializeMessage(ctx, component, msg);
       return parse(vMessageWithMetadata, {
@@ -254,7 +263,7 @@ function getMimeOrMediaType(part: { mediaType?: string; mimeType?: string }) {
 }
 
 export async function serializeContent(
-  ctx: ActionCtx | RunMutationCtx,
+  ctx: ActionCtx | MutationCtx,
   component: AgentComponent,
   content: Content | Message["content"],
 ): Promise<{ content: SerializedContent; fileIds?: string[] }> {
@@ -262,18 +271,18 @@ export async function serializeContent(
     return { content };
   }
   const fileIds: string[] = [];
-  const metadata: {
-    providerOptions?: ProviderOptions;
-    providerMetadata?: ProviderMetadata;
-  } = {};
-  if ("providerOptions" in content) {
-    metadata.providerOptions = content.providerOptions as ProviderOptions;
-  }
-  if ("providerMetadata" in content) {
-    metadata.providerMetadata = content.providerMetadata as ProviderMetadata;
-  }
   const serialized = await Promise.all(
     content.map(async (part) => {
+      const metadata: {
+        providerOptions?: ProviderOptions;
+        providerMetadata?: ProviderMetadata;
+      } = {};
+      if ("providerOptions" in part) {
+        metadata.providerOptions = part.providerOptions as ProviderOptions;
+      }
+      if ("providerMetadata" in part) {
+        metadata.providerMetadata = part.providerMetadata as ProviderMetadata;
+      }
       switch (part.type) {
         case "text": {
           return {
@@ -371,17 +380,17 @@ export function fromModelMessageContent(content: Content): Message["content"] {
   if (typeof content === "string") {
     return content;
   }
-  const metadata: {
-    providerOptions?: ProviderOptions;
-    providerMetadata?: ProviderMetadata;
-  } = {};
-  if ("providerOptions" in content) {
-    metadata.providerOptions = content.providerOptions as ProviderOptions;
-  }
-  if ("providerMetadata" in content) {
-    metadata.providerMetadata = content.providerMetadata as ProviderMetadata;
-  }
   return content.map((part) => {
+    const metadata: {
+      providerOptions?: ProviderOptions;
+      providerMetadata?: ProviderMetadata;
+    } = {};
+    if ("providerOptions" in part) {
+      metadata.providerOptions = part.providerOptions as ProviderOptions;
+    }
+    if ("providerMetadata" in part) {
+      metadata.providerMetadata = part.providerMetadata as ProviderMetadata;
+    }
     switch (part.type) {
       case "text":
         return part satisfies Infer<typeof vTextPart>;
@@ -424,7 +433,7 @@ export function fromModelMessageContent(content: Content): Message["content"] {
   }) as Message["content"];
 }
 
-export function deserializeContent(
+export function toModelMessageContent(
   content: SerializedContent | ModelMessage["content"],
 ): Content {
   if (typeof content === "string") {
@@ -451,14 +460,14 @@ export function deserializeContent(
       case "image":
         return {
           type: part.type,
-          image: deserializeUrl(part.image),
+          image: toModelMessageDataOrUrl(part.image),
           mediaType: getMimeOrMediaType(part),
           ...metadata,
         } satisfies ImagePart;
       case "file":
         return {
           type: part.type,
-          data: deserializeUrl(part.data),
+          data: toModelMessageDataOrUrl(part.data),
           filename: part.filename,
           mediaType: getMimeOrMediaType(part)!,
           ...metadata,
@@ -636,7 +645,7 @@ export function serializeDataOrUrl(
   ) as ArrayBuffer;
 }
 
-export function deserializeUrl(
+export function toModelMessageDataOrUrl(
   urlOrString: string | ArrayBuffer | URL | DataContent,
 ): URL | DataContent {
   if (urlOrString instanceof URL) {

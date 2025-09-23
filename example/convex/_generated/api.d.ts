@@ -19,15 +19,17 @@ import type * as chat_streamAbort from "../chat/streamAbort.js";
 import type * as chat_streaming from "../chat/streaming.js";
 import type * as chat_streamingReasoning from "../chat/streamingReasoning.js";
 import type * as coreMemories_utils from "../coreMemories/utils.js";
+import type * as chat_withoutAgent from "../chat/withoutAgent.js";
 import type * as crons from "../crons.js";
 import type * as debugging_rawRequestResponseHandler from "../debugging/rawRequestResponseHandler.js";
-import type * as etc_objects from "../etc/objects.js";
 import type * as files_addFile from "../files/addFile.js";
 import type * as files_autoSave from "../files/autoSave.js";
 import type * as files_generateImage from "../files/generateImage.js";
 import type * as files_vacuum from "../files/vacuum.js";
 import type * as http from "../http.js";
 import type * as modelsForDemo from "../modelsForDemo.js";
+import type * as objects_generateObject from "../objects/generateObject.js";
+import type * as objects_streamArray from "../objects/streamArray.js";
 import type * as playground from "../playground.js";
 import type * as rag_ragAsPrompt from "../rag/ragAsPrompt.js";
 import type * as rag_ragAsTools from "../rag/ragAsTools.js";
@@ -72,16 +74,16 @@ declare const fullApi: ApiFromModules<{
   "chat/streamAbort": typeof chat_streamAbort;
   "chat/streaming": typeof chat_streaming;
   "chat/streamingReasoning": typeof chat_streamingReasoning;
-  "coreMemories/utils": typeof coreMemories_utils;
   crons: typeof crons;
   "debugging/rawRequestResponseHandler": typeof debugging_rawRequestResponseHandler;
-  "etc/objects": typeof etc_objects;
   "files/addFile": typeof files_addFile;
   "files/autoSave": typeof files_autoSave;
   "files/generateImage": typeof files_generateImage;
   "files/vacuum": typeof files_vacuum;
   http: typeof http;
   modelsForDemo: typeof modelsForDemo;
+  "objects/generateObject": typeof objects_generateObject;
+  "objects/streamArray": typeof objects_streamArray;
   playground: typeof playground;
   "rag/ragAsPrompt": typeof rag_ragAsPrompt;
   "rag/ragAsTools": typeof rag_ragAsTools;
@@ -465,7 +467,7 @@ export declare const components: {
                               Record<string, any>
                             >;
                             sourceType: "url";
-                            title: string;
+                            title?: string;
                             type: "source";
                             url: string;
                           }
@@ -768,7 +770,7 @@ export declare const components: {
                               Record<string, any>
                             >;
                             sourceType: "url";
-                            title: string;
+                            title?: string;
                             type: "source";
                             url: string;
                           }
@@ -1076,7 +1078,7 @@ export declare const components: {
                           >;
                           providerOptions?: Record<string, Record<string, any>>;
                           sourceType: "url";
-                          title: string;
+                          title?: string;
                           type: "source";
                           url: string;
                         }
@@ -1394,7 +1396,7 @@ export declare const components: {
                               Record<string, any>
                             >;
                             sourceType: "url";
-                            title: string;
+                            title?: string;
                             type: "source";
                             url: string;
                           }
@@ -1683,7 +1685,7 @@ export declare const components: {
                           >;
                           providerOptions?: Record<string, Record<string, any>>;
                           sourceType: "url";
-                          title: string;
+                          title?: string;
                           type: "source";
                           url: string;
                         }
@@ -1956,7 +1958,7 @@ export declare const components: {
                           >;
                           providerOptions?: Record<string, Record<string, any>>;
                           sourceType: "url";
-                          title: string;
+                          title?: string;
                           type: "source";
                           url: string;
                         }
@@ -2253,7 +2255,7 @@ export declare const components: {
                               Record<string, any>
                             >;
                             sourceType: "url";
-                            title: string;
+                            title?: string;
                             type: "source";
                             url: string;
                           }
@@ -2467,7 +2469,7 @@ export declare const components: {
                           >;
                           providerOptions?: Record<string, Record<string, any>>;
                           sourceType: "url";
-                          title: string;
+                          title?: string;
                           type: "source";
                           url: string;
                         }

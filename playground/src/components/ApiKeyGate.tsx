@@ -163,7 +163,11 @@ function ApiKeyGate({
               autoComplete="username"
               id="agent-playground-api-path"
               value={apiPathInput}
-              onChange={(e) => setApiPathInput(e.target.value.trim())}
+              onChange={(e) =>
+                setApiPathInput(
+                  e.target.value.trim().replace(/[^a-zA-Z0-9/]/g, ""),
+                )
+              }
               placeholder="playground"
             />
             <span className="text-xs text-muted-foreground">

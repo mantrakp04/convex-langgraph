@@ -132,10 +132,7 @@ describe("toUIMessages", () => {
       type: "tool-myTool",
       toolCallId: "call1",
       state: "output-available",
-      output: {
-        type: "text",
-        value: "42",
-      },
+      output: "42",
     });
   });
 
@@ -163,14 +160,14 @@ describe("toUIMessages", () => {
             },
           ],
         },
-        reasoning: "I'm thinking...I'm thinking...",
+        reasoning: "I'm thinking... I'm thinking...",
         text: "Here's one idea. Here's another idea.",
       }),
     ];
     const uiMessages = toUIMessages(messages);
     expect(uiMessages).toHaveLength(1);
     expect(uiMessages[0].role).toBe("assistant");
-    expect(uiMessages[0].text).toBe("Here's one idea.Here's another idea.");
+    expect(uiMessages[0].text).toBe("Here's one idea. Here's another idea.");
     expect(uiMessages[0].parts.filter((p) => p.type === "reasoning")).toEqual([
       {
         providerOptions: undefined,
@@ -203,6 +200,81 @@ describe("toUIMessages", () => {
     );
     expect(uiMessages[0].parts.filter((p) => p.type === "text")[1].text).toBe(
       "Here's another idea.",
+    );
+  });
+
+  it("combines text from between messages", () => {
+    const messages = [
+      baseMessageDoc({
+        message: {
+          role: "assistant",
+          content: [
+            {
+              type: "reasoning",
+              text: "I'm thinking...",
+            },
+            {
+              type: "text",
+              text: "I'm going to ask a question.",
+            },
+            {
+              type: "tool-call",
+              args: "What's the meaning of life?",
+              toolCallId: "call1",
+              toolName: "myTool",
+            },
+          ],
+        },
+        reasoning: "I'm thinking...",
+        text: "Here's one idea.",
+        tool: true,
+        order: 1,
+        stepOrder: 1,
+      }),
+      baseMessageDoc({
+        message: {
+          role: "tool",
+          content: [
+            {
+              type: "tool-result",
+              toolCallId: "call1",
+              toolName: "myTool",
+              output: {
+                type: "text",
+                value: "42",
+              },
+            },
+          ],
+        },
+        text: "",
+        tool: true,
+        order: 1,
+        stepOrder: 2,
+      }),
+      baseMessageDoc({
+        message: {
+          role: "assistant",
+          content: [
+            {
+              type: "reasoning",
+              text: "Thinking again...",
+            },
+            {
+              type: "text",
+              text: "Ok now I know.",
+            },
+          ],
+        },
+        text: "One last thing.",
+        order: 1,
+        stepOrder: 3,
+      }),
+    ];
+    const uiMessages = toUIMessages(messages);
+    expect(uiMessages).toHaveLength(1);
+    expect(uiMessages[0].role).toBe("assistant");
+    expect(uiMessages[0].text).toBe(
+      "I'm going to ask a question. Ok now I know.",
     );
   });
 
@@ -252,7 +324,7 @@ describe("toUIMessages", () => {
               type: "tool-result",
               toolName: "myTool",
               toolCallId: "call1",
-              result: {
+              output: {
                 type: "json",
                 value: { data: "wrapped result", success: true },
               },
@@ -648,10 +720,7 @@ describe("toUIMessages", () => {
       toolCallId: "call1",
       state: "output-available",
       input: { operation: "add", a: 40, b: 2 },
-      output: {
-        type: "text",
-        value: "42",
-      },
+      output: "42",
     });
 
     // Should also have text part

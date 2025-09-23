@@ -7,9 +7,14 @@ import {
   type MockedFunction,
 } from "vitest";
 import type { ModelMessage } from "ai";
-import { defineSchema } from "convex/server";
+import {
+  defineSchema,
+  type Auth,
+  type StorageActionWriter,
+  type StorageReader,
+} from "convex/server";
 import type { MessageDoc } from "../validators.js";
-import type { RunActionCtx, RunQueryCtx } from "./types.js";
+import type { ActionCtx, QueryCtx } from "./types.js";
 import {
   fetchContextWithPrompt,
   fetchContextMessages,
@@ -43,8 +48,8 @@ const schema = defineSchema({});
 
 describe("search.ts", () => {
   let t = initConvexTest(schema);
-  let mockCtx: RunActionCtx;
-  let ctx: RunActionCtx;
+  let mockCtx: ActionCtx;
+  let ctx: ActionCtx;
 
   // Shared helper functions
   async function createTestThread(userId: string) {
@@ -88,13 +93,15 @@ describe("search.ts", () => {
       runQuery: t.query,
       runAction: t.action,
       runMutation: t.mutation,
-    } as RunActionCtx;
+    } as ActionCtx;
 
     mockCtx = {
       runQuery: vi.fn(),
       runAction: vi.fn(),
       runMutation: vi.fn(),
-    } satisfies RunActionCtx;
+      auth: {} as Auth,
+      storage: {} as StorageActionWriter,
+    } satisfies ActionCtx;
 
     // Mock process.env to avoid file inlining in tests
     process.env.CONVEX_CLOUD_URL = "https://example.convex.cloud";
@@ -183,8 +190,23 @@ describe("search.ts", () => {
     it("should filter out orphaned tool messages", () => {
       const messages: MessageDoc[] = [
         {
-          _id: "1",
+          _id: "0",
           message: { role: "user", content: "Hello" },
+          order: 1,
+        } as MessageDoc,
+        {
+          _id: "1",
+          message: {
+            role: "assistant",
+            content: [
+              {
+                type: "tool-call",
+                toolCallId: "call_orphaned",
+                toolName: "test",
+                args: {},
+              },
+            ],
+          },
           order: 1,
         } as MessageDoc,
         {
@@ -194,18 +216,24 @@ describe("search.ts", () => {
             content: [
               {
                 type: "tool-result",
-                toolCallId: "call_orphaned",
+                toolCallId: "result_orphaned",
                 result: "orphaned",
               },
             ],
           },
           order: 2,
         } as MessageDoc,
+        {
+          _id: "3",
+          message: { role: "assistant", content: "I'll help you with that" },
+          order: 1,
+        } as MessageDoc,
       ];
 
       const result = filterOutOrphanedToolMessages(messages);
-      expect(result).toHaveLength(1);
-      expect(result[0]._id).toBe("1");
+      expect(result).toHaveLength(2);
+      expect(result[0]._id).toBe("0");
+      expect(result[1]._id).toBe("3");
     });
   });
 
@@ -227,7 +255,7 @@ describe("search.ts", () => {
       ];
 
       (
-        mockCtx.runQuery as MockedFunction<RunActionCtx["runQuery"]>
+        mockCtx.runQuery as MockedFunction<ActionCtx["runQuery"]>
       ).mockResolvedValue({
         page: mockPage,
       });
@@ -269,7 +297,7 @@ describe("search.ts", () => {
       ];
 
       (
-        mockCtx.runAction as MockedFunction<RunActionCtx["runAction"]>
+        mockCtx.runAction as MockedFunction<ActionCtx["runAction"]>
       ).mockResolvedValue(searchResults);
 
       const result = await fetchContextMessages(mockCtx, components.agent, {
@@ -293,7 +321,8 @@ describe("search.ts", () => {
       const mockQueryCtx = {
         runQuery: vi.fn().mockResolvedValue({ page: [] }),
         // No runAction method
-      } as RunQueryCtx;
+        storage: {} as StorageReader,
+      } as QueryCtx;
 
       await expect(
         fetchContextMessages(mockQueryCtx, components.agent, {
@@ -1019,7 +1048,7 @@ describe("search.ts", () => {
           inputPrompt: expect.arrayContaining([
             expect.objectContaining({ content: "New replacement prompt" }),
           ]),
-        })
+        }),
       );
 
       expect(result.messages).toHaveLength(4);

@@ -1,8 +1,12 @@
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { saveInputMessages } from "./saveInputMessages.js";
 import type { MessageDoc } from "../validators.js";
-import type { RunActionCtx } from "./types.js";
-import { defineSchema } from "convex/server";
+import type { ActionCtx } from "./types.js";
+import {
+  defineSchema,
+  type Auth,
+  type StorageActionWriter,
+} from "convex/server";
 import { initConvexTest } from "./setup.test.js";
 import { components } from "./setup.test.js";
 
@@ -59,7 +63,7 @@ describe("saveInputMessages", () => {
   const mockComponent = components.agent;
 
   let t = initConvexTest(schema);
-  let ctx: RunActionCtx;
+  let ctx: ActionCtx;
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -68,7 +72,9 @@ describe("saveInputMessages", () => {
       runQuery: t.query,
       runAction: t.action,
       runMutation: t.mutation,
-    } as RunActionCtx;
+      auth: {} as Auth,
+      storage: {} as StorageActionWriter,
+    } as ActionCtx;
 
     mockSaveMessages.mockResolvedValue({
       messages: [
@@ -358,7 +364,9 @@ describe("saveInputMessages", () => {
         runQuery: vi.fn(),
         runMutation: vi.fn(),
         runAction: vi.fn(),
-      } as RunActionCtx;
+        auth: {} as Auth,
+        storage: {} as StorageActionWriter,
+      } as ActionCtx;
 
       await saveInputMessages(actionCtx, mockComponent, {
         ...defaultArgs,

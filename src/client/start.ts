@@ -34,7 +34,7 @@ import { saveInputMessages } from "./saveInputMessages.js";
 import { memoryTools } from "./memory.js";
 import { fetchCoreMemoryMessages } from "./coreMemory.js";
 
-export async function start<
+export async function startGeneration<
   T,
   Tools extends ToolSet = ToolSet,
   CustomCtx extends object = object,

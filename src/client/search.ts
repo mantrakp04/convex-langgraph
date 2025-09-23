@@ -20,15 +20,16 @@ import {
 } from "../shared.js";
 import type { Message } from "../validators.js";
 import type {
+  ActionCtx,
   AgentComponent,
   Config,
   ContextOptions,
   Options,
-  RunActionCtx,
-  RunQueryCtx,
+  QueryCtx,
+  MutationCtx,
 } from "./types.js";
 import { inlineMessagesFiles } from "./files.js";
-import { deserializeMessage } from "../mapping.js";
+import { docsToModelMessages, toModelMessage } from "../mapping.js";
 
 const DEFAULT_VECTOR_SCORE_THRESHOLD = 0.0;
 // 10k characters should be more than enough for most cases, and stays under
@@ -49,7 +50,7 @@ export type GetEmbedding = (text: string) => Promise<{
  * @returns
  */
 export async function fetchContextMessages(
-  ctx: RunQueryCtx | RunActionCtx,
+  ctx: QueryCtx | MutationCtx | ActionCtx,
   component: AgentComponent,
   args: {
     userId: string | undefined;
@@ -85,7 +86,7 @@ export async function fetchContextMessages(
 }
 
 export async function fetchRecentAndSearchMessages(
-  ctx: RunQueryCtx | RunActionCtx,
+  ctx: QueryCtx | MutationCtx | ActionCtx,
   component: AgentComponent,
   args: {
     userId: string | undefined;
@@ -231,23 +232,48 @@ export async function fetchRecentAndSearchMessages(
  */
 export function filterOutOrphanedToolMessages(docs: MessageDoc[]) {
   const toolCallIds = new Set<string>();
+  const toolResultIds = new Set<string>();
   const result: MessageDoc[] = [];
+  for (const doc of docs) {
+    if (doc.message && Array.isArray(doc.message.content)) {
+      for (const content of doc.message.content) {
+        if (content.type === "tool-call") {
+          toolCallIds.add(content.toolCallId);
+        } else if (content.type === "tool-result") {
+          toolResultIds.add(content.toolCallId);
+        }
+      }
+    }
+  }
   for (const doc of docs) {
     if (
       doc.message?.role === "assistant" &&
       Array.isArray(doc.message.content)
     ) {
-      for (const content of doc.message.content) {
-        if (content.type === "tool-call") {
-          toolCallIds.add(content.toolCallId);
-        }
+      const content = doc.message.content.filter(
+        (p) => p.type !== "tool-call" || toolResultIds.has(p.toolCallId),
+      );
+      if (content.length) {
+        result.push({
+          ...doc,
+          message: {
+            ...doc.message,
+            content,
+          },
+        });
       }
-      result.push(doc);
     } else if (doc.message?.role === "tool") {
-      if (doc.message.content.every((c) => toolCallIds.has(c.toolCallId))) {
-        result.push(doc);
-      } else {
-        console.debug("Filtering out orphaned tool message", doc);
+      const content = doc.message.content.filter((c) =>
+        toolCallIds.has(c.toolCallId),
+      );
+      if (content.length) {
+        result.push({
+          ...doc,
+          message: {
+            ...doc.message,
+            content,
+          },
+        });
       }
     } else {
       result.push(doc);
@@ -261,7 +287,7 @@ export function filterOutOrphanedToolMessages(docs: MessageDoc[]) {
  * This will not save the embeddings to the database.
  */
 export async function embedMessages(
-  ctx: RunActionCtx,
+  ctx: ActionCtx,
   {
     userId,
     threadId,
@@ -330,7 +356,7 @@ export async function embedMessages(
  * @returns The embeddings for the strings, matching the order of the values.
  */
 export async function embedMany(
-  ctx: RunActionCtx,
+  ctx: ActionCtx,
   {
     userId,
     threadId,
@@ -388,7 +414,7 @@ export async function embedMany(
  * @param messages The messages to embed, in the Agent MessageDoc format.
  */
 export async function generateAndSaveEmbeddings(
-  ctx: RunActionCtx,
+  ctx: ActionCtx,
   component: AgentComponent,
   args: {
     threadId: string | undefined;
@@ -433,7 +459,7 @@ export async function generateAndSaveEmbeddings(
  * promptMessageId message.
  */
 export async function fetchContextWithPrompt(
-  ctx: RunActionCtx,
+  ctx: ActionCtx,
   component: AgentComponent,
   args: {
     prompt: string | (ModelMessage | Message)[] | undefined;
@@ -545,26 +571,25 @@ export async function fetchContextWithPrompt(
     }
   }
 
-  const search = searchMessages
-    .map((m) => m.message)
-    .filter((m): m is NonNullable<typeof m> => !!m)
-    .map(deserializeMessage);
-  const recent = prePromptDocs
-    .map((m) => m.message)
-    .filter((m): m is NonNullable<typeof m> => !!m)
-    .map(deserializeMessage);
-  const inputMessages = messages.map(deserializeMessage);
-  const inputPrompt = promptArray.map(deserializeMessage);
-  const existingResponses = existingResponseDocs
-    .map((m) => m.message)
-    .filter((m): m is NonNullable<typeof m> => !!m)
-    .map(deserializeMessage);
+  const search = docsToModelMessages(searchMessages);
+  const recent = docsToModelMessages(prePromptDocs);
+  const inputMessages = messages.map(toModelMessage);
+  const inputPrompt = promptArray.map(toModelMessage);
+  const existingResponses = docsToModelMessages(existingResponseDocs);
 
   // Core memory provided by caller to separate concerns from search.
   const coreMemoryMessages: ModelMessage[] = args.coreMemoryMessages ?? [];
 
+  const allMessages = [
+    ...search,
+    ...recent,
+    ...inputMessages,
+    ...inputPrompt,
+    ...existingResponses,
+  ];
   let processedMessages = args.contextHandler
     ? await args.contextHandler(ctx, {
+        allMessages,
         search,
         recent,
         inputMessages,

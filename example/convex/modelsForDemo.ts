@@ -1,6 +1,7 @@
 import { openrouter } from "@openrouter/ai-sdk-provider";
 import { type EmbeddingModel } from "ai";
 import type { LanguageModelV2 } from "@ai-sdk/provider";
+import { anthropic } from "@ai-sdk/anthropic";
 import { openai } from "@ai-sdk/openai";
 import { groq } from "@ai-sdk/groq";
 import { mockModel } from "@convex-dev/agent";
@@ -9,7 +10,9 @@ import { google } from "@ai-sdk/google";
 let languageModel: LanguageModelV2;
 let textEmbeddingModel: EmbeddingModel<string>;
 
-if (process.env.OPENAI_API_KEY) {
+if (process.env.ANTHROPIC_API_KEY) {
+  languageModel = anthropic.chat("claude-opus-4-20250514");
+} else if (process.env.OPENAI_API_KEY) {
   languageModel = openai.chat("gpt-4o-mini");
 } else if (process.env.GROQ_API_KEY) {
   languageModel = groq.languageModel(

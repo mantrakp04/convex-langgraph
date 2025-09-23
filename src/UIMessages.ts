@@ -12,12 +12,14 @@ import {
   type UITools,
 } from "ai";
 import type { Infer } from "convex/values";
+import { toModelMessage, fromModelMessage, toUIFilePart } from "./mapping.js";
 import {
-  deserializeMessage,
-  fromModelMessage,
-  toUIFilePart,
-} from "./mapping.js";
-import { extractReasoning, extractText, isTool, sorted } from "./shared.js";
+  extractReasoning,
+  extractText,
+  isTool,
+  joinText,
+  sorted,
+} from "./shared.js";
 import type {
   MessageDoc,
   MessageStatus,
@@ -202,7 +204,7 @@ function groupAssistantMessages<METADATA = unknown>(
   let currentOrder: number | undefined;
 
   for (const message of messages) {
-    const coreMessage = message.message && deserializeMessage(message.message);
+    const coreMessage = message.message && toModelMessage(message.message);
     if (!coreMessage) continue;
 
     if (coreMessage.role === "user" || coreMessage.role === "system") {
@@ -304,7 +306,7 @@ function createUserUIMessage<
   message: MessageDoc & ExtraFields<METADATA>,
 ): UIMessage<METADATA, DATA_PARTS, TOOLS> {
   const text = extractTextFromMessageDoc(message);
-  const coreMessage = deserializeMessage(message.message!);
+  const coreMessage = toModelMessage(message.message!);
   const content = coreMessage.content;
   const nonStringContent =
     content && typeof content !== "string" ? content : [];
@@ -369,12 +371,6 @@ function createAssistantUIMessage<
     agentName: firstMessage.agentName,
   };
 
-  // Concatenate text from all messages in group
-  const allText = group
-    .map((msg) => extractTextFromMessageDoc(msg))
-    .filter(Boolean)
-    .join(" ");
-
   // Get status from last message
   const lastMessage = group[group.length - 1];
   const status = lastMessage.streaming
@@ -385,7 +381,7 @@ function createAssistantUIMessage<
   const allParts: UIMessage<METADATA, DATA_PARTS, TOOLS>["parts"] = [];
 
   for (const message of group) {
-    const coreMessage = message.message && deserializeMessage(message.message);
+    const coreMessage = message.message && toModelMessage(message.message);
     if (!coreMessage) continue;
 
     const content = coreMessage.content;
@@ -463,7 +459,7 @@ function createAssistantUIMessage<
         }
         case "tool-result": {
           const output =
-            contentPart.output?.type === "json"
+            typeof contentPart.output?.type === "string"
               ? contentPart.output.value
               : contentPart.output;
           const call = allParts.find(
@@ -531,7 +527,7 @@ function createAssistantUIMessage<
   return {
     ...common,
     role: "assistant",
-    text: allText,
+    text: joinText(allParts),
     status,
     parts: allParts,
     metadata: group.find((m) => m.metadata)?.metadata,

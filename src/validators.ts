@@ -93,7 +93,7 @@ export const vSourcePart = v.union(
     sourceType: v.literal("url"),
     id: v.string(),
     url: v.string(),
-    title: v.string(),
+    title: v.optional(v.string()),
     providerOptions,
     providerMetadata,
   }),
@@ -220,6 +220,16 @@ export const vMessage = v.union(
   vSystemMessage,
 );
 export type Message = Infer<typeof vMessage>;
+
+export type MessageContentParts =
+  | Infer<typeof vTextPart>
+  | Infer<typeof vImagePart>
+  | Infer<typeof vFilePart>
+  | Infer<typeof vReasoningPart>
+  | Infer<typeof vRedactedReasoningPart>
+  | Infer<typeof vToolCallPart>
+  | Infer<typeof vToolResultPart>
+  | Infer<typeof vSourcePart>;
 
 export const vSource = v.union(
   v.object({

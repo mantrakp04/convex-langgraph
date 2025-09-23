@@ -8,18 +8,16 @@ import {
   useThreadMessages,
   type UIMessage,
 } from "@convex-dev/agent/react";
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { cn } from "../lib/utils";
-
-function getThreadIdFromHash() {
-  return window.location.hash.replace(/^#/, "") || undefined;
-}
+import { useDemoThread } from "@/hooks/use-demo-thread";
 
 export default function ChatBasic() {
-  const createThread = useMutation(api.threads.createNewThread);
-  const [threadId, setThreadId] = useState<string | undefined>(
-    typeof window !== "undefined" ? getThreadIdFromHash() : undefined,
-  );
+  const {
+    threadId,
+    resetThread: newThread,
+    setThreadId,
+  } = useDemoThread("Basic Chat Example");
 
   // Fetch thread title if threadId exists
   const threadDetails = useQuery(
@@ -27,35 +25,12 @@ export default function ChatBasic() {
     threadId ? { threadId } : "skip",
   );
 
-  // Fetch all threads (internal API)
-  // For demo, hardcode userId as in backend
+  // Fetch all threads
   const threads = usePaginatedQuery(
     api.threads.listThreads,
     {},
     { initialNumItems: 20 },
   );
-
-  // Listen for hash changes
-  useEffect(() => {
-    function onHashChange() {
-      setThreadId(getThreadIdFromHash());
-    }
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, []);
-
-  // Reset handler: create a new thread and update hash
-  const newThread = useCallback(() => {
-    void createThread({ title: "Fresh thread" }).then((newId) => {
-      window.location.hash = newId;
-      setThreadId(newId);
-    });
-  }, [createThread]);
-
-  // On mount or when threadId changes, if no threadId, create one and set hash
-  useEffect(() => {
-    if (!threadId) newThread();
-  }, [newThread, threadId]);
 
   return (
     <div className="h-full flex flex-col">
@@ -106,7 +81,7 @@ export default function ChatBasic() {
           </div>
           <div className="px-4 py-2">
             <button
-              onClick={newThread}
+              onClick={() => void newThread()}
               className="w-full flex justify-center items-center gap-2 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 transition font-semibold shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
               type="button"
             >

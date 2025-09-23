@@ -7,43 +7,13 @@ import {
   useUIMessages,
   type UIMessage,
 } from "@convex-dev/agent/react";
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
-
-function getThreadIdFromHash() {
-  return window.location.hash.replace(/^#/, "") || undefined;
-}
+import { useDemoThread } from "@/hooks/use-demo-thread";
+import { ToolUIPart } from "ai";
 
 export default function ChatStreaming() {
-  const createThread = useMutation(api.threads.createNewThread);
-  const [threadId, setThreadId] = useState<string | undefined>(
-    typeof window !== "undefined" ? getThreadIdFromHash() : undefined,
-  );
-
-  // Listen for hash changes
-  useEffect(() => {
-    function onHashChange() {
-      setThreadId(getThreadIdFromHash());
-    }
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, []);
-
-  const resetThread = useCallback(() => {
-    void createThread({
-      title: "Streaming Chat Example",
-    }).then((newId) => {
-      window.location.hash = newId;
-      setThreadId(newId);
-    });
-  }, [createThread]);
-
-  // On mount or when threadId changes, if no threadId, create one and set hash
-  useEffect(() => {
-    if (!threadId) {
-      void resetThread();
-    }
-  }, [resetThread, threadId]);
+  const { threadId, resetThread } = useDemoThread("Streaming Chat Example");
 
   return (
     <>
@@ -54,7 +24,7 @@ export default function ChatStreaming() {
       </header>
       <div className="h-[calc(100vh-8rem)] flex flex-col bg-gray-50">
         {threadId ? (
-          <Story threadId={threadId} reset={resetThread} />
+          <Story threadId={threadId} reset={() => void resetThread()} />
         ) : (
           <div className="flex-1 flex items-center justify-center text-gray-500">
             Loading...
@@ -223,6 +193,9 @@ function Message({ message }: { message: UIMessage }) {
       startStreaming: message.status === "streaming",
     },
   );
+  const nameToolCalls = message.parts.filter(
+    (p): p is ToolUIPart => p.type === "tool-getCharacterNames",
+  );
   return (
     <div className={cn("flex", isUser ? "justify-end" : "justify-start")}>
       <div
@@ -238,6 +211,13 @@ function Message({ message }: { message: UIMessage }) {
         {reasoningText && (
           <div className="text-xs text-gray-500">💭{reasoningText}</div>
         )}
+        {nameToolCalls.map((p) => (
+          <div key={p.toolCallId} className="text-xs text-gray-500">
+            Names generated:{" "}
+            {p.output ? (p.output as string[]).join(", ") : p.state}
+            <br />
+          </div>
+        ))}
         {visibleText || "..."}
       </div>
     </div>

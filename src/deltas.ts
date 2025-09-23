@@ -11,63 +11,13 @@ import {
 } from "ai";
 import { assert, pick } from "convex-helpers";
 import { type UIMessage } from "./UIMessages.js";
-import { sorted } from "./shared.js";
+import { joinText, sorted } from "./shared.js";
 import {
   type MessageStatus,
   type StreamDelta,
   type StreamMessage,
 } from "./validators.js";
-
-/**
- * Compressing parts when streaming to save bandwidth in deltas.
- */
-
-export function compressUIMessageChunks(
-  parts: UIMessageChunk[],
-): UIMessageChunk[] {
-  const compressed: UIMessageChunk[] = [];
-  for (const part of parts) {
-    const last = compressed.at(-1);
-    if (part.type === "text-delta" || part.type === "reasoning-delta") {
-      if (last?.type === part.type && part.id === last.id) {
-        last.delta += part.delta;
-      } else {
-        compressed.push(part);
-      }
-    } else {
-      compressed.push(part);
-    }
-  }
-  return compressed;
-}
-
-export function compressTextStreamParts(
-  parts: TextStreamPart<ToolSet>[],
-): TextStreamPart<ToolSet>[] {
-  const compressed: TextStreamPart<ToolSet>[] = [];
-  for (const part of parts) {
-    const last = compressed.at(-1);
-    if (part.type === "text-delta" || part.type === "reasoning-delta") {
-      if (last?.type === part.type && part.id === last.id) {
-        last.text += part.text;
-      } else {
-        compressed.push(part);
-      }
-    } else {
-      if (part.type === "file") {
-        compressed.push({
-          type: "file",
-          file: {
-            ...part.file,
-            uint8Array: undefined as unknown as Uint8Array,
-          },
-        });
-      }
-      compressed.push(part);
-    }
-  }
-  return compressed;
-}
+import { getErrorMessage } from "@ai-sdk/provider-utils";
 
 export function blankUIMessage<METADATA = unknown>(
   streamMessage: StreamMessage & { metadata?: METADATA },
@@ -136,10 +86,7 @@ export async function updateFromUIMessageChunks(
   if (failed) {
     message.status = "failed";
   }
-  message.text = message.parts
-    .filter((p) => p.type === "text")
-    .map((p) => p.text)
-    .join("");
+  message.text = joinText(message.parts);
   return message;
 }
 
@@ -238,9 +185,6 @@ export function getParts<T extends StreamDelta["parts"][number]>(
     }
     if (cursor !== delta.start) {
       if (cursor >= delta.end) {
-        console.debug(
-          `Got duplicate delta for stream ${delta.streamId} at ${delta.start}`,
-        );
         continue;
       } else if (cursor < delta.start) {
         console.warn(
@@ -524,10 +468,7 @@ export function updateFromTextStreamParts(
       case "tool-error": {
         const toolPart = toolPartsById.get(part.toolCallId);
         if (toolPart) {
-          toolPart.errorText =
-            part.error instanceof Error
-              ? part.error.message.toString()
-              : String(part.error);
+          toolPart.errorText = getErrorMessage(part.error);
         }
         break;
       }
@@ -555,10 +496,7 @@ export function updateFromTextStreamParts(
       part.state = "done";
     }
   }
-  message.text = message.parts
-    .filter((p) => p.type === "text")
-    .map((p) => p.text)
-    .join("");
+  message.text = joinText(message.parts);
   return [
     {
       streamId: streamMessage.streamId,
@@ -590,4 +528,63 @@ function mergeProviderMetadata(
     };
   }
   return merged;
+}
+
+export function combineUIMessages(messages: UIMessage[]): UIMessage[] {
+  const combined = messages.reduce((acc, message) => {
+    if (!acc.length) {
+      return [message];
+    }
+    const previous = acc.at(-1)!;
+    if (previous.role !== message.role) {
+      acc.push(message);
+      return acc;
+    }
+    // We will replace it with a combined message
+    acc.pop();
+    const newParts = [...previous.parts];
+    for (const part of message.parts) {
+      const toolCallId = getToolCallId(part);
+      if (!toolCallId) {
+        newParts.push(part);
+        continue;
+      }
+      const previousPartIndex = newParts.findIndex(
+        (p) => getToolCallId(p) === toolCallId,
+      );
+      const previousPart = newParts.splice(previousPartIndex, 1)[0];
+      if (!previousPart) {
+        newParts.push(part);
+        continue;
+      }
+      newParts.push(mergeParts(previousPart, part));
+    }
+    acc.push({
+      ...previous,
+      ...pick(message, ["status", "metadata", "agentName"]),
+      parts: newParts,
+      text: joinText(newParts),
+    });
+    return acc;
+  }, [] as UIMessage[]);
+  return combined;
+}
+
+function getToolCallId(
+  part: UIMessage["parts"][number] & { toolCallId?: string },
+) {
+  return part.toolCallId;
+}
+
+function mergeParts(
+  previousPart: UIMessage["parts"][number],
+  part: UIMessage["parts"][number],
+): UIMessage["parts"][number] {
+  const merged: Record<string, unknown> = { ...previousPart };
+  for (const [key, value] of Object.entries(part)) {
+    if (value !== undefined) {
+      merged[key] = value;
+    }
+  }
+  return merged as ToolUIPart | DynamicToolUIPart;
 }

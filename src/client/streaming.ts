@@ -1,27 +1,30 @@
 import {
-  type ChunkDetector,
-  type AsyncIterableStream,
-  type StreamTextTransform,
-  type ToolSet,
   smoothStream,
+  type AsyncIterableStream,
+  type ChunkDetector,
+  type StreamTextTransform,
+  type TextStreamPart,
+  type ToolSet,
+  type UIMessageChunk,
 } from "ai";
+import { v } from "convex/values";
 import {
+  vMessageDoc,
+  vPaginationResult,
   vStreamDelta,
   vStreamMessage,
-  vPaginationResult,
   type ProviderOptions,
   type StreamArgs,
   type StreamDelta,
   type StreamMessage,
 } from "../validators.js";
 import type {
+  ActionCtx,
   AgentComponent,
-  RunMutationCtx,
-  RunQueryCtx,
+  MutationCtx,
+  QueryCtx,
   SyncStreamsReturnValue,
 } from "./types.js";
-import { v } from "convex/values";
-import { vMessageDoc } from "../validators.js";
 
 export const vStreamMessagesReturnValue = v.object({
   ...vPaginationResult(vMessageDoc).fields,
@@ -43,7 +46,7 @@ export const vStreamMessagesReturnValue = v.object({
  * @returns The deltas for each stream from their existing cursor.
  */
 export async function syncStreams(
-  ctx: RunQueryCtx,
+  ctx: QueryCtx | MutationCtx | ActionCtx,
   component: AgentComponent,
   {
     threadId,
@@ -78,7 +81,7 @@ export async function syncStreams(
 }
 
 export async function abortStream(
-  ctx: RunMutationCtx,
+  ctx: MutationCtx,
   component: AgentComponent,
   args: { reason: string } & (
     | { streamId: string }
@@ -109,7 +112,7 @@ export async function abortStream(
  * @returns The streams for the thread.
  */
 export async function listStreams(
-  ctx: RunQueryCtx,
+  ctx: QueryCtx | MutationCtx | ActionCtx,
   component: AgentComponent,
   {
     threadId,
@@ -196,7 +199,7 @@ export function mergeTransforms<TOOLS extends ToolSet>(
  * optimize the data in transit.
  */
 export class DeltaStreamer<T> {
-  public streamId: string | undefined;
+  streamId: string | undefined;
   public readonly config: {
     throttleMs: number;
     onAsyncAbort: (reason: string) => Promise<void>;
@@ -210,7 +213,7 @@ export class DeltaStreamer<T> {
 
   constructor(
     public readonly component: AgentComponent,
-    public readonly ctx: RunMutationCtx,
+    public readonly ctx: MutationCtx,
     config: {
       throttleMs: number | undefined;
       onAsyncAbort: (reason: string) => Promise<void>;
@@ -253,16 +256,27 @@ export class DeltaStreamer<T> {
     }
   }
 
+  // Avoid race conditions by only creating once
+  #creatingStreamIdPromise: Promise<string> | undefined;
+  public async getStreamId() {
+    if (this.streamId) {
+      return this.streamId;
+    }
+    if (this.#creatingStreamIdPromise) {
+      return this.#creatingStreamIdPromise;
+    }
+    this.#creatingStreamIdPromise = this.ctx.runMutation(
+      this.component.streams.create,
+      this.metadata,
+    );
+    this.streamId = await this.#creatingStreamIdPromise;
+  }
+
   public async addParts(parts: T[]) {
     if (this.abortController.signal.aborted) {
       return;
     }
-    if (!this.streamId) {
-      this.streamId = await this.ctx.runMutation(
-        this.component.streams.create,
-        this.metadata,
-      );
-    }
+    await this.getStreamId();
     this.#nextParts.push(...parts);
     if (
       !this.#ongoingWrite &&
@@ -359,4 +373,55 @@ export class DeltaStreamer<T> {
       reason,
     });
   }
+}
+
+/**
+ * Compressing parts when streaming to save bandwidth in deltas.
+ */
+
+export function compressUIMessageChunks(
+  parts: UIMessageChunk[],
+): UIMessageChunk[] {
+  const compressed: UIMessageChunk[] = [];
+  for (const part of parts) {
+    const last = compressed.at(-1);
+    if (part.type === "text-delta" || part.type === "reasoning-delta") {
+      if (last?.type === part.type && part.id === last.id) {
+        last.delta += part.delta;
+      } else {
+        compressed.push(part);
+      }
+    } else {
+      compressed.push(part);
+    }
+  }
+  return compressed;
+}
+
+export function compressTextStreamParts(
+  parts: TextStreamPart<ToolSet>[],
+): TextStreamPart<ToolSet>[] {
+  const compressed: TextStreamPart<ToolSet>[] = [];
+  for (const part of parts) {
+    const last = compressed.at(-1);
+    if (part.type === "text-delta" || part.type === "reasoning-delta") {
+      if (last?.type === part.type && part.id === last.id) {
+        last.text += part.text;
+      } else {
+        compressed.push(part);
+      }
+    } else {
+      if (part.type === "file") {
+        compressed.push({
+          type: "file",
+          file: {
+            ...part.file,
+            uint8Array: undefined as unknown as Uint8Array,
+          },
+        });
+      }
+      compressed.push(part);
+    }
+  }
+  return compressed;
 }
