@@ -10,6 +10,7 @@ import RateLimiting from "./rate_limiting/RateLimiting";
 import { WeatherFashion } from "./workflows/WeatherFashion";
 import RagBasic from "./rag/RagBasic";
 import MemoryUI from "./coreMemories/MemoryUI";
+import McpUI from "./mcp/McpUI";
 
 const convex = new ConvexReactClient(import.meta.env.VITE_CONVEX_URL as string);
 
@@ -42,6 +43,7 @@ export function App() {
             <Route path="/rate-limiting" element={<RateLimiting />} />
             <Route path="/weather-fashion" element={<WeatherFashion />} />
             <Route path="/core-memories" element={<MemoryUI />} />
+            <Route path="/mcp" element={<McpUI />} />
           </Routes>
         </main>
         <Toaster />
@@ -69,6 +71,17 @@ function Index() {
             <p className="mt-2 text-gray-700">
               A simple chat with an AI agent. No tool calls, no streaming. Just
               enough to see it in action.
+            </p>
+          </li>
+          <li className="border rounded p-4 hover:shadow transition">
+            <Link
+              to="/mcp"
+              className="text-xl font-semibold text-indigo-700 hover:underline"
+            >
+              MCP Management
+            </Link>
+            <p className="mt-2 text-gray-700">
+              Provision/remove the MCP proxy and view or update its configuration.
             </p>
           </li>
           <li className="border rounded p-4 hover:shadow transition">

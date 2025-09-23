@@ -106,5 +106,9 @@
   },
   "main": "./dist/client/index.js",
   "types": "./dist/client/index.d.ts",
-  "module": "./dist/client/index.js"
+  "module": "./dist/client/index.js",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.18.1",
+    "jose": "^6.1.0"
+  }
 }

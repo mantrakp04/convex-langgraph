@@ -1,0 +1,23 @@
+{
+  "mcpServers": {
+    "stripe": {
+      "url": "https://mcp.stripe.com",
+      "enabled": true
+    },
+    "linear": {
+      "url": "https://mcp.linear.app/sse",
+      "enabled": false
+    },
+    "fileSystem": {
+      "command": "bunx",
+      "args": [
+        "@modelcontextprotocol/server-filesystem",
+        "/tmp"
+      ]
+    },
+    "context7": {
+      "url": "https://mcp.context7.com/mcp",
+      "enabled": false
+    }
+  }
+}

@@ -14,4 +14,13 @@ export const defaultConfig = {
   textEmbeddingModel,
   // Enable built-in memory tools (append/replace core memory, message search)
   memoryTools: true,
+  mcpConfig: {
+    adapter: "flyio",
+    config: {
+      apiToken: process.env.FLY_API_TOKEN,
+      orgSlug: process.env.FLY_ORG_SLUG || "personal",
+      jwtPrivateKey: process.env.JWT_PRIVATE_KEY || "",
+      jwks: process.env.JWKS || "",
+    },
+  },
 } satisfies Config;

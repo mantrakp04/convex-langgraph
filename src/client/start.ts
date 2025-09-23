@@ -33,6 +33,7 @@ import { omit } from "convex-helpers";
 import { saveInputMessages } from "./saveInputMessages.js";
 import { memoryTools } from "./memory.js";
 import { fetchCoreMemoryMessages } from "./coreMemory.js";
+import { MCPClient } from "./mcp.js";
 
 export async function start<
   T,
@@ -202,6 +203,11 @@ export async function start<
   const toolsToWrap: (ToolSet | undefined)[] = [args.tools];
   if (opts.memoryTools && opts.textEmbeddingModel) {
     toolsToWrap.push(memoryTools(component));
+  }
+  if (opts.mcpConfig) {
+    const client = new MCPClient(ctx, component, userId, opts.mcpConfig);
+    const mcpTools = await client.loadMcpTools();
+    toolsToWrap.push(mcpTools.tools);
   }
   
   const tools = wrapTools(toolCtx, ...toolsToWrap) as Tools;

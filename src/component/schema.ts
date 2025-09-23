@@ -145,6 +145,21 @@ export const schema = defineSchema({
     .index("userId", ["userId"])
     .index("persona", ["persona"])
     .index("human", ["human"]),
+  
+  mcps: defineTable({
+    userId: v.optional(v.string()),
+    resourceId: v.optional(v.string()),
+    url: v.optional(v.string()),
+    status: v.union(
+      v.literal("running"),
+      v.literal("stopped"),
+      v.literal("restarting"),
+      v.literal("pending"),
+      v.literal("error"),
+    ),
+  })
+    .index("userId", ["userId"])
+    .index("resourceId", ["resourceId"]),
 
   files: defineTable({
     storageId: v.string(),

@@ -44,6 +44,7 @@ import type {
   StreamDelta,
   StreamMessage,
   ThreadDoc,
+  MCPAdapterConfig,
 } from "../validators.js";
 import type { StreamingOptions } from "./streaming.js";
 import type * as z3 from "zod/v3";
@@ -142,6 +143,12 @@ export type Config = {
    * Defaults to false.
    */
   memoryTools?: boolean;
+  /**
+   * Whether to automatically include MCP tools when an MCP is available (provisioned).
+   * This doesn't automatically provision an MCP, it just includes the tools if one is available.
+   * Defaults to false.
+   */
+  mcpConfig?: MCPAdapterConfig;
 };
 
 /**
