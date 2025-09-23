@@ -3,6 +3,7 @@
 ## 0.2.11 alpha
 
 - Filters out empty content arrays when prompting the LLM.
+- Fixes combining sequential user messages in useUIMessages
 - Breaking: now joins all text parts with a space delimiter instead of strict
   concatenation. This improves text search and is unlikely to look worse, as
   text parts aren't meant to be deltas.
