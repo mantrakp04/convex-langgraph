@@ -536,7 +536,11 @@ export function combineUIMessages(messages: UIMessage[]): UIMessage[] {
       return [message];
     }
     const previous = acc.at(-1)!;
-    if (previous.role !== message.role || message.role !== "assistant") {
+    if (
+      message.order !== previous.order ||
+      previous.role !== message.role ||
+      message.role !== "assistant"
+    ) {
       acc.push(message);
       return acc;
     }
