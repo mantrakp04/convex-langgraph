@@ -1,12 +1,12 @@
 import type { ModelMessage } from "ai";
-import type { AgentComponent, RunActionCtx, RunQueryCtx } from "./types.js";
+import type { AgentComponent, ActionCtx, QueryCtx } from "./types.js";
 
 /**
  * Load core memory for a user and convert it into system messages.
  * Returns an empty array if no userId provided or no core memory found.
  */
 export async function fetchCoreMemoryMessages(
-  ctx: RunQueryCtx | RunActionCtx,
+  ctx: QueryCtx | ActionCtx,
   component: AgentComponent,
   userId: string | undefined,
 ): Promise<ModelMessage[]> {
