@@ -1,4 +1,4 @@
-import z from "zod/v3";
+import z from "zod/v4";
 import { createTool, type ToolCtx } from "./createTool.js";
 import type { AgentComponent } from "./types.js";
 import { embed } from "ai";
