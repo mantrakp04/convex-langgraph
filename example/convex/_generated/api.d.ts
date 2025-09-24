@@ -27,6 +27,7 @@ import type * as files_autoSave from "../files/autoSave.js";
 import type * as files_generateImage from "../files/generateImage.js";
 import type * as files_vacuum from "../files/vacuum.js";
 import type * as http from "../http.js";
+import type * as mcp_utils from "../mcp/utils.js";
 import type * as modelsForDemo from "../modelsForDemo.js";
 import type * as objects_generateObject from "../objects/generateObject.js";
 import type * as objects_streamArray from "../objects/streamArray.js";
@@ -83,6 +84,7 @@ declare const fullApi: ApiFromModules<{
   "files/generateImage": typeof files_generateImage;
   "files/vacuum": typeof files_vacuum;
   http: typeof http;
+  "mcp/utils": typeof mcp_utils;
   modelsForDemo: typeof modelsForDemo;
   "objects/generateObject": typeof objects_generateObject;
   "objects/streamArray": typeof objects_streamArray;
@@ -269,6 +271,48 @@ export declare const components: {
         { filename?: string; hash: string },
         null | { fileId: string; storageId: string }
       >;
+    };
+    mcp: {
+      index: {
+        get: FunctionReference<
+          "query",
+          "internal",
+          { userId?: string },
+          {
+            _creationTime: number;
+            _id: string;
+            resourceId?: string;
+            status: "running" | "stopped" | "restarting" | "pending" | "error";
+            url?: string;
+            userId?: string;
+          } | null
+        >;
+        getOrCreate: FunctionReference<
+          "mutation",
+          "internal",
+          {
+            config: { adapter: string; config: Record<string, any> };
+            userId?: string;
+          },
+          {
+            _creationTime: number;
+            _id: string;
+            resourceId?: string;
+            status: "running" | "stopped" | "restarting" | "pending" | "error";
+            url?: string;
+            userId?: string;
+          }
+        >;
+        remove: FunctionReference<
+          "mutation",
+          "internal",
+          {
+            config: { adapter: string; config: Record<string, any> };
+            userId?: string;
+          },
+          null
+        >;
+      };
     };
     messages: {
       addMessages: FunctionReference<

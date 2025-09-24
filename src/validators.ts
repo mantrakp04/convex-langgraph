@@ -537,3 +537,37 @@ export const vCoreMemoryDoc = v.object({
   human: v.string(),
 });
 export type CoreMemoryDoc = Infer<typeof vCoreMemoryDoc>;
+
+// MCP (Model Context Protocol) validators
+export const vMCPStatus = v.union(
+  v.literal("running"),
+  v.literal("stopped"),
+  v.literal("restarting"),
+  v.literal("pending"),
+  v.literal("error"),
+);
+export type MCPStatus = Infer<typeof vMCPStatus>;
+
+export const vMCP = v.object({
+  userId: v.optional(v.string()),
+  resourceId: v.optional(v.string()),
+  url: v.optional(v.string()),
+  status: vMCPStatus,
+});
+export type MCP = Infer<typeof vMCP>;
+
+export const vMCPDoc = v.object({
+  _id: v.id("mcps"),
+  _creationTime: v.number(),
+  userId: v.optional(v.string()),
+  resourceId: v.optional(v.string()),
+  url: v.optional(v.string()),
+  status: vMCPStatus,
+});
+export type MCPDoc = Infer<typeof vMCPDoc>;
+
+export const vMCPAdapterConfig = v.object({
+  adapter: v.string(),
+  config: v.record(v.string(), v.any()),
+});
+export type MCPAdapterConfig = Infer<typeof vMCPAdapterConfig>;

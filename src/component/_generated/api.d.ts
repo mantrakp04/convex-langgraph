@@ -11,6 +11,13 @@
 import type * as apiKeys from "../apiKeys.js";
 import type * as coreMemories from "../coreMemories.js";
 import type * as files from "../files.js";
+import type * as mcp_adapters_constants from "../mcp/adapters/constants.js";
+import type * as mcp_adapters_flyio_graphqlTypes from "../mcp/adapters/flyio/graphqlTypes.js";
+import type * as mcp_adapters_flyio_index from "../mcp/adapters/flyio/index.js";
+import type * as mcp_adapters_flyio_types from "../mcp/adapters/flyio/types.js";
+import type * as mcp_adapters_index from "../mcp/adapters/index.js";
+import type * as mcp_adapters_types from "../mcp/adapters/types.js";
+import type * as mcp_index from "../mcp/index.js";
 import type * as messages from "../messages.js";
 import type * as streams from "../streams.js";
 import type * as threads from "../threads.js";
@@ -36,6 +43,13 @@ declare const fullApi: ApiFromModules<{
   apiKeys: typeof apiKeys;
   coreMemories: typeof coreMemories;
   files: typeof files;
+  "mcp/adapters/constants": typeof mcp_adapters_constants;
+  "mcp/adapters/flyio/graphqlTypes": typeof mcp_adapters_flyio_graphqlTypes;
+  "mcp/adapters/flyio/index": typeof mcp_adapters_flyio_index;
+  "mcp/adapters/flyio/types": typeof mcp_adapters_flyio_types;
+  "mcp/adapters/index": typeof mcp_adapters_index;
+  "mcp/adapters/types": typeof mcp_adapters_types;
+  "mcp/index": typeof mcp_index;
   messages: typeof messages;
   streams: typeof streams;
   threads: typeof threads;
@@ -170,6 +184,48 @@ export type Mounts = {
       { filename?: string; hash: string },
       null | { fileId: string; storageId: string }
     >;
+  };
+  mcp: {
+    index: {
+      get: FunctionReference<
+        "query",
+        "public",
+        { userId?: string },
+        {
+          _creationTime: number;
+          _id: string;
+          resourceId?: string;
+          status: "running" | "stopped" | "restarting" | "pending" | "error";
+          url?: string;
+          userId?: string;
+        } | null
+      >;
+      getOrCreate: FunctionReference<
+        "mutation",
+        "public",
+        {
+          config: { adapter: string; config: Record<string, any> };
+          userId?: string;
+        },
+        {
+          _creationTime: number;
+          _id: string;
+          resourceId?: string;
+          status: "running" | "stopped" | "restarting" | "pending" | "error";
+          url?: string;
+          userId?: string;
+        }
+      >;
+      remove: FunctionReference<
+        "mutation",
+        "public",
+        {
+          config: { adapter: string; config: Record<string, any> };
+          userId?: string;
+        },
+        null
+      >;
+    };
   };
   messages: {
     addMessages: FunctionReference<

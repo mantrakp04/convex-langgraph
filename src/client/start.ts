@@ -31,7 +31,8 @@ import { wrapTools, type ToolCtx } from "./createTool.js";
 import type { Agent } from "./index.js";
 import { omit } from "convex-helpers";
 import { saveInputMessages } from "./saveInputMessages.js";
-import { memoryTools } from "./coreMemory.js";
+import { memoryTools, fetchCoreMemoryMessages } from "./coreMemory.js";
+import { MCPClient } from "./mcp.js";
 
 export async function startGeneration<
   T,
@@ -194,6 +195,11 @@ export async function startGeneration<
   const toolsToWrap: (ToolSet | undefined)[] = [args.tools];
   if (opts.memoryTools && opts.textEmbeddingModel) {
     toolsToWrap.push(memoryTools(component));
+  }
+  if (opts.mcpConfig) {
+    const client = new MCPClient(ctx, component, userId, opts.mcpConfig);
+    const mcpTools = await client.loadMcpTools();
+    toolsToWrap.push(mcpTools.tools);
   }
   
   const tools = wrapTools(toolCtx, ...toolsToWrap) as Tools;
