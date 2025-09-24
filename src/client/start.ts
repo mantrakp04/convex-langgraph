@@ -31,7 +31,7 @@ import { wrapTools, type ToolCtx } from "./createTool.js";
 import type { Agent } from "./index.js";
 import { omit } from "convex-helpers";
 import { saveInputMessages } from "./saveInputMessages.js";
-import { memoryTools, fetchCoreMemoryMessages } from "./coreMemory.js";
+import { memoryTools } from "./coreMemory.js";
 import { MCPClient } from "./mcp.js";
 
 export async function startGeneration<
