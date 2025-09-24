@@ -2,6 +2,7 @@ import {
   convertToModelMessages,
   type UIMessage as AIUIMessage,
   type DeepPartial,
+  type DynamicToolUIPart,
   type ReasoningUIPart,
   type SourceDocumentUIPart,
   type SourceUrlUIPart,
@@ -554,4 +555,67 @@ function toSourcePart(
     filename: part.filename,
     providerMetadata: part.providerMetadata,
   } satisfies SourceDocumentUIPart;
+}
+
+export function combineUIMessages(messages: UIMessage[]): UIMessage[] {
+  const combined = messages.reduce((acc, message) => {
+    if (!acc.length) {
+      return [message];
+    }
+    const previous = acc.at(-1)!;
+    if (
+      message.order !== previous.order ||
+      previous.role !== message.role ||
+      message.role !== "assistant"
+    ) {
+      acc.push(message);
+      return acc;
+    }
+    // We will replace it with a combined message
+    acc.pop();
+    const newParts = [...previous.parts];
+    for (const part of message.parts) {
+      const toolCallId = getToolCallId(part);
+      if (!toolCallId) {
+        newParts.push(part);
+        continue;
+      }
+      const previousPartIndex = newParts.findIndex(
+        (p) => getToolCallId(p) === toolCallId,
+      );
+      const previousPart = newParts.splice(previousPartIndex, 1)[0];
+      if (!previousPart) {
+        newParts.push(part);
+        continue;
+      }
+      newParts.push(mergeParts(previousPart, part));
+    }
+    acc.push({
+      ...previous,
+      ...pick(message, ["status", "metadata", "agentName"]),
+      parts: newParts,
+      text: joinText(newParts),
+    });
+    return acc;
+  }, [] as UIMessage[]);
+  return combined;
+}
+
+function getToolCallId(
+  part: UIMessage["parts"][number] & { toolCallId?: string },
+) {
+  return part.toolCallId;
+}
+
+function mergeParts(
+  previousPart: UIMessage["parts"][number],
+  part: UIMessage["parts"][number],
+): UIMessage["parts"][number] {
+  const merged: Record<string, unknown> = { ...previousPart };
+  for (const [key, value] of Object.entries(part)) {
+    if (value !== undefined) {
+      merged[key] = value;
+    }
+  }
+  return merged as ToolUIPart | DynamicToolUIPart;
 }
