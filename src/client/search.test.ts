@@ -585,15 +585,19 @@ describe("search.ts", () => {
       // Reset mocks so we can control specific call order/values
       vi.mocked(mockCtx.runQuery).mockReset();
       vi.mocked(mockCtx.runAction).mockReset();
-      // No recent messages or search
-      const coreMemoryMessages: ModelMessage[] = [
-        { role: "system", content: "Core Memory - Agent Persona: Helpful" },
-        {
-          role: "system",
-          content: "Core Memory - Human Context: Prefers concise answers",
-        },
-      ];
-
+      
+      // Mock the core memory query to return core memory data
+      vi.mocked(mockCtx.runQuery).mockImplementation(async (query, args) => {
+        // Check if this is a core memory query by looking at the args
+        if (args && 'userId' in args && args.userId === "userCore") {
+          return {
+            persona: "Helpful",
+            human: "Prefers concise answers",
+          };
+        }
+        return { page: [] };
+      });
+      
       const result = await fetchContextWithPrompt(mockCtx, components.agent, {
         ...baseArgs,
         userId: "userCore",
@@ -602,7 +606,6 @@ describe("search.ts", () => {
         messages: undefined,
         promptMessageId: undefined,
         contextOptions: { recentMessages: 0 },
-        coreMemoryMessages,
       });
 
       expect(result.messages).toHaveLength(2);

@@ -30,6 +30,7 @@ import type {
 } from "./types.js";
 import { inlineMessagesFiles } from "./files.js";
 import { docsToModelMessages, toModelMessage } from "../mapping.js";
+import { fetchCoreMemoryMessages } from "./coreMemory.js";
 
 const DEFAULT_VECTOR_SCORE_THRESHOLD = 0.0;
 // 10k characters should be more than enough for most cases, and stays under
@@ -452,7 +453,7 @@ export async function generateAndSaveEmbeddings(
 
 /**
  * Similar to fetchContextMessages, but also combines the input messages,
- * with search context, core memory, recent messages, input messages, then prompt messages.
+ * with search context, recent messages, input messages, then prompt messages.
  * If there is a promptMessageId and prompt message(s) provided, it will splice
  * the prompt messages into the history to replace the promptMessageId message,
  * but still be followed by any existing messages that were in response to the
@@ -468,7 +469,6 @@ export async function fetchContextWithPrompt(
     userId: string | undefined;
     threadId: string | undefined;
     agentName?: string;
-    coreMemoryMessages?: ModelMessage[];
   } & Options &
     Config,
 ): Promise<{
@@ -577,11 +577,12 @@ export async function fetchContextWithPrompt(
   const inputPrompt = promptArray.map(toModelMessage);
   const existingResponses = docsToModelMessages(existingResponseDocs);
 
-  // Core memory provided by caller to separate concerns from search.
-  const coreMemoryMessages: ModelMessage[] = args.coreMemoryMessages ?? [];
+  // Fetch core memory for the user
+  const coreMemoryMessages = await fetchCoreMemoryMessages(ctx, component, userId);
 
   const allMessages = [
     ...search,
+    ...coreMemoryMessages,
     ...recent,
     ...inputMessages,
     ...inputPrompt,
@@ -599,14 +600,7 @@ export async function fetchContextWithPrompt(
         userId,
         threadId,
       })
-    : [
-        ...search,
-        ...coreMemoryMessages,
-        ...recent,
-        ...inputMessages,
-        ...inputPrompt,
-        ...existingResponses,
-      ];
+    : allMessages;
 
   // Process messages to inline localhost files (if not, file urls pointing to localhost will be sent to LLM providers)
   if (process.env.CONVEX_CLOUD_URL?.startsWith("http://127.0.0.1")) {
