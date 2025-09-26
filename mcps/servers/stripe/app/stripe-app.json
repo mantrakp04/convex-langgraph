@@ -5,8 +5,424 @@
   "icon": "",
   "permissions": [
     {
-      "permission": "read_only",
-      "purpose": "read_only"
+      "permission": "balance_read",
+      "purpose": "Access to account balances and financial data"
+    },
+    {
+      "permission": "balance_transaction_source_read",
+      "purpose": "Access to balance transaction sources and related data"
+    },
+    {
+      "permission": "charge_read",
+      "purpose": "Read access to payment charges"
+    },
+    {
+      "permission": "charge_write",
+      "purpose": "Write access to payment charges"
+    },
+    {
+      "permission": "confirmation_token_client_write",
+      "purpose": "Write access to confirmation tokens from client"
+    },
+    {
+      "permission": "confirmation_token_read",
+      "purpose": "Read access to confirmation tokens"
+    },
+    {
+      "permission": "customer_read",
+      "purpose": "Read access to customer data"
+    },
+    {
+      "permission": "customer_write",
+      "purpose": "Write access to customer data"
+    },
+    {
+      "permission": "dispute_read",
+      "purpose": "Read access to payment disputes"
+    },
+    {
+      "permission": "dispute_write",
+      "purpose": "Write access to payment disputes"
+    },
+    {
+      "permission": "elements_write",
+      "purpose": "Access to Stripe.js Elements for payment forms"
+    },
+    {
+      "permission": "event_read",
+      "purpose": "Read access to Stripe events"
+    },
+    {
+      "permission": "file_read",
+      "purpose": "Read access to uploaded files"
+    },
+    {
+      "permission": "file_write",
+      "purpose": "Write access to upload files"
+    },
+    {
+      "permission": "mandate_read",
+      "purpose": "Read access to payment mandates"
+    },
+    {
+      "permission": "mandate_write",
+      "purpose": "Write access to payment mandates"
+    },
+    {
+      "permission": "payment_intent_read",
+      "purpose": "Read access to payment intents"
+    },
+    {
+      "permission": "payment_intent_write",
+      "purpose": "Write access to payment intents"
+    },
+    {
+      "permission": "payment_links_read",
+      "purpose": "Read access to payment links"
+    },
+    {
+      "permission": "payment_links_write",
+      "purpose": "Write access to payment links"
+    },
+    {
+      "permission": "payment_method_read",
+      "purpose": "Read access to payment methods"
+    },
+    {
+      "permission": "payment_method_write",
+      "purpose": "Write access to payment methods"
+    },
+    {
+      "permission": "payment_method_domain_read",
+      "purpose": "Read access to payment method domains"
+    },
+    {
+      "permission": "payment_method_domain_write",
+      "purpose": "Write access to payment method domains"
+    },
+    {
+      "permission": "payout_read",
+      "purpose": "Read access to payouts"
+    },
+    {
+      "permission": "payout_write",
+      "purpose": "Write access to payouts"
+    },
+    {
+      "permission": "product_read",
+      "purpose": "Read access to products"
+    },
+    {
+      "permission": "product_write",
+      "purpose": "Write access to products"
+    },
+    {
+      "permission": "setup_intent_read",
+      "purpose": "Read access to setup intents"
+    },
+    {
+      "permission": "setup_intent_write",
+      "purpose": "Write access to setup intents"
+    },
+    {
+      "permission": "shipping_rate_read",
+      "purpose": "Read access to shipping rates"
+    },
+    {
+      "permission": "shipping_rate_write",
+      "purpose": "Write access to shipping rates"
+    },
+    {
+      "permission": "source_read",
+      "purpose": "Read access to payment sources"
+    },
+    {
+      "permission": "source_write",
+      "purpose": "Write access to payment sources"
+    },
+    {
+      "permission": "token_read",
+      "purpose": "Read access to tokens"
+    },
+    {
+      "permission": "token_write",
+      "purpose": "Write access to tokens"
+    },
+    {
+      "permission": "checkout_session_read",
+      "purpose": "Read access to checkout sessions"
+    },
+    {
+      "permission": "checkout_session_write",
+      "purpose": "Write access to checkout sessions"
+    },
+    {
+      "permission": "billing_clock_read",
+      "purpose": "Read access to test clocks"
+    },
+    {
+      "permission": "billing_clock_write",
+      "purpose": "Write access to test clocks"
+    },
+    {
+      "permission": "billing_meter_read",
+      "purpose": "Read access to billing meters"
+    },
+    {
+      "permission": "billing_meter_write",
+      "purpose": "Write access to billing meters"
+    },
+    {
+      "permission": "billing_meter_event_read",
+      "purpose": "Read access to meter events"
+    },
+    {
+      "permission": "billing_meter_event_write",
+      "purpose": "Write access to meter events"
+    },
+    {
+      "permission": "coupon_read",
+      "purpose": "Read access to coupons"
+    },
+    {
+      "permission": "coupon_write",
+      "purpose": "Write access to coupons"
+    },
+    {
+      "permission": "credit_note_read",
+      "purpose": "Read access to credit notes"
+    },
+    {
+      "permission": "credit_note_write",
+      "purpose": "Write access to credit notes"
+    },
+    {
+      "permission": "customer_portal_read",
+      "purpose": "Read access to customer portal"
+    },
+    {
+      "permission": "customer_portal_write",
+      "purpose": "Write access to customer portal"
+    },
+    {
+      "permission": "entitlement_read",
+      "purpose": "Read access to entitlements"
+    },
+    {
+      "permission": "invoice_read",
+      "purpose": "Read access to invoices"
+    },
+    {
+      "permission": "invoice_write",
+      "purpose": "Write access to invoices"
+    },
+    {
+      "permission": "plan_read",
+      "purpose": "Read access to plans and prices"
+    },
+    {
+      "permission": "plan_write",
+      "purpose": "Write access to plans and prices"
+    },
+    {
+      "permission": "promotion_code_read",
+      "purpose": "Read access to promotion codes"
+    },
+    {
+      "permission": "promotion_code_write",
+      "purpose": "Write access to promotion codes"
+    },
+    {
+      "permission": "quote_read",
+      "purpose": "Read access to quotes"
+    },
+    {
+      "permission": "quote_write",
+      "purpose": "Write access to quotes"
+    },
+    {
+      "permission": "subscription_read",
+      "purpose": "Read access to subscriptions"
+    },
+    {
+      "permission": "subscription_write",
+      "purpose": "Write access to subscriptions"
+    },
+    {
+      "permission": "tax_rate_read",
+      "purpose": "Read access to tax rates"
+    },
+    {
+      "permission": "tax_rate_write",
+      "purpose": "Write access to tax rates"
+    },
+    {
+      "permission": "usage_record_read",
+      "purpose": "Read access to usage records"
+    },
+    {
+      "permission": "usage_record_write",
+      "purpose": "Write access to usage records"
+    },
+    {
+      "permission": "report_runs_and_report_types_read",
+      "purpose": "Read access to report runs and report types"
+    },
+    {
+      "permission": "connected_account_read",
+      "purpose": "Read access to connected accounts"
+    },
+    {
+      "permission": "account_link_write",
+      "purpose": "Write access to account links"
+    },
+    {
+      "permission": "application_fee_read",
+      "purpose": "Read access to application fees"
+    },
+    {
+      "permission": "application_fee_write",
+      "purpose": "Write access to application fees"
+    },
+    {
+      "permission": "edit_link_write",
+      "purpose": "Write access to login links"
+    },
+    {
+      "permission": "top_up_read",
+      "purpose": "Read access to top-ups"
+    },
+    {
+      "permission": "top_up_write",
+      "purpose": "Write access to top-ups"
+    },
+    {
+      "permission": "transfer_read",
+      "purpose": "Read access to transfers"
+    },
+    {
+      "permission": "transfer_write",
+      "purpose": "Write access to transfers"
+    },
+    {
+      "permission": "issuing_authorization_read",
+      "purpose": "Read access to issuing authorizations"
+    },
+    {
+      "permission": "issuing_authorization_write",
+      "purpose": "Write access to issuing authorizations"
+    },
+    {
+      "permission": "issuing_card_read",
+      "purpose": "Read access to issuing cards"
+    },
+    {
+      "permission": "issuing_card_write",
+      "purpose": "Write access to issuing cards"
+    },
+    {
+      "permission": "issuing_cardholder_read",
+      "purpose": "Read access to issuing cardholders"
+    },
+    {
+      "permission": "issuing_cardholder_write",
+      "purpose": "Write access to issuing cardholders"
+    },
+    {
+      "permission": "issuing_dispute_read",
+      "purpose": "Read access to issuing disputes"
+    },
+    {
+      "permission": "issuing_dispute_write",
+      "purpose": "Write access to issuing disputes"
+    },
+    {
+      "permission": "issuing_transaction_read",
+      "purpose": "Read access to issuing transactions"
+    },
+    {
+      "permission": "issuing_transaction_write",
+      "purpose": "Write access to issuing transactions"
+    },
+    {
+      "permission": "terminal_configuration_read",
+      "purpose": "Read access to terminal configurations"
+    },
+    {
+      "permission": "terminal_configuration_write",
+      "purpose": "Write access to terminal configurations"
+    },
+    {
+      "permission": "terminal_connection_token_write",
+      "purpose": "Write access to terminal connection tokens"
+    },
+    {
+      "permission": "terminal_location_read",
+      "purpose": "Read access to terminal locations"
+    },
+    {
+      "permission": "terminal_location_write",
+      "purpose": "Write access to terminal locations"
+    },
+    {
+      "permission": "terminal_reader_read",
+      "purpose": "Read access to terminal readers"
+    },
+    {
+      "permission": "terminal_reader_write",
+      "purpose": "Write access to terminal readers"
+    },
+    {
+      "permission": "tax_settings_read",
+      "purpose": "Read access to tax settings"
+    },
+    {
+      "permission": "tax_settings_write",
+      "purpose": "Write access to tax settings"
+    },
+    {
+      "permission": "tax_calculations_and_transactions_read",
+      "purpose": "Read access to tax calculations and transactions"
+    },
+    {
+      "permission": "tax_calculations_and_transactions_write",
+      "purpose": "Write access to tax calculations and transactions"
+    },
+    {
+      "permission": "review_read",
+      "purpose": "Read access to radar reviews"
+    },
+    {
+      "permission": "review_write",
+      "purpose": "Write access to radar reviews"
+    },
+    {
+      "permission": "secret_write",
+      "purpose": "Write access to secrets"
+    },
+    {
+      "permission": "user_email_read",
+      "purpose": "Read access to user emails"
+    },
+    {
+      "permission": "webhook_read",
+      "purpose": "Read access to webhook endpoints"
+    },
+    {
+      "permission": "order_read",
+      "purpose": "Read access to orders"
+    },
+    {
+      "permission": "order_write",
+      "purpose": "Write access to orders"
+    },
+    {
+      "permission": "sku_read",
+      "purpose": "Read access to SKUs"
+    },
+    {
+      "permission": "sku_write",
+      "purpose": "Write access to SKUs"
     }
   ],
   "connect_permissions": null,
