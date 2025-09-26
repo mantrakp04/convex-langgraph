@@ -1,5 +1,4 @@
-import type { ToolSet } from "ai";
-import { experimental_createMCPClient as createMCPClient } from "ai";
+import { experimental_createMCPClient as createMCPClient, type ToolSet } from "ai";
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { AgentComponent, ActionCtx, MutationCtx, QueryCtx } from "./types.js";
 import { createJwt } from "../encryption.js";
@@ -41,7 +40,7 @@ export class MCPClient {
     if (!mcp) {
       throw new Error("MCP not found");
     }
-    if (mcp.status !== "running" && mcp.url) {
+    if (mcp.status === "running" && mcp.url) {
       const authToken = await createJwt({
         key: "auth_token",
         value: mcp._id,
@@ -50,18 +49,22 @@ export class MCPClient {
       });
       
       const client = await createMCPClient({
-        transport: new StreamableHTTPClientTransport(new URL(mcp.url), {
+        transport: new StreamableHTTPClientTransport(new URL(mcp.url + "/mcp"), {
           requestInit: {
             headers: {
               Authorization: `Bearer ${authToken}`,
             },
           },
         }),
+        onUncaughtError: (error) => {
+          console.error("Uncaught error", error);
+        },
       });
+
       const tools = await client.tools();
       return { tools, close: async () => client.close() };
     }
-    return { tools: [] as unknown as ToolSet, close: async () => {} };
+    return { tools: {} as ToolSet, close: async () => {} };
   }
 
   async provisionMcp() {

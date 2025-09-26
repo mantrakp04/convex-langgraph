@@ -19,8 +19,7 @@ export const defaultConfig = {
     config: {
       apiToken: process.env.FLY_API_TOKEN,
       orgSlug: process.env.FLY_ORG_SLUG || "personal",
-      jwtPrivateKey: process.env.JWT_PRIVATE_KEY || "",
-      jwks: process.env.JWKS || "",
+      jwtPrivateKey: process.env.JWT_PRIVATE_KEY || ""
     },
   },
 } satisfies Config;

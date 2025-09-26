@@ -774,7 +774,7 @@ export type Mounts = {
       "mutation",
       "public",
       { messageIds: Array<string> },
-      any
+      Array<string>
     >;
     deleteByOrder: FunctionReference<
       "mutation",

@@ -60,6 +60,7 @@ export async function deleteMessage(
 
 export const deleteByIds = mutation({
   args: { messageIds: v.array(v.id("messages")) },
+  returns: v.array(v.id("messages")),
   handler: async (ctx, args) => {
     const deletedMessageIds = await Promise.all(
       args.messageIds.map(async (id) => {
@@ -71,7 +72,7 @@ export const deleteByIds = mutation({
         return null;
       }),
     );
-    return deletedMessageIds.filter((id) => id !== null);
+    return deletedMessageIds.filter((id) => id !== null) as Id<"messages">[];
   },
 });
 

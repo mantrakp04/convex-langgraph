@@ -203,6 +203,6 @@ export const deleteFiles = mutation({
         return fileId;
       }),
     );
-    return deletedFileIds.filter((fileId) => fileId !== null);
+    return deletedFileIds.filter((fileId) => fileId !== null) as Id<"files">[];
   },
 });

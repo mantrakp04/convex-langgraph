@@ -35,6 +35,10 @@ class BearerAuthMiddleware(BaseHTTPMiddleware):
     self.token = token
 
   async def dispatch(self, request: Request, call_next):
+    # Skip authentication for OAuth callback when using token auth
+    if request.url.path == "/callback":
+      return await call_next(request)
+    
     auth_header = request.headers.get("authorization") or request.headers.get("Authorization")
     if not auth_header or auth_header != f"Bearer {self.token}":
       return JSONResponse({"error": "Unauthorized"}, status_code=401, headers={"WWW-Authenticate": "Bearer"})

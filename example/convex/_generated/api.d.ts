@@ -943,7 +943,7 @@ export declare const components: {
         "mutation",
         "internal",
         { messageIds: Array<string> },
-        any
+        Array<string>
       >;
       deleteByOrder: FunctionReference<
         "mutation",

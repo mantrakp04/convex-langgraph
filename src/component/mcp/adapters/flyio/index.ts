@@ -197,6 +197,7 @@ export class FlyAdapter implements MCPAdapter {
 
   async provision(request: Doc<"mcps">, config: Record<string, unknown>) {
     const appName = request._id;
+    const url = `https://${appName}.fly.dev`;
     
     // Create the app using GraphQL
     await this.createApp(appName);
@@ -219,6 +220,7 @@ export class FlyAdapter implements MCPAdapter {
         config: {
           image: constants.DEFAULT_IMAGE,
           env: {
+            HOST_URL: url,
             AUTH_TOKEN: await createJwt({
               key: "auth_token",
               value: appName,
@@ -227,8 +229,8 @@ export class FlyAdapter implements MCPAdapter {
             }),
           },
           guest: {
-            cpus: config.cpus as number || 2,
-            memory_mb: config.memory_mb as number || 2048,
+            cpus: config.cpus as number || 4,
+            memory_mb: config.memory_mb as number || 4096,
             cpu_kind: config.cpu_kind as string || "shared",
           },
           services: [{
@@ -263,7 +265,6 @@ export class FlyAdapter implements MCPAdapter {
     // Wait until the machine is healthy
     await this.waitUntilHealthy(appName, machine.id!);
     
-    const url = `https://${appName}.fly.dev`;
     return url;
   }
 
