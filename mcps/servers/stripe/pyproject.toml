@@ -1,17 +1,12 @@
 [project]
-name = "mcps"
+name = "stripe"
 version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi>=0.116.2",
+    "fastapi>=0.117.1",
     "fastmcp>=2.12.3",
     "pydantic>=2.11.9",
-    "uvicorn>=0.30.0",
-]
-
-[tool.uv.workspace]
-members = [
-    "servers/stripe",
+    "uvicorn>=0.37.0",
 ]

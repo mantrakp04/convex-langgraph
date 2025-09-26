@@ -1,7 +1,7 @@
 import type { ToolSet } from "ai";
 import { experimental_createMCPClient as createMCPClient } from "ai";
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
-import type { AgentComponent, RunActionCtx, RunMutationCtx, RunQueryCtx } from "./types.js";
+import type { AgentComponent, ActionCtx, MutationCtx, QueryCtx } from "./types.js";
 import { createJwt } from "../encryption.js";
 import { DEFAULT_CONFIG_PATH } from "../component/mcp/adapters/constants.js";
 import type { MCPAdapterConfig } from "../validators.js";
@@ -30,7 +30,7 @@ export type MCPToolsHandle = {
 
 export class MCPClient {
   constructor(
-    private ctx: RunQueryCtx | RunMutationCtx | RunActionCtx,
+    private ctx: QueryCtx | MutationCtx | ActionCtx,
     private component: AgentComponent,
     private userId?: string,
     private adapterConfig?: MCPAdapterConfig

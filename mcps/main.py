@@ -1,5 +1,5 @@
 from fastmcp import FastMCP
-from oauth import ProxyOAuth as OAuth, register_oauth_callback
+from oauth import OAuth
 from fastmcp.client.auth.oauth import check_if_auth_required
 import httpx
 from starlette.requests import Request
@@ -82,7 +82,11 @@ def prepare_config(config: dict):
     if server_cfg.get("enabled", True) is False:
       continue
     if "url" in server_cfg and server_cfg["url"]:
-      server_cfg["auth"] = OAuth(mcp_url=server_cfg["url"])
+      server_cfg["auth"] = OAuth(
+        mcp_url=server_cfg["url"],
+        redirect_uri=os.environ.get("HOST_URL", "http://localhost:8000") + "/callback",
+        return_auth_url_in_redirect=False
+      )
     filtered_servers[server_name] = server_cfg
   config["mcpServers"] = filtered_servers
   return config
@@ -91,43 +95,25 @@ proxy = FastMCP.as_proxy(prepare_config(config), name="Config-Based Proxy")
 
 @proxy.custom_route("/callback", methods=["GET"], name="oauth_callback")
 async def oauth_callback(request: Request) -> JSONResponse:
-  params = request.query_params
-  code = params.get("code")
-  state = params.get("state")
-  if not code or not state:
-    return JSONResponse({"error": "Missing code or state"}, status_code=400)
-  ok = await register_oauth_callback(state, code)
-  return JSONResponse({"ok": ok})
+  return await OAuth.callback_handler(request)
 
 @proxy.custom_route("/config", methods=["GET"], name="get_config")
 async def get_config(request: Request) -> JSONResponse:
-  def _resolve_redirect_base_from_request(req: Request) -> str:
-    # Prefer forwarded headers when behind a proxy (e.g., Cloudflare)
-    proto = req.headers.get("x-forwarded-proto") or req.url.scheme or "http"
-    host = req.headers.get("x-forwarded-host") or req.headers.get("host") or req.url.netloc
-    return f"{proto}://{host}"
-
-  async def fetch_auth_url(mcp_url: str, redirect_base: str) -> str | None:
-    oauth = OAuth(mcp_url, redirect_host=redirect_base)
-    try:
-      async with httpx.AsyncClient(auth=oauth, timeout=5.0) as client:
-        await client.get(mcp_url)
-    except Exception as e:
-      if e.args and isinstance(e.args[0], str) and e.args[0].startswith("Please authorize the URL"):
-        return e.args[1] if len(e.args) > 1 else None
-      return None
+  async def fetch_auth_url(mcp_url: str, redirect_uri: str) -> str | None:
+    oauth = OAuth(mcp_url=mcp_url, redirect_uri=redirect_uri, return_auth_url_in_redirect=True)
+    tokens = await oauth.context.storage.get_tokens()
+    if tokens is not None:
+      return True
+    return await oauth.get_authorization_url()
 
   prepared: dict[str, Any] = {"mcpServers": {}}
-  servers = (config.get("mcpServers", {}) or {}) if isinstance(config, dict) else {}
-  redirect_base = _resolve_redirect_base_from_request(request)
+  servers = (read_config().get("mcpServers", {}) or {}) if isinstance(config, dict) else {}
+  redirect_uri = os.environ.get("HOST_URL", "http://localhost:8000") + "/callback"
 
   for name, server_cfg in servers.items():
     if not isinstance(server_cfg, dict):
       continue
-    # Shallow copy without mutating global config
-    out_cfg = {k: v for k, v in server_cfg.items() if k != "auth"}
-
-    mcp_url = out_cfg.get("url")
+    mcp_url = server_cfg.get("url")
     auth_url: str | None = None
     if mcp_url:
       try:
@@ -135,12 +121,12 @@ async def get_config(request: Request) -> JSONResponse:
       except Exception:
         needs_auth = True
       if needs_auth:
-        auth_url = await fetch_auth_url(mcp_url, redirect_base)
+        auth_url = await fetch_auth_url(mcp_url, redirect_uri)
 
     if mcp_url:
-      out_cfg["auth"] = auth_url
+      server_cfg["auth"] = auth_url
 
-    prepared["mcpServers"][name] = out_cfg
+    prepared["mcpServers"][name] = server_cfg
 
   return JSONResponse(prepared)
 

@@ -1,0 +1,25 @@
+{
+  "id": "com.example.mcps",
+  "version": "0.0.3",
+  "name": "Mcps",
+  "icon": "",
+  "permissions": [
+    {
+      "permission": "read_only",
+      "purpose": "read_only"
+    }
+  ],
+  "connect_permissions": null,
+  "ui_extension": {
+    "content_security_policy": {
+      "connect-src": [],
+      "image-src": [],
+      "purpose": ""
+    }
+  },
+  "allowed_redirect_uris": [
+    "https://stripe-blube.ngrok.app/callback"
+  ],
+  "stripe_api_access_type": "oauth",
+  "distribution_type": "public"
+}

@@ -1,23 +1,24 @@
 {
   "mcpServers": {
     "stripe": {
-      "url": "https://mcp.stripe.com",
+      "url": "https://stripe-blube.ngrok.app/mcp",
       "enabled": true
     },
     "linear": {
       "url": "https://mcp.linear.app/sse",
-      "enabled": false
+      "enabled": true
     },
     "fileSystem": {
       "command": "bunx",
       "args": [
         "@modelcontextprotocol/server-filesystem",
         "/tmp"
-      ]
+      ],
+      "enabled": true
     },
     "context7": {
       "url": "https://mcp.context7.com/mcp",
-      "enabled": false
+      "enabled": true
     }
   }
 }
