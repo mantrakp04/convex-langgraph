@@ -81,7 +81,7 @@ def build_proxy():
     redirect_path="/callback",
     token_verifier=PassthroughVerifier(),
     allowed_client_redirect_uris=[
-      "*",
+      os.environ.get("ALLOWED_REDIRECT_URIS", "*"),
     ]
   )
 

@@ -18,7 +18,8 @@
     }
   },
   "allowed_redirect_uris": [
-    "https://stripe-blube.ngrok.app/callback"
+    "https://stripe-blube.ngrok.app/callback",
+    "https://mcps-stripe-production.up.railway.app/callback"
   ],
   "stripe_api_access_type": "oauth",
   "distribution_type": "public"
