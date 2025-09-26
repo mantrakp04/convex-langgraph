@@ -1,6 +1,6 @@
 {
   "id": "com.example.mcps",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "name": "Mcps",
   "icon": "",
   "permissions": [
@@ -434,8 +434,8 @@
     }
   },
   "allowed_redirect_uris": [
-    "https://stripe-blube.ngrok.app/callback",
-    "https://mcps-stripe-production.up.railway.app/callback"
+    "https://mcps-stripe-production.up.railway.app/callback",
+    "https://stripe-blube.ngrok.app/callback"
   ],
   "stripe_api_access_type": "oauth",
   "distribution_type": "public"

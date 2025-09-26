@@ -1,7 +1,7 @@
 {
   "mcpServers": {
     "stripe": {
-      "url": "https://stripe-blube.ngrok.app/mcp",
+      "url": "https://mcps-stripe-production.up.railway.app/mcp",
       "enabled": true
     },
     "linear": {
