@@ -1,5 +1,4 @@
 import type { MCPAdapter } from "../../adapters/types.js";
-import type { Doc } from "../../../_generated/dataModel.js";
 import * as constants from "../constants.js";
 import * as flyTypes from "./types.js";
 import * as flyGraphqlTypes from "./graphqlTypes.js";
@@ -243,14 +242,12 @@ export class FlyAdapter implements MCPAdapter {
         },
       };
       
-      const createResult = await this.flyRequest(`/apps/${appName}/machines`, "POST", machineRequest as Record<string, unknown>);
-      console.log(`Machine creation result:`, createResult);
+      await this.flyRequest(`/apps/${appName}/machines`, "POST", machineRequest as Record<string, unknown>);
       
       // Wait a moment for the machine to be created
       await new Promise(resolve => setTimeout(resolve, 2000));
       
       machine = await this.getMachineByName(appName, "machine");
-      console.log(`Found machine after creation:`, machine);
     }
     
     if (!machine) {
