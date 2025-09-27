@@ -287,11 +287,16 @@ export declare const components: {
             userId?: string;
           } | null
         >;
-        getOrCreate: FunctionReference<
+        getOrAssignAndCreate: FunctionReference<
           "mutation",
           "internal",
           {
-            config: { adapter: string; config: Record<string, any> };
+            config: {
+              adapter: string;
+              config: Record<string, any>;
+              pool?: number;
+            };
+            provisionConfig?: Record<string, any>;
             userId?: string;
           },
           {
@@ -301,16 +306,28 @@ export declare const components: {
             status: "running" | "stopped" | "restarting" | "pending" | "error";
             url?: string;
             userId?: string;
-          }
+          } | null
         >;
         remove: FunctionReference<
           "mutation",
           "internal",
           {
-            config: { adapter: string; config: Record<string, any> };
+            config: {
+              adapter: string;
+              config: Record<string, any>;
+              pool?: number;
+            };
             userId?: string;
           },
           null
+        >;
+      };
+      utils: {
+        getAuthTokenMutation: FunctionReference<
+          "mutation",
+          "internal",
+          { jwtPrivateKey: string; value: string },
+          any
         >;
       };
     };

@@ -18,6 +18,7 @@ import type * as mcp_adapters_flyio_types from "../mcp/adapters/flyio/types.js";
 import type * as mcp_adapters_index from "../mcp/adapters/index.js";
 import type * as mcp_adapters_types from "../mcp/adapters/types.js";
 import type * as mcp_index from "../mcp/index.js";
+import type * as mcp_utils from "../mcp/utils.js";
 import type * as messages from "../messages.js";
 import type * as streams from "../streams.js";
 import type * as threads from "../threads.js";
@@ -50,6 +51,7 @@ declare const fullApi: ApiFromModules<{
   "mcp/adapters/index": typeof mcp_adapters_index;
   "mcp/adapters/types": typeof mcp_adapters_types;
   "mcp/index": typeof mcp_index;
+  "mcp/utils": typeof mcp_utils;
   messages: typeof messages;
   streams: typeof streams;
   threads: typeof threads;
@@ -200,11 +202,16 @@ export type Mounts = {
           userId?: string;
         } | null
       >;
-      getOrCreate: FunctionReference<
+      getOrAssignAndCreate: FunctionReference<
         "mutation",
         "public",
         {
-          config: { adapter: string; config: Record<string, any> };
+          config: {
+            adapter: string;
+            config: Record<string, any>;
+            pool?: number;
+          };
+          provisionConfig?: Record<string, any>;
           userId?: string;
         },
         {
@@ -214,16 +221,28 @@ export type Mounts = {
           status: "running" | "stopped" | "restarting" | "pending" | "error";
           url?: string;
           userId?: string;
-        }
+        } | null
       >;
       remove: FunctionReference<
         "mutation",
         "public",
         {
-          config: { adapter: string; config: Record<string, any> };
+          config: {
+            adapter: string;
+            config: Record<string, any>;
+            pool?: number;
+          };
           userId?: string;
         },
         null
+      >;
+    };
+    utils: {
+      getAuthTokenMutation: FunctionReference<
+        "mutation",
+        "public",
+        { jwtPrivateKey: string; value: string },
+        any
       >;
     };
   };

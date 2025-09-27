@@ -3,7 +3,7 @@ import type { Doc } from "../../../_generated/dataModel.js";
 import * as constants from "../constants.js";
 import * as flyTypes from "./types.js";
 import * as flyGraphqlTypes from "./graphqlTypes.js";
-import { createJwt } from "../../../../encryption.js";
+import { getAuthToken } from "../../utils.js";
 
 export type FlyConfig = {
   apiToken: string;
@@ -195,8 +195,8 @@ export class FlyAdapter implements MCPAdapter {
     }
   }
 
-  async provision(request: Doc<"mcps">, config: Record<string, unknown>) {
-    const appName = request._id;
+  async provision(config: Record<string, unknown>) {
+    const appName = crypto.randomUUID();
     const url = `https://${appName}.fly.dev`;
     
     // Create the app using GraphQL
@@ -216,17 +216,12 @@ export class FlyAdapter implements MCPAdapter {
     if (!machine) {
       const machineRequest: CreateMachineRequest = {
         name: "machine",
-        region: "sea",
+        region: config.region as string || "ord",
         config: {
           image: constants.DEFAULT_IMAGE,
           env: {
             HOST_URL: url,
-            AUTH_TOKEN: await createJwt({
-              key: "auth_token",
-              value: appName,
-              userId: request.userId,
-              jwtPrivateKey: this.config.jwtPrivateKey,
-            }),
+            AUTH_TOKEN: await getAuthToken(appName, this.config.jwtPrivateKey),
           },
           guest: {
             cpus: config.cpus as number || 4,
@@ -265,11 +260,11 @@ export class FlyAdapter implements MCPAdapter {
     // Wait until the machine is healthy
     await this.waitUntilHealthy(appName, machine.id!);
     
-    return url;
+    return { resourceId: appName, url };
   }
 
-  async start(request: Doc<"mcps">) {
-    const appName = request._id;
+  async start(resourceId: string) {
+    const appName = resourceId;
     const machine = await this.getMachineByName(appName, "machine");
     if (!machine) {
       throw new Error(`Machine not found for app ${appName}`);
@@ -290,8 +285,8 @@ export class FlyAdapter implements MCPAdapter {
     return null;
   }
 
-  async stop(request: Doc<"mcps">) {
-    const appName = request._id;
+  async stop(resourceId: string) {
+    const appName = resourceId;
     const machine = await this.getMachineByName(appName, "machine");
     if (!machine) {
       throw new Error(`Machine not found for app ${appName}`);
@@ -312,8 +307,8 @@ export class FlyAdapter implements MCPAdapter {
     return null;
   }
 
-  async restart(request: Doc<"mcps">) {
-    const appName = request._id;
+  async restart(resourceId: string) {
+    const appName = resourceId;
     const machine = await this.getMachineByName(appName, "machine");
     if (!machine) {
       throw new Error(`Machine not found for app ${appName}`);
@@ -334,8 +329,8 @@ export class FlyAdapter implements MCPAdapter {
     return null;
   }
 
-  async remove(request: Doc<"mcps">) {
-    const appName = request._id;
+  async remove(resourceId: string) {
+    const appName = resourceId;
     await this.flyRequest(`/apps/${appName}`, "DELETE");
     return null;
   }

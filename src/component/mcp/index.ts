@@ -18,40 +18,59 @@ export const get = query({
   },
 });
 
-export const getOrCreate = mutation({
+export const getOrAssignAndCreate = mutation({
   args: {
     userId: v.optional(v.string()),
+    provisionConfig: v.optional(v.record(v.string(), v.any())),
     config: vMCPAdapterConfig,
   },
-  returns: vMCPDoc,
-  handler: async (ctx, args): Promise<Doc<"mcps">> => {
+  returns: v.union(vMCPDoc, v.null()),
+  handler: async (ctx, args): Promise<Doc<"mcps"> | null> => {
     const exsisting = await ctx.runQuery(api.mcp.index.get, { userId: args.userId });
     if (exsisting) {
       return exsisting;
     }
-    const newMcpId = await ctx.db.insert("mcps", {
-      userId: args.userId,
-      status: "pending",
-    });
-    const newMcpDoc = await ctx.db.get(newMcpId);
-    if (!newMcpDoc) {
-      throw new Error("Failed to create MCP");
+    const unassignedMcps = await ctx.db.query("mcps")
+      .withIndex("userId", (q) => q.eq("userId", undefined))
+      .collect();
+    if (args.config.pool && args.config.pool > 0 && (unassignedMcps.length - 1) < args.config.pool) {
+      const numToProvision = args.config.pool - (unassignedMcps.length - 1);
+      await Promise.all(Array.from({ length: numToProvision }, async () => {
+        const newMcpId = await ctx.db.insert("mcps", {
+          userId: undefined,
+          status: "pending",
+        });
+        const newMcpDoc = await ctx.db.get(newMcpId);
+        if (!newMcpDoc) {
+          throw new Error("Failed to create MCP");
+        }
+        unassignedMcps.push(newMcpDoc);
+        await ctx.scheduler.runAfter(0, internal.mcp.adapters.index.provision, { mcp: newMcpDoc, config: args.config, provisionConfig: args.provisionConfig });
+      }))
     }
-    await ctx.scheduler.runAfter(0, internal.mcp.adapters.index.provision, { userId: args.userId, config: args.config });
-    return newMcpDoc;
+
+    if (unassignedMcps.length > 0) {
+      const toAssign = unassignedMcps[0];
+      await ctx.db.patch(toAssign._id, { userId: args.userId });
+      const assignedMcp = await ctx.db.get(toAssign._id);
+      if (!assignedMcp) {
+        throw new Error("Failed to assign MCP");
+      }
+      return assignedMcp;
+    }
+
+    return null;
   },
 });
 
 export const update = internalMutation({
   args: {
-    userId: v.optional(v.string()),
-    config: vMCPAdapterConfig,
+    id: v.id("mcps"),
     patch: v.object(partial(schema.tables.mcps.validator.fields)),
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const mcp = await ctx.runMutation(api.mcp.index.getOrCreate, { userId: args.userId, config: args.config });
-    await ctx.db.patch(mcp._id, args.patch);
+    await ctx.db.patch(args.id, args.patch);
   },
 });
 
@@ -62,7 +81,10 @@ export const remove = mutation({
   },
   returns: v.null(),
   handler: async (ctx, args) => {
-    const mcp = await ctx.runMutation(api.mcp.index.getOrCreate, { userId: args.userId, config: args.config });
+    const mcp = await ctx.runQuery(api.mcp.index.get, { userId: args.userId });
+    if (!mcp) {
+      return null;
+    }
     await ctx.scheduler.runAfter(0, internal.mcp.adapters.index.remove, { mcp, config: args.config });
     await ctx.db.delete(mcp._id);
     return null;

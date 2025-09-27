@@ -569,5 +569,6 @@ export type MCPDoc = Infer<typeof vMCPDoc>;
 export const vMCPAdapterConfig = v.object({
   adapter: v.string(),
   config: v.record(v.string(), v.any()),
+  pool: v.optional(v.number()),
 });
 export type MCPAdapterConfig = Infer<typeof vMCPAdapterConfig>;

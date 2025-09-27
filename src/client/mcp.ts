@@ -1,9 +1,9 @@
 import { experimental_createMCPClient as createMCPClient, type ToolSet } from "ai";
 import { StreamableHTTPClientTransport } from '@modelcontextprotocol/sdk/client/streamableHttp.js';
 import type { AgentComponent, ActionCtx, MutationCtx, QueryCtx } from "./types.js";
-import { createJwt } from "../encryption.js";
 import { DEFAULT_CONFIG_PATH } from "../component/mcp/adapters/constants.js";
 import type { MCPAdapterConfig } from "../validators.js";
+import { getAuthToken } from "../component/mcp/utils.js";
 
 // Type-safe MCP config structure based on the proxy's schema
 export interface HTTPServerConfig {
@@ -41,12 +41,7 @@ export class MCPClient {
       throw new Error("MCP not found");
     }
     if (mcp.status === "running" && mcp.url) {
-      const authToken = await createJwt({
-        key: "auth_token",
-        value: mcp._id,
-        userId: this.userId,
-        jwtPrivateKey: this.adapterConfig?.config.jwtPrivateKey || "",
-      });
+      const authToken = await getAuthToken(mcp.resourceId!, this.adapterConfig?.config.jwtPrivateKey || "");
       
       const client = await createMCPClient({
         transport: new StreamableHTTPClientTransport(new URL(mcp.url + "/mcp"), {
@@ -68,9 +63,10 @@ export class MCPClient {
   }
 
   async provisionMcp() {
-    if ('runMutation' in this.ctx) {
-      const mcp = await this.ctx.runMutation(this.component.mcp.index.getOrCreate, {
+    if ("runMutation" in this.ctx) {
+      const mcp = await this.ctx.runMutation(this.component.mcp.index.getOrAssignAndCreate, {
         userId: this.userId,
+        provisionConfig: {},
         config: this.adapterConfig || { adapter: "flyio", config: {} }
       });
       if (!mcp) {
@@ -78,7 +74,7 @@ export class MCPClient {
       }
       return mcp;
     }
-    throw new Error("provisionMcp requires RunMutationCtx");
+    throw new Error("provisionMcp requires MutationCtx or ActionCtx");
   }
 
   async getMcpConfig(): Promise<MCPConfig> {
@@ -86,12 +82,7 @@ export class MCPClient {
     if (!mcp || !mcp.url) {
       throw new Error("MCP not found");
     }
-    const authToken = await createJwt({
-      key: "auth_token",
-      value: mcp._id,
-      userId: this.userId,
-      jwtPrivateKey: this.adapterConfig?.config.jwtPrivateKey || "",
-    });
+    const authToken = await getAuthToken(mcp.resourceId!, this.adapterConfig?.config.jwtPrivateKey || "");
     const url = new URL(mcp.url);
     url.pathname = DEFAULT_CONFIG_PATH;
     const res = await fetch(url, {
@@ -111,12 +102,7 @@ export class MCPClient {
     if (!mcp || !mcp.url) {
       throw new Error("MCP not found");
     }
-    const authToken = await createJwt({
-      key: "auth_token",
-      value: mcp._id,
-      userId: this.userId,
-      jwtPrivateKey: this.adapterConfig?.config.jwtPrivateKey || "",
-    });
+    const authToken = await getAuthToken(mcp.resourceId!, this.adapterConfig?.config.jwtPrivateKey || "");
     const url = new URL(mcp.url);
     url.pathname = DEFAULT_CONFIG_PATH;
     const res = await fetch(url, {

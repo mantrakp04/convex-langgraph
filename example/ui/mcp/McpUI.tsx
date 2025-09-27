@@ -9,56 +9,17 @@ export default function McpUI() {
   const getConfigAction = useAction(api.mcp.utils.getConfig);
   const updateConfigAction = useAction(api.mcp.utils.updateConfig);
 
-  const [configText, setConfigText] = useState<string>("");
-  const [isValidJson, setIsValidJson] = useState<boolean>(true);
   const [config, setConfig] = useState<any>(null);
-  const [loadingConfig, setLoadingConfig] = useState<boolean>(false);
-
-  const loadConfig = async () => {
-    if (!mcp || !mcp.url) return;
-    setLoadingConfig(true);
-    try {
-      const configData = await getConfigAction();
-      setConfig(configData);
-    } catch (error) {
-      console.error("Failed to load config:", error);
-      setConfig(null);
-    } finally {
-      setLoadingConfig(false);
-    }
-  };
 
   useEffect(() => {
-    if (config) {
-      const text = JSON.stringify(config, null, 2);
-      setConfigText(text);
-      setIsValidJson(true);
-    } else if (config === null) {
-      setConfigText("");
-      setIsValidJson(true);
+    if (mcp) {
+      const getConfig = async () => {
+        const cfg = await getConfigAction({});
+        setConfig(cfg);
+      };
+      void getConfig();
     }
-  }, [config]);
-
-  // Load config when MCP is available
-  useEffect(() => {
-    if (mcp && mcp.url && mcp.status === "running") {
-      void loadConfig();
-    } else {
-      setConfig(null);
-    }
-  }, [mcp]);
-
-  const parsedConfig = useMemo(() => {
-    try {
-      if (!configText.trim()) return undefined;
-      const parsed = JSON.parse(configText);
-      setIsValidJson(true);
-      return parsed as unknown;
-    } catch {
-      setIsValidJson(false);
-      return undefined;
-    }
-  }, [configText]);
+  }, [mcp, getConfigAction]);
 
   return (
     <div className="h-full flex flex-col">
@@ -107,16 +68,16 @@ export default function McpUI() {
               <div className="flex gap-2">
                 <button
                   className="px-3 py-2 rounded bg-gray-600 text-white disabled:opacity-50"
-                  disabled={!mcp || loadingConfig}
-                  onClick={() => void loadConfig()}
+                  disabled={!mcp}
+                  onClick={() => void getConfigAction({})}
                 >
-                  {loadingConfig ? "Loading..." : "Refresh"}
+                  Refresh
                 </button>
                 <button
                   className="px-3 py-2 rounded bg-green-600 text-white disabled:opacity-50"
-                  disabled={!mcp || !parsedConfig || !isValidJson}
+                  disabled={!mcp}
                   onClick={() =>
-                    void updateConfigAction({ config: parsedConfig as any })
+                    void updateConfigAction({ config: config })
                   }
                 >
                   Save Config
@@ -126,18 +87,13 @@ export default function McpUI() {
             <textarea
               className="w-full border rounded p-3 font-mono text-sm min-h-[320px]"
               placeholder={
-                loadingConfig 
-                  ? "Loading configuration..." 
-                  : mcp && mcp.url 
-                    ? "Click Refresh to load configuration" 
-                    : "Provision an MCP to load config"
+                mcp && mcp.url 
+                  ? "Click Refresh to load configuration" 
+                  : "Provision an MCP to load config"
               }
-              value={configText}
-              onChange={(e) => setConfigText(e.target.value)}
+              value={JSON.stringify(config, null, 2)}
+              onChange={(e) => setConfig(JSON.parse(e.target.value))}
             />
-            {!isValidJson && (
-              <div className="text-sm text-red-600">Invalid JSON</div>
-            )}
           </section>
         </div>
       </div>
